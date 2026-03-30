@@ -1,0 +1,75 @@
+{
+    "general": [
+        "who.int",
+        "cdc.gov",
+        "nih.gov",
+        "nasa.gov",
+        "ipcc.ch",
+        "noaa.gov",
+        "unfccc.int",
+        "eea.europa.eu",
+        "worldbank.org",
+        "imf.org",
+        "oecd.org",
+        ".edu",
+        "mit.edu",
+        "harvard.edu",
+        "stanford.edu",
+        "edx.org",
+        "reuters.com",
+        "apnews.com",
+        "bbc.com",
+        "cnn.com",
+        "theguardian.com",
+        "nytimes.com",
+        "thehindu.com",
+        "npr.org",
+        "forbes.com",
+        "techcrunch.com",
+        "nature.com",
+        "carbonbrief.org",
+        "snopes.com",
+        "politifact.com",
+        "altnews.in",
+        "wikipedia.org",
+        "britannica.com",
+        "quora.com",
+        "reddit.com",
+        "medium.com",
+        "stackexchange.com",
+        "wikihow.com"
+    ],
+    "science": [
+        "nasa.gov",
+        "who.int",
+        "ipcc.ch",
+        "noaa.gov",
+        "nature.com"
+    ],
+    "climate": [
+        "carbonbrief.org",
+        "unfccc.int",
+        "eea.europa.eu"
+    ],
+    "economy": [
+        "worldbank.org",
+        "imf.org",
+        "oecd.org"
+    ],
+    "education": [
+        ".edu",
+        "mit.edu",
+        "harvard.edu"
+    ],
+    "factcheck": [
+        "snopes.com",
+        "politifact.com",
+        "altnews.in"
+    ],
+    "news": [
+        "reuters.com",
+        "bbc.com",
+        "apnews.com",
+        "thehindu.com"
+    ]
+}

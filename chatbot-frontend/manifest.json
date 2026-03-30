@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Chatbot Extensions",
+  "version": "1.0",
+  "description": "AI chatbot inside a Chrome extension popup",
+  "permissions": [
+    "storage"
+  ],
+  "action": {
+    "default_popup": "index.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "src/App.jsx"
+      ]
+    }
+  ]
+}

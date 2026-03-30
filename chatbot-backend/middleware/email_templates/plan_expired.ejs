@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header img { max-width: 150px; }
+        .content { color: #333; line-height: 1.6; }
+        .button { display: block; width: 200px; margin: 20px auto; padding: 10px; background-color: #007bff; color: #ffffff; text-align: center; text-decoration: none; border-radius: 5px; font-weight: bold; }
+        .footer { text-align: center; font-size: 12px; color: #888; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Accout Plan Expired</h2>
+        </div>
+        <div class="content">
+            <p>Hello <%= firstName %>,</p>
+            <p>Your subscription plan has expired. To continue using all premium features of WrdsAI, please renew or upgrade your plan.</p>
+            <p>Don't lose access to your favorite AI models and chats!</p>
+            <a href="<%= upgradeUrl %>" class="button">Renew / Upgrade Plan</a>
+            <p>If you have any questions, feel free to contact our support team.</p>
+        </div>
+        <div class="footer">
+            <p>&copy; <%= new Date().getFullYear() %> WrdsAI. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
