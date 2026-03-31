@@ -380,20 +380,7 @@ const ChatUI = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  useEffect(() => {
-    const fetchChapters = async () => {
-      try {
-        const response = await fetch(`${apiBaseUrl}/api/ai/get_math_chapters`);
-        const data = await response.json();
-        if (data.success) {
-          setChapters(data.chapters);
-        }
-      } catch (err) {
-        console.error("❌ Failed to fetch chapters:", err);
-      }
-    };
-    fetchChapters();
-  }, []);
+
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);

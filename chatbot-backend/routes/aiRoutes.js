@@ -16,7 +16,7 @@ import { saveSmartAIProPartialResponse } from "../controller/smartAiProControlle
 import { forgotPassword, resetPassword } from "../controller/authController.js";
 import { changePassword, getAllUsers, deleteUser } from "../controller/authController.js";
 import { createUserManually } from "../controller/adminController.js";
-import { getSmartAINxtResponse, getMathChapters } from "../controller/smartAiNxtController.js";
+import { getSmartAINxtResponse } from "../controller/smartAiNxtController.js";
 import { getSmartAiNxtHistory } from "../controller/smartAiNxtController.js";
 import { getSmartAINxtAllSessions } from "../controller/smartAiNxtController.js";
 import { saveSmartAINxtPartialResponse } from "../controller/smartAiNxtController.js";
@@ -48,7 +48,7 @@ router.post("/SmartAINxt_ask", getSmartAINxtResponse);
 router.post("/save_smartAi_Nxt_partial", saveSmartAINxtPartialResponse);
 router.post("/SmartAINxt_history", getSmartAiNxtHistory);
 router.post("/get_smartAi_Nxt_sessions", getSmartAINxtAllSessions);
-router.get("/get_math_chapters", getMathChapters);
+
 
 router.get("/get_all_users", getAllUsers);
 router.delete("/delete_user/:id", deleteUser);
