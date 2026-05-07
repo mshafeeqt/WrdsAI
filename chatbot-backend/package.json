@@ -9,7 +9,7 @@
     "dev": "nodemon index.js",
     "migrate:pg": "node scripts/migrateMongoToPg.js",
     "migrate:pg:dry": "node scripts/migrateMongoToPg.js --dry-run",
-    "build": "rm -rf node_modules && rm package-lock.json && npm install --omit=dev",
+    "build": "npm install --omit=dev",
     "postinstall": "npx puppeteer browsers install chrome"
   },
   "keywords": [],
