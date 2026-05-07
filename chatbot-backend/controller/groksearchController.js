@@ -5,10 +5,15 @@ import trustedSources from "../trusted_sources.json" with { type: "json" };
 import { v4 as uuidv4 } from "uuid"; // npm install uuid
 import ChatSession from "../model/ChatSession.js";
 import { checkGlobalTokenLimit, getGlobalTokenStats } from "../utils/tokenLimit.js";
+import User from "../model/User.js";
+import {
+  buildSelfHarmSupportPayload,
+  shouldTriggerSelfHarmGuardrail,
+} from "../utils/selfHarmGuardrails.js";
 import dotenv from "dotenv";
 dotenv.config();
 
-const GROK_MODEL = "gpt-4o-mini";
+const GROK_MODEL = "gpt-5-nano";
 const GROK_API_URL = "https://api.openai.com/v1/chat/completions";
 const GROK_API_KEY = process.env.OPENAI_API_KEY;
 
@@ -48,6 +53,10 @@ export const grokSearchResults = async (req, res) => {
   try {
     let { id, query, email, linkCount, category } = req.body;
     if (!query) return res.status(400).json({ error: "Missing 'query'" });
+
+    if (shouldTriggerSelfHarmGuardrail(query)) {
+      return res.status(403).json(buildSelfHarmSupportPayload());
+    }
 
     id = id || uuidv4();
 

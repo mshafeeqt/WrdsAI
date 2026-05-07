@@ -202,11 +202,16 @@ export default function GrokSearchUI(props) {
       }
 
       if (response.status === 403 || data.allowed === false) {
+        const isSelfHarmSupport =
+          data?.error === "SELF_HARM_SUPPORT" ||
+          data?.restrictedCategory === "self-harm" ||
+          data?.safetyType === "self-harm";
+
         Swal.fire({
-          title: "Restricted Search 🚫",
+          title: isSelfHarmSupport ? "Immediate Support" : "Restricted Search 🚫",
           text:
             data.message || "This search is not allowed for your age group.",
-          icon: "warning",
+          icon: isSelfHarmSupport ? "info" : "warning",
         });
         setError(data.message);
         setLoading(false);

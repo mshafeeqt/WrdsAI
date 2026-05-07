@@ -7,6 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js",
     "dev": "nodemon index.js",
+    "migrate:pg": "node scripts/migrateMongoToPg.js",
+    "migrate:pg:dry": "node scripts/migrateMongoToPg.js --dry-run",
     "build": "rm -rf node_modules && rm package-lock.json && npm install --omit=dev",
     "postinstall": "npx puppeteer browsers install chrome"
   },
@@ -55,7 +57,9 @@
     "tesseract.js": "^6.0.1",
     "tiktoken": "^1.0.22",
     "uuid": "^11.1.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "sequelize": "^6.37.3",
+    "pg": "^8.12.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"

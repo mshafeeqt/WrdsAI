@@ -19,25 +19,10 @@ import {
   MenuItem,
   Menu,
   Popover,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Drawer,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
   Grid,
   InputLabel,
 } from "@mui/material";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { allCountries } from "country-telephone-data";
 import {
   Menu as MenuIcon,
   Add as AddIcon,
@@ -51,16 +36,21 @@ import {
 import EditIcon from "@mui/icons-material/Edit";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import SearchUI from "./SearchUi";
+import { formatChatResponseHtml } from "./features/chat/utils/responseFormatting";
+import ChangePasswordDialog from "./features/chat/components/ChangePasswordDialog";
+import UserProfileDialog from "./features/chat/components/UserProfileDialog";
+import UserManagementPanel from "./features/chat/components/admin/UserManagementPanel";
+import AddUserDialog from "./features/chat/components/admin/AddUserDialog";
+import DeleteUserDialog from "./features/chat/components/admin/DeleteUserDialog";
+import SidebarDrawer from "./features/chat/components/SidebarDrawer";
+import StudyChapterMenus from "./features/chat/components/study/StudyChapterMenus";
 import FeaturedPlayListOutlinedIcon from "@mui/icons-material/FeaturedPlayListOutlined";
 import KeyboardArrowDownTwoToneIcon from "@mui/icons-material/KeyboardArrowDownTwoTone";
 import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
 import LogoutTwoToneIcon from "@mui/icons-material/LogoutTwoTone";
 import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
-import leaf from "././assets/leaf.png"; // path adjust karo according to folder
 import Mainlogo from "././assets/Mainlogo.png"; // path adjust karo
 import Msg_logo from "././assets/Msg_logo.png"; // path adjust karo
-import chat4 from "././assets/chat4.png"; // path adjust karo
-import search6 from "././assets/search6.png"; // path adjust karo
 import Search_logo1 from "././assets/Search_logo1.png"; // path adjust karo
 import Swal from "sweetalert2";
 import GrokSearchUI from "./GrokSearchUI";
@@ -77,10 +67,10 @@ import Words2 from "././assets/words2.png"; // path adjust karo
 import Msg_logo1 from "././assets/Msg_logo.png"; // path adjust karo
 import Icon from "././assets/Icon2.png";
 import Icon2 from "./assets/icon3.png";
-import KeyboardVoiceIcon from "@mui/icons-material/KeyboardVoice";
 import StopCircleIcon from "@mui/icons-material/StopCircle";
 import { useTheme, useMediaQuery } from "@mui/material";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import LanguageIcon from "@mui/icons-material/Language";
 // import searchIcon from "@mui/icons-material/Language";
 import Tooltip, { tooltipClasses } from "@mui/material/Tooltip";
@@ -88,9 +78,6 @@ import ContactSupportRoundedIcon from "@mui/icons-material/ContactSupportRounded
 import MailOutlineIcon from "@mui/icons-material/MailOutline";
 import { useNavigate } from "react-router-dom";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
-import Visibility from "@mui/icons-material/Visibility";
-import VisibilityOff from "@mui/icons-material/VisibilityOff";
-import InputAdornment from "@mui/material/InputAdornment";
 import { toast } from "react-toastify";
 import LockResetRoundedIcon from "@mui/icons-material/LockResetRounded";
 // import IconButton from "@mui/material/IconButton";
@@ -156,6 +143,21 @@ const ChatUI = () => {
       ageGroup: ageGroup,
     }));
   };
+
+  const handleAddUserFieldChange = (field, value) => {
+    if (field === "bulk") {
+      setNewUserData((prev) => ({
+        ...prev,
+        ...value,
+      }));
+      return;
+    }
+
+    setNewUserData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
   const [isSending, setIsSending] = useState(false);
   const [isTypingResponse, setIsTypingResponse] = useState(false);
   const messagesEndRef = useRef(null);
@@ -166,10 +168,21 @@ const ChatUI = () => {
   const [editingId, setEditingId] = useState(null);
   const [editText, setEditText] = useState("");
   const isStoppedRef = useRef(false);
-  const [maxWords, setMaxWords] = useState(10);
   const [skipHistoryLoad, setSkipHistoryLoad] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [selectedBot, setSelectedBot] = useState("chatgpt-5-mini");
+  const GPT_NANO_BOT = "gpt-5-nano";
+  const LEGACY_GPT_NANO_BOT = "chatgpt-5-mini";
+  const normalizeBotName = (botName = "") =>
+    botName === LEGACY_GPT_NANO_BOT ? GPT_NANO_BOT : botName;
+  const getBotDisplayName = (botName = "") => {
+    const normalizedBotName = normalizeBotName(botName);
+    if (normalizedBotName === GPT_NANO_BOT) return "GPT-5 Nano";
+    if (normalizedBotName === "grok") return "Grok";
+    if (normalizedBotName === "claude-3-haiku") return "Claude";
+    if (normalizedBotName === "mistral") return "Mistral";
+    if (normalizedBotName === "gemini") return "Gemini";
+    return normalizedBotName;
+  };
+  const [selectedBot, setSelectedBot] = useState(GPT_NANO_BOT);
   const [isBotDropdownOpen, setIsBotDropdownOpen] = useState(() => {
     try {
       const user = JSON.parse(localStorage.getItem("user"));
@@ -185,20 +198,23 @@ const ChatUI = () => {
     return false;
   });
   const [openProfile, setOpenProfile] = useState(false);
-  const [remainingTokens, setRemainingTokens] = useState(0);
   // const [totalTokensUsed, setTotalTokensUsed] = useState(0);
-  const [responseLength, setResponseLength] = useState("Concise");
-  const lastSelectedResponseLength = useRef(responseLength);
   const [mobileMenuAnchor, setMobileMenuAnchor] = useState(null);
   // Add this with your other useState declarations
   const [searchSessionResults, setSearchSessionResults] = useState([]);
   const [showSessionPanel, setShowSessionPanel] = useState(false);
   const [openSidebar, setOpenSidebar] = useState(false);
-  const [showTopSearch, setShowTopSearch] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const [User, setUser] = useState(() => {
     return JSON.parse(localStorage.getItem("user")) || {};
   });
+  const formatDisplayName = (value) => {
+    const rawName = String(value || "").trim();
+    if (!rawName) return "User";
+    if (rawName.toLowerCase() === "qwerty") return "Onkar";
+    return rawName[0].toUpperCase() + rawName.slice(1);
+  };
+  const displayName = formatDisplayName(User.firstName);
   const navigate = useNavigate();
   // 🔹 नवी state add करो
   // const [sessionRemainingTokens, setSessionRemainingTokens] = useState(0);
@@ -224,11 +240,19 @@ const ChatUI = () => {
     }
   });
 
-  const [educationBoard, setEducationBoard] = useState("CBSE");
   const [isCBSEActive, setIsCBSEActive] = useState(false);
+  const [chapterStructure, setChapterStructure] = useState([]);
+  const [selectedClass, setSelectedClass] = useState("");
+  const [selectedSubject, setSelectedSubject] = useState("");
   const [chapters, setChapters] = useState([]);
   const [selectedChapter, setSelectedChapter] = useState("");
   const [chapterError, setChapterError] = useState("");
+  const [chaptersLoading, setChaptersLoading] = useState(false);
+  const [studyMenuAnchorEl, setStudyMenuAnchorEl] = useState(null);
+  const [studyClassMenuAnchorEl, setStudyClassMenuAnchorEl] = useState(null);
+  const [studySubjectMenuAnchorEl, setStudySubjectMenuAnchorEl] = useState(null);
+  const [activeStudyClass, setActiveStudyClass] = useState(null);
+  const [activeStudySubject, setActiveStudySubject] = useState(null);
   // const [activeView, setActiveView] = useState(() => {
   //   try {
   //     const user = JSON.parse(localStorage.getItem("user"));
@@ -245,9 +269,9 @@ const ChatUI = () => {
   //   }
   // });
 
-  const [customValue, setCustomValue] = useState("");
   const [historyList, setHistoryList] = useState([]); // store user search history
   const [selectedGrokQuery, setSelectedGrokQuery] = useState("");
+
   const [isSmartAI, setIsSmartAI] = useState(() => {
     try {
       const user = JSON.parse(localStorage.getItem("user"));
@@ -275,7 +299,6 @@ const ChatUI = () => {
       return false;
     }
   });
-  const [openContactUs, setOpenContactUs] = useState(false);
   // const [error, setError] = useState("");
   // const [tokenCount, setTokenCount] = useState(0);
   const [linkCount, setLinkCount] = useState(3);
@@ -293,7 +316,6 @@ const ChatUI = () => {
   const recognitionRef = useRef(null);
   const partialResponseRef = useRef("");
   const currentPromptRef = useRef("");
-  const [selectOpen, setSelectOpen] = useState(false);
   const selectRef = useRef(null);
   const disabled = true; // or false
   // const navigate = useNavigate();
@@ -325,6 +347,105 @@ const ChatUI = () => {
   const [activeGroup, setActiveGroup] = useState(null);
 
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+  const selectedChapterMeta =
+    chapters.find((chapter) => chapter.id === selectedChapter) || null;
+  const isStudyMenuOpen = Boolean(studyMenuAnchorEl);
+
+  useEffect(() => {
+    if ((!isCBSEActive && !isStudyMenuOpen) || chapters.length > 0 || chaptersLoading) {
+      return;
+    }
+
+    const fetchMathChapters = async () => {
+      setChaptersLoading(true);
+      try {
+        const response = await fetch(`${apiBaseUrl}/api/ai/math-chapters`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "Failed to load chapters");
+        }
+
+        setChapterStructure(Array.isArray(data.structure) ? data.structure : []);
+        setChapters(Array.isArray(data.chapters) ? data.chapters : []);
+      } catch (error) {
+        console.error("Failed to fetch math chapters:", error);
+        setChapterStructure([]);
+        setChapters([]);
+        toast.error("Unable to load chapter list");
+      } finally {
+        setChaptersLoading(false);
+      }
+    };
+
+    fetchMathChapters();
+  }, [apiBaseUrl, chapters.length, chaptersLoading, isCBSEActive, isStudyMenuOpen]);
+
+  const closeStudyMenus = () => {
+    setStudyMenuAnchorEl(null);
+    setStudyClassMenuAnchorEl(null);
+    setStudySubjectMenuAnchorEl(null);
+    setActiveStudyClass(null);
+    setActiveStudySubject(null);
+  };
+
+  const handleStudyTriggerClick = (event) => {
+    setChapterError("");
+    setStudyClassMenuAnchorEl(null);
+    setStudySubjectMenuAnchorEl(null);
+    setActiveStudyClass(null);
+    setActiveStudySubject(null);
+    setStudyMenuAnchorEl((currentAnchor) =>
+      currentAnchor ? null : event.currentTarget,
+    );
+  };
+
+  const handleStudyClassOpen = (event, classItem) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setActiveStudyClass(classItem);
+    setActiveStudySubject(null);
+    setStudyClassMenuAnchorEl(event.currentTarget);
+    setStudySubjectMenuAnchorEl(null);
+  };
+
+  const handleStudySubjectOpen = (event, subjectItem) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setActiveStudySubject(subjectItem);
+    setStudySubjectMenuAnchorEl(event.currentTarget);
+  };
+
+  const handleStudyClassMenuClose = () => {
+    setStudyClassMenuAnchorEl(null);
+    setStudySubjectMenuAnchorEl(null);
+    setActiveStudyClass(null);
+    setActiveStudySubject(null);
+  };
+
+  const handleStudySubjectMenuClose = () => {
+    setStudySubjectMenuAnchorEl(null);
+    setActiveStudySubject(null);
+  };
+
+  const handleDeselectChapter = (e) => {
+    if (e) e.stopPropagation();
+    setIsCBSEActive(false);
+    setSelectedClass("");
+    setSelectedSubject("");
+    setSelectedChapter("");
+    setChapterError("");
+  };
+
+  const handleStudyChapterSelect = (classItem, subjectItem, chapterItem) => {
+
+    setIsCBSEActive(true);
+    setSelectedClass(classItem.id);
+    setSelectedSubject(subjectItem.id);
+    setSelectedChapter(chapterItem.id);
+    setChapterError("");
+    closeStudyMenus();
+  };
 
   const handleClick = (event, idx, tokens) => {
     setAnchorEl(event.currentTarget);
@@ -413,7 +534,13 @@ const ChatUI = () => {
         body: JSON.stringify(submitData),
       });
 
-      const data = await response.json();
+      const rawText = await response.text();
+      let data = {};
+      try {
+        data = rawText ? JSON.parse(rawText) : {};
+      } catch {
+        data = { message: rawText };
+      }
 
       if (response.ok) {
         Swal.fire({
@@ -476,11 +603,6 @@ const ChatUI = () => {
     });
   };
 
-  // Add this function to clear all files
-  const clearAllFiles = () => {
-    setSelectedFiles([]);
-  };
-
   useEffect(() => {
     const saved = localStorage.getItem("globalRemainingTokens");
     if (saved) {
@@ -521,7 +643,6 @@ const ChatUI = () => {
         const savedTokens = localStorage.getItem(`tokens_${lastSmartId}`);
         if (savedTokens) {
           console.log("Restored Smart AI tokens:", savedTokens);
-          setRemainingTokens(Number(savedTokens));
         }
 
         loadSmartAIHistory(lastSmartId);
@@ -539,7 +660,6 @@ const ChatUI = () => {
         const savedTokens = localStorage.getItem(`tokens_${lastProId}`);
         if (savedTokens) {
           console.log("Restored Smart AI Pro tokens:", savedTokens);
-          setRemainingTokens(Number(savedTokens));
         }
 
         loadSmartAIProHistory(lastProId);
@@ -557,20 +677,12 @@ const ChatUI = () => {
         const savedTokens = localStorage.getItem(`tokens_${lastNxtId}`);
         if (savedTokens) {
           console.log("Restored Smart AI Nxt tokens:", savedTokens);
-          setRemainingTokens(Number(savedTokens));
         }
 
         loadSmartAINxtHistory(lastNxtId);
       }
-      // 🟢 Always set responseLength to Long for WrdsAI Nxt as requested
-      setResponseLength("Long");
     }
   }, [activeView]);
-
-  useEffect(() => {
-    // Whenever user changes dropdown, keep latest value saved
-    lastSelectedResponseLength.current = responseLength;
-  }, [responseLength]);
 
   useEffect(() => {
     return () => {
@@ -586,35 +698,6 @@ const ChatUI = () => {
       minWidth: "400px", // 🔥 Set your desired width here
     },
   });
-
-  const fetchSearchHistory = async () => {
-    try {
-      const user = JSON.parse(localStorage.getItem("user"));
-      const email = user?.email;
-      if (!email) return;
-
-      setHistoryLoading(true);
-
-      const res = await fetch(`${apiBaseUrl}/Searchhistory`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await res.json();
-      if (data.history) {
-        // extract only queries
-        setHistoryList(data.history.map((h) => h.query));
-      }
-    } catch (err) {
-      console.error("History fetch error:", err);
-    } finally {
-      setHistoryLoading(false);
-    }
-  };
-  // useEffect(() => {
-  //   fetchSearchHistory();
-  // }, [apiBaseUrl, historyLoading]);
 
   const fetchAllUsers = async () => {
     try {
@@ -956,6 +1039,41 @@ const ChatUI = () => {
     });
   };
 
+  const handleCloseSidebar = () => {
+    setOpenSidebar(false);
+    setSearchSessionResults([]);
+    setSearchValue("");
+  };
+
+  const handleSidebarSessionSelect = (chat) => {
+    if (!chat?.id) return;
+
+    setSelectedChatId(chat.id);
+
+    if (activeView === "chat") {
+      localStorage.setItem("lastChatSessionId", chat.id);
+      loadChatHistory(chat.sessionId);
+    }
+
+    if (activeView === "smartAi") {
+      localStorage.setItem("lastSmartAISessionId", chat.id);
+      loadSmartAIHistory(chat.sessionId);
+    }
+
+    if (activeView === "wrds AiPro") {
+      localStorage.setItem("lastSmartAIProSessionId", chat.id);
+      loadSmartAIProHistory(chat.sessionId);
+    }
+
+    if (activeView === "WrdsAI Nxt") {
+      localStorage.setItem("lastSmartAINxtSessionId", chat.id);
+      loadSmartAINxtHistory(chat.sessionId);
+    }
+
+    setMobileMenuAnchor(null);
+    setShowSessionPanel(false);
+  };
+
   const handleSearch = async (searchQuery) => {
     const finalQuery = searchQuery || query; // ✅ use passed query if available
     console.log("finalQuery:::====", finalQuery);
@@ -997,11 +1115,16 @@ const ChatUI = () => {
       }
 
       if (response.status === 403 || data.allowed === false) {
+        const isSelfHarmSupport =
+          data?.error === "SELF_HARM_SUPPORT" ||
+          data?.restrictedCategory === "self-harm" ||
+          data?.safetyType === "self-harm";
+
         Swal.fire({
-          title: "Restricted Search 🚫",
+          title: isSelfHarmSupport ? "Immediate Support" : "Restricted Search 🚫",
           text:
             data.message || "This search is not allowed for your age group.",
-          icon: "warning",
+          icon: isSelfHarmSupport ? "info" : "warning",
           customClass: {
             popup: "red-alert-icon",
           },
@@ -1174,7 +1297,13 @@ const ChatUI = () => {
         signal: controller.signal,
       });
 
-      const data = await response.json();
+      const rawText = await response.text();
+      let data = {};
+      try {
+        data = rawText ? JSON.parse(rawText) : {};
+      } catch {
+        data = { message: rawText };
+      }
 
       // Handle "Not enough tokens" error
       // if (!response.ok) {
@@ -1340,6 +1469,12 @@ const ChatUI = () => {
         };
       }
 
+      if (!response.ok) {
+        throw new Error(
+          data.message || data.error || `HTTP error! status: ${response.status}`,
+        );
+      }
+
       // 🟢 while processing response, store it in partial ref
       if (data?.response) {
         partialResponseRef.current = data.response; // save the full (or partial) response
@@ -1450,7 +1585,7 @@ const ChatUI = () => {
       }
 
       return {
-        response: "Sorry, something went wrong.",
+        response: err?.message || "Sorry, something went wrong.",
         sessionId: currentSessionId,
         // botName: selectedBot,
         botName:
@@ -2765,7 +2900,7 @@ const ChatUI = () => {
           // Old format - user message
           let modelResponse = null;
           let tokensUsed = null;
-          let botName = "chatgpt-5-mini";
+          let botName = GPT_NANO_BOT;
           let j = i + 1;
 
           // Look for the corresponding model response
@@ -2773,7 +2908,7 @@ const ChatUI = () => {
             if (rawHistory[j].role === "model") {
               modelResponse = rawHistory[j];
               tokensUsed = modelResponse.tokensUsed || null;
-              botName = modelResponse.botName || "chatgpt-5-mini";
+              botName = normalizeBotName(modelResponse.botName || GPT_NANO_BOT);
               break;
             }
             j++;
@@ -3252,7 +3387,6 @@ const ChatUI = () => {
       create_time: new Date().toISOString(),
       prompt: text,
       sessionId: currentSessionId || "",
-      responseLength,
       botName: selectedBot,
     };
 
@@ -3264,10 +3398,18 @@ const ChatUI = () => {
         body: JSON.stringify(payload),
         signal: controller.signal,
       });
+      const rawText = await response.text();
+      let data = {};
+      try {
+        data = rawText ? JSON.parse(rawText) : {};
+      } catch {
+        data = { message: rawText };
+      }
+
 
       // 🔹 Check for "Not enough tokens" error specifically
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = data;
 
         // If it's a "Not enough tokens" error, return it directly
         if (
@@ -3305,12 +3447,13 @@ const ChatUI = () => {
 
         // For other errors, throw normally
         throw new Error(
-          errorData.message || `HTTP error! status: ${response.status}`,
+          errorData.error ||
+            errorData.message ||
+            `HTTP error! status: ${response.status}`,
         );
       }
 
       abortControllerRef.current = null;
-      const data = await response.json();
 
       console.log("API Response:", data);
 
@@ -3341,7 +3484,7 @@ const ChatUI = () => {
       }
 
       return {
-        response: "Sorry, something went wrong.",
+        response: err?.message || "Sorry, something went wrong.",
         sessionId: currentSessionId,
         botName: selectedBot,
       };
@@ -3490,17 +3633,14 @@ const ChatUI = () => {
         messageType !== "WrdsAI Nxt"
       )
         formData.append("botName", selectedBot);
-      // ✅ WrdsAI Nxt always uses "Long" (300-500 words). Other views use selected value.
-      formData.append(
-        "responseLength",
-        messageType === "WrdsAI Nxt"
-          ? "Long"
-          : lastSelectedResponseLength.current || "Concise",
-      );
       formData.append("sessionId", currentSessionId);
       formData.append("type", messageType);
       formData.append("isCBSEActive", isCBSEActive);
       formData.append("selectedChapter", selectedChapter);
+      formData.append(
+        "selectedChapterName",
+        selectedChapterMeta?.name || selectedChapter,
+      );
 
       selectedFiles.forEach((file) => {
         formData.append("files", file);
@@ -3731,7 +3871,6 @@ const ChatUI = () => {
       setIsSending(false);
       setIsTypingResponse(false);
       scrollToBottom();
-      // setResponseLength(" ");
 
       // ✅ Only refresh sessions if user did NOT stop typing (full response)
       // if (!isStoppedRef.current) {
@@ -3945,7 +4084,7 @@ const ChatUI = () => {
   };
 
   const bots = [
-    { label: "ChatGPT", value: "chatgpt-5-mini" },
+    { label: "GPT-5 Nano", value: GPT_NANO_BOT },
     { label: "Grok", value: "grok" },
     { label: "Mistral", value: "mistral" },
   ];
@@ -4069,13 +4208,13 @@ const ChatUI = () => {
                     }}
                   >
                     <MenuItem
-                      value="chatgpt-5-mini"
+                      value={GPT_NANO_BOT}
                       sx={{
                         fontSize: "15px",
                         fontFamily: "Calibri, sans-serif",
                       }}
                     >
-                      ChatGPT
+                      GPT-5 Nano
                     </MenuItem>
                     <MenuItem
                       value="claude-3-haiku"
@@ -4188,9 +4327,7 @@ const ChatUI = () => {
                   {/* {User.firstName && User.lastName
                     ? `${User.firstName} ${User.lastName}`
                     : "User"} */}
-                  {User.firstName
-                    ? User.firstName[0].toUpperCase() + User.firstName.slice(1)
-                    : "User"}
+                  {displayName}
                 </Typography>
 
                 <PersonRoundedIcon sx={{ fontSize: 29, color: "#fff" }} />
@@ -4227,13 +4364,13 @@ const ChatUI = () => {
                     }}
                   >
                     <MenuItem
-                      value="chatgpt-5-mini"
+                      value={GPT_NANO_BOT}
                       sx={{
                         fontSize: "15px",
                         fontFamily: "Calibri, sans-serif",
                       }}
                     >
-                      ChatGPT
+                      GPT-5 Nano
                     </MenuItem>
                     <MenuItem
                       value="claude-3-haiku"
@@ -4647,9 +4784,7 @@ const ChatUI = () => {
                   {/* {User.firstName && User.lastName
                     ? `${User.firstName} ${User.lastName}`
                     : "User"} */}
-                  {User.firstName
-                    ? User.firstName[0].toUpperCase() + User.firstName.slice(1)
-                    : "User"}
+                  {displayName}
                 </Typography>
 
                 <PersonRoundedIcon
@@ -4691,10 +4826,10 @@ const ChatUI = () => {
                   }}
                 >
                   <MenuItem
-                    value="chatgpt-5-mini"
+                    value={GPT_NANO_BOT}
                     sx={{ fontSize: "16px", fontFamily: "Calibri, sans-serif" }}
                   >
-                    ChatGPT
+                    GPT-5 Nano
                   </MenuItem>
                   <MenuItem
                     value="claude-3-haiku"
@@ -5046,13 +5181,13 @@ const ChatUI = () => {
                       }}
                     >
                       <MenuItem
-                        value="chatgpt-5-mini"
+                        value={GPT_NANO_BOT}
                         sx={{
                           fontSize: "18px",
                           fontFamily: "Calibri, sans-serif",
                         }}
                       >
-                        ChatGPT
+                        GPT-5 Nano
                       </MenuItem>
                       <MenuItem
                         value="claude-3-haiku"
@@ -5393,9 +5528,7 @@ const ChatUI = () => {
                         User.lastName[0].toUpperCase() + User.lastName.slice(1)
                       }`
                     : "User"} */}
-                  {User.firstName
-                    ? User.firstName[0].toUpperCase() + User.firstName.slice(1)
-                    : "User"}
+                  {displayName}
                 </Typography>
 
                 <PersonRoundedIcon
@@ -6073,7 +6206,7 @@ const ChatUI = () => {
                               <>
                                 <Typography
                                   sx={{
-                                    fontSize: "17px",
+                                    fontSize: "19px",
                                     fontFamily: "Calibri, sans-serif",
                                     fontWeight: 400,
                                   }}
@@ -6182,14 +6315,7 @@ const ChatUI = () => {
                             />
                             {console.log(
                               group.botName,
-                              group.botName.charAt(0).toUpperCase() ===
-                                "chatgpt-5-mini"
-                                ? "ChatGPT"
-                                : group.botName.charAt(0).toUpperCase() +
-                                      group.botName.slice(1) ===
-                                    "grok"
-                                  ? "Grok"
-                                  : "",
+                              getBotDisplayName(group.botName),
                               "group",
                             )}
                             {/* ✅ Bot name + AI Assistant */}
@@ -6215,17 +6341,7 @@ const ChatUI = () => {
                                   ? "Wrds AI"
                                   : isSmartAINxt
                                     ? "Wrds Ai Nxt"
-                                    : group.botName === "chatgpt-5-mini"
-                                      ? "ChatGPT"
-                                      : group.botName === "grok"
-                                        ? "Grok"
-                                        : group.botName === "claude-3-haiku"
-                                          ? "Claude"
-                                          : group.botName === "mistral"
-                                            ? "Mistral"
-                                            : group.botName === "gemini"
-                                              ? "Gemini"
-                                              : ""}
+                                    : getBotDisplayName(group.botName)}
                               </Typography>
 
                               {/* <Typography
@@ -6277,12 +6393,14 @@ const ChatUI = () => {
                               ) : (
                                 <div
                                   style={{
-                                    fontSize: "17px",
+                                    fontSize: "19px",
                                     fontFamily: "Calibri, sans-serif",
                                     fontWeight: 400, // Regular weight
                                   }}
                                   dangerouslySetInnerHTML={{
-                                    __html: group.responses[group.currentSlide],
+                                    __html: formatChatResponseHtml(
+                                      group.responses[group.currentSlide],
+                                    ),
                                   }}
                                 />
                               )}
@@ -6680,31 +6798,6 @@ const ChatUI = () => {
                         gap: 2,
                       }}
                     >
-                      {/* ▼ Dropdown */}
-                      <TextField
-                        select
-                        size="small"
-                        value={responseLength}
-                        onChange={(e) => setResponseLength(e.target.value)}
-                        sx={{
-                          // width: "150px",
-                          width: isXS ? "112px" : "150px",
-                          "& fieldset": { border: "none" },
-                          bgcolor: "#f6f6f6",
-                          borderRadius: "10px",
-                          textAlign: "left",
-                          fontSize: "14px",
-                          paddingLeft: "4px",
-                        }}
-                      >
-                        <MenuItem value="Short">Short</MenuItem>
-                        <MenuItem value="Concise">Concise</MenuItem>
-                        <MenuItem value="Long">Long</MenuItem>
-                        <MenuItem value="NoOptimisation">
-                          No Optimisation
-                        </MenuItem>
-                      </TextField>
-
                       {/* ➤ Send Button */}
                       <IconButton
                         onClick={() => {
@@ -6782,7 +6875,7 @@ const ChatUI = () => {
               <Box
                 sx={{
                   // height: "70vh",
-                  height: { xs: "62vh", sm: "62vh", md: "62vh", lg: "63vh" },
+                  height: { xs: "70vh", sm: "71vh", md: "72vh", lg: "73vh" },
                   // p: 2,
                   display: "flex",
                   flexDirection: "column",
@@ -7024,7 +7117,7 @@ const ChatUI = () => {
                               <>
                                 <Typography
                                   sx={{
-                                    fontSize: "17px",
+                                    fontSize: "19px",
                                     fontFamily: "Calibri, sans-serif",
                                     fontWeight: 400,
                                   }}
@@ -7133,14 +7226,7 @@ const ChatUI = () => {
                             />
                             {console.log(
                               group.botName,
-                              group.botName.charAt(0).toUpperCase() ===
-                                "chatgpt-5-mini"
-                                ? "ChatGPT"
-                                : group.botName.charAt(0).toUpperCase() +
-                                      group.botName.slice(1) ===
-                                    "grok"
-                                  ? "Grok"
-                                  : "",
+                              getBotDisplayName(group.botName),
                               "group",
                             )}
                             {/* ✅ Bot name + AI Assistant */}
@@ -7217,7 +7303,9 @@ const ChatUI = () => {
                                     fontWeight: 400, // Regular weight
                                   }}
                                   dangerouslySetInnerHTML={{
-                                    __html: group.responses[group.currentSlide],
+                                    __html: formatChatResponseHtml(
+                                      group.responses[group.currentSlide],
+                                    ),
                                   }}
                                 />
                               )}
@@ -7584,31 +7672,6 @@ const ChatUI = () => {
                         gap: "6px",
                       }}
                     >
-                      {/* ▼ Dropdown */}
-                      <TextField
-                        select
-                        size="small"
-                        value={responseLength}
-                        onChange={(e) => setResponseLength(e.target.value)}
-                        sx={{
-                          // width: "150px",
-                          width: isXS ? "112px" : "150px",
-                          "& fieldset": { border: "none" },
-                          bgcolor: "#f6f6f6",
-                          borderRadius: "10px",
-                          textAlign: "left",
-                          fontSize: "14px",
-                          paddingLeft: "4px",
-                        }}
-                      >
-                        <MenuItem value="Short">Short</MenuItem>
-                        <MenuItem value="Concise">Concise</MenuItem>
-                        <MenuItem value="Long">Long</MenuItem>
-                        <MenuItem value="NoOptimisation">
-                          No Optimisation
-                        </MenuItem>
-                      </TextField>
-
                       {/* ➤ Send Button */}
                       <IconButton
                         onClick={() => handleSend()}
@@ -7667,12 +7730,19 @@ const ChatUI = () => {
           <>
             <Box
               sx={{
+                display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                justifyContent: "space-between",
+                justifyContent: "flex-start",
                 transition: "all 0.3s ease",
                 width: "100%",
                 maxWidth: { xs: "100%", sm: "100%", md: "100%" },
+                minHeight: {
+                  xs: "calc(100svh - 70px)",
+                  sm: "calc(100dvh - 71px)",
+                  md: "calc(100dvh - 84px)",
+                  lg: "calc(100dvh - 86px)",
+                },
                 px: { xs: 1, sm: 2, md: 8 },
                 mb: 0,
                 pb: 0,
@@ -7681,15 +7751,16 @@ const ChatUI = () => {
               {/* 👉 Main Content (Conditional) */}
               <Box
                 sx={{
-                  height: { xs: "62vh", sm: "62vh", md: "62vh", lg: "63vh" },
                   display: "flex",
                   flexDirection: "column",
                   flexGrow: 1,
+                  flex: 1,
                   overflowY: "auto",
                   overflowX: "hidden",
                   width: "92%",
                   // mx: "auto",
                   p: { xs: 1, sm: 1, md: 2 },
+                  pb: { xs: "152px", sm: "168px", md: "176px" },
                   minHeight: 0,
                   "&::-webkit-scrollbar": { display: "none" },
                   scrollbarWidth: "none",
@@ -7728,9 +7799,9 @@ const ChatUI = () => {
                   </Box>
                 ) : (
                   // Chat Messages
-                  <Box sx={{ spaceY: 6, width: "100%", minWidth: 0 }}>
-                    {(smartAINxtMessageGroups[0] || []).map((group, idx) => (
-                      <Box key={idx} mb={3}>
+                  <Box sx={{ spaceY: 6, width: "100%", minWidth: 0, pb: 1 }}>
+                    {(smartAINxtMessageGroups[0] || []).map((group, idx, groups) => (
+                      <Box key={idx} mb={idx === groups.length - 1 ? 0.5 : 2.25}>
                         <Box
                           display="flex"
                           justifyContent="flex-end"
@@ -7992,12 +8063,20 @@ const ChatUI = () => {
                           <Paper
                             sx={{
                               p: { xs: 1, sm: 1.5 },
-                              bgcolor: "#f1f6fc",
+                              bgcolor: "#eef5ff",
                               borderRadius: 3,
-                              maxWidth: { xs: "87%", sm: "90%", md: "89%" },
+                              border: "1px solid rgba(18, 104, 251, 0.08)",
+                              boxShadow: "0 2px 8px rgba(15, 23, 42, 0.06)",
+                              maxWidth: { xs: "92%", sm: "92%", md: "88%" },
                             }}
                           >
-                            <Box sx={{ mb: 2 }}>
+                            <Box
+                              sx={{
+                                mb: 2,
+                                color: "#1f1f1f",
+                                lineHeight: 1.75,
+                              }}
+                            >
                               {group.isTyping &&
                               [
                                 "Thinking...",
@@ -8026,12 +8105,15 @@ const ChatUI = () => {
                               ) : (
                                 <div
                                   style={{
-                                    fontSize: "17px",
+                                    fontSize: "19px",
                                     fontFamily: "Calibri, sans-serif",
                                     fontWeight: 400,
+                                    lineHeight: 1.7,
                                   }}
                                   dangerouslySetInnerHTML={{
-                                    __html: group.responses[group.currentSlide],
+                                    __html: formatChatResponseHtml(
+                                      group.responses[group.currentSlide],
+                                    ),
                                   }}
                                 />
                               )}
@@ -8047,7 +8129,11 @@ const ChatUI = () => {
                               <Box>
                                 <Typography
                                   variant="caption"
-                                  sx={{ opacity: 0.6, mb: 0.5 }}
+                                  sx={{
+                                    opacity: 0.6,
+                                    mb: 0.5,
+                                    fontSize: "12px",
+                                  }}
                                 >
                                   {group.time}
                                 </Typography>
@@ -8124,32 +8210,50 @@ const ChatUI = () => {
               <Box
                 sx={{
                   mb: 0,
-                  pb: "16px",
+                  pb: { xs: 0.15, sm: 0.35 },
                   display: "flex",
-                  p: { xs: 1, sm: 1, md: 2 },
-                  width: "92%",
+                  position: "fixed",
+                  bottom: "max(env(safe-area-inset-bottom), 0px)",
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  zIndex: 20,
+                  p: { xs: 0.05, sm: 0.2, md: 0.35 },
+                  width: { xs: "94%", sm: "92%" },
+                  maxWidth: {
+                    xs: "420px",
+                    sm: "calc(100vw - 32px)",
+                    md: "calc(100vw - 120px)",
+                    lg: "calc(100vw - 180px)",
+                  },
                   flexDirection: "column",
-                  justifyContent: "space-between",
+                  justifyContent: "flex-end",
+                  mt: 0,
+                  flexShrink: 0,
+                  background: {
+                    xs: "linear-gradient(to top, rgba(255,255,255,0.985) 78%, rgba(255,255,255,0))",
+                    sm: "linear-gradient(to top, rgba(255,255,255,0.975) 78%, rgba(255,255,255,0))",
+                  },
+                  pt: { xs: 1.1, sm: 0.2, md: 0.35 },
                 }}
               >
                 <Box
                   sx={{
-                    p: 1,
-                    bgcolor: "#fff",
-                    borderRadius: "40px",
-                    border: "1px solid #dcdcdc",
+                    p: { xs: 0.45, sm: 0.85 },
+                    bgcolor: "#ffffff",
+                    borderRadius: "32px",
+                    border: "1px solid rgba(15, 23, 42, 0.1)",
                     display: "flex",
-                    alignItems: "center",
+                    alignItems: "stretch",
                     gap: 0.5,
                     flexDirection: "column",
                     width: "100%",
-                    boxShadow: "0px 1px 6px rgba(0,0,0,0.1)",
+                    boxShadow: "0 10px 28px rgba(15,23,42,0.1)",
                   }}
                 >
                   <Box sx={{ width: "100%" }}>
                     <TextField
                       fullWidth
-                      placeholder="Ask WrdsAI Nxt..."
+                      placeholder="Ask anything"
                       variant="outlined"
                       size="small"
                       value={input}
@@ -8163,15 +8267,15 @@ const ChatUI = () => {
                       disabled={isSending || isTypingResponse}
                       sx={{
                         "& .MuiOutlinedInput-root": {
-                          borderRadius: "30px",
-                          backgroundColor: "#fff",
+                          borderRadius: "24px",
+                          backgroundColor: "transparent",
                           height: "auto",
                           border: 0,
-                          minHeight: selectedFiles.length > 0 ? "75px" : "60px",
+                          minHeight: selectedFiles.length > 0 ? "74px" : "46px",
                           padding:
                               selectedFiles.length > 0
-                                  ? "25px 14px 10px 14px"
-                                  : "4px 14px 4px 14px",
+                                  ? "20px 12px 6px 12px"
+                                  : "1px 12px 0px 12px",
                           display: "flex",
                           alignItems: "center",
                         },
@@ -8179,18 +8283,23 @@ const ChatUI = () => {
                           border: "none !important",
                         },
                         "& .MuiOutlinedInput-input": {
-                          padding: "6px 8px",
+                          padding: "4px 6px",
                           height: "auto",
                           fontSize: "16px",
+                          color: "#1f1f1f",
                           display: "flex",
                           alignItems: "center",
+                        },
+                        "& .MuiInputBase-input::placeholder": {
+                          color: "rgba(15,23,42,0.45)",
+                          opacity: 1,
                         },
                         "& .Mui-disabled": { opacity: 0.5 },
                         minWidth: { xs: "100%", sm: "200px" },
                         mb: { xs: 1, sm: 0 },
                       }}
                       multiline
-                      maxRows={2}
+                      maxRows={3}
                       InputProps={{
                         startAdornment: (
                             <>
@@ -8198,8 +8307,8 @@ const ChatUI = () => {
                                   <Box
                                       sx={{
                                         position: "absolute",
-                                        top: "5px",
-                                        left: "20px",
+                                        top: "6px",
+                                        left: "12px",
                                         display: "flex",
                                         flexWrap: "wrap",
                                         gap: 0.5,
@@ -8212,21 +8321,21 @@ const ChatUI = () => {
                                             sx={{
                                               display: "flex",
                                               alignItems: "center",
-                                              backgroundColor: "#eef3ff",
-                                              borderRadius: "14px",
+                                              backgroundColor: "#f4f7fb",
+                                              borderRadius: "999px",
                                               padding: "2px 8px",
-                                              border: "1px solid #1268fb",
-                                              maxWidth: "120px",
+                                              border: "1px solid rgba(18,104,251,0.18)",
+                                              maxWidth: "140px",
                                             }}
                                         >
                                           <Typography
                                               sx={{
-                                                fontSize: "11px",
+                                                fontSize: "10px",
                                                 fontWeight: 600,
                                                 overflow: "hidden",
                                                 textOverflow: "ellipsis",
                                                 whiteSpace: "nowrap",
-                                                color: "#1268fb",
+                                                color: "#2457d6",
                                               }}
                                           >
                                             {file.name.length > 15
@@ -8237,7 +8346,11 @@ const ChatUI = () => {
                                           <IconButton
                                               size="small"
                                               onClick={() => removeFile(index)}
-                                              sx={{ color: "#ff4444", ml: 0.5, p: 0 }}
+                                              sx={{
+                                                color: "rgba(15,23,42,0.45)",
+                                                ml: 0.5,
+                                                p: 0,
+                                              }}
                                           >
                                             <CloseIcon fontSize="inherit" />
                                           </IconButton>
@@ -8255,26 +8368,34 @@ const ChatUI = () => {
                     sx={{
                       display: "flex",
                       alignItems: "center",
-                      gap: isXS ? 0.5 : 1,
-                      flexDirection: "raw",
+                      gap: isXS ? 0.75 : 1,
+                      flexDirection: "row",
                       width: "100%",
                       justifyContent: "space-between",
+                      px: { xs: 0.1, sm: 0.5 },
+                      pb: { xs: 0, sm: 0.25 },
+                      mt: { xs: -0.25, sm: 0 },
                     }}
                   >
-                    <Box sx={{ ml: 1 }}>
+                    <Box sx={{ ml: { xs: 0.25, sm: 1 } }}>
                       <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: { xs: 0.5, sm: 1.5 },
+                        }}
                       >
                         <IconButton
                           component="label"
                           sx={{
-                            color: "#1268fb",
+                            color: "#1f1f1f",
                             borderRadius: "50%",
-                            width: isXS ? "25px" : "32px",
-                            height: isXS ? "25px" : "32px",
-                            backgroundColor: "rgba(47, 103, 246, 0.1)",
+                            width: isXS ? "30px" : "38px",
+                            height: isXS ? "30px" : "38px",
+                            border: "1px solid rgba(15,23,42,0.1)",
+                            backgroundColor: "#ffffff",
                             "&:hover": {
-                              backgroundColor: "rgba(47,103,246,0.2)",
+                              backgroundColor: "#f7f8fa",
                             },
                           }}
                         >
@@ -8293,7 +8414,7 @@ const ChatUI = () => {
                               e.target.value = "";
                             }}
                           />
-                          <AttachFileIcon fontSize="small" />
+                          <AddIcon fontSize="small" />
                         </IconButton>
 
                         {(isTypingResponse || isSending) && (
@@ -8316,130 +8437,79 @@ const ChatUI = () => {
                     </Box>
                     <Box
                       sx={{
-                        mr: 1,
+                        mr: { xs: 0.25, sm: 1 },
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        gap: "6px",
+                        gap: { xs: "4px", sm: "6px" },
                       }}
                     >
                       {/* 🏫 Board Selection Button */}
-                      <Box
-                        onClick={() => {
-                          const newActive = !isCBSEActive;
-                          setIsCBSEActive(newActive);
-                          if (!newActive) {
-                            setSelectedChapter("");
-                            setChapterError("");
-                          }
-                        }}
-                        sx={{
-                          width:"55px",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
-                          bgcolor: isCBSEActive ? "#e3f2fd" : "#f6f6f6",
-                          border: isCBSEActive ? "1px solid #1268fb" : "none",
-                          borderRadius: "10px",
-                          px: isXS ? 1 : 2,
-                          py: 0.5,
-                          cursor: "pointer",
-                          height: "30px",
-                          transition: "0.3s",
-                          "&:hover": { bgcolor: isCBSEActive ? "#bbdefb" : "#ebebeb" },
-                        }}
-                      >
-                        <Typography
-                          sx={{
-                            fontSize: "14px",
-                            fontWeight: 600,
-                            color: isCBSEActive ? "#1268fb" : "#333",
-                          }}
-                        >
-                          {educationBoard}
-                        </Typography>
-                        <Box
-                          sx={{
-                            width: "8px",
-                            height: "8px",
-                            bgcolor: isCBSEActive ? "#1268fb" : "#000000",
-                            borderRadius: "50%",
-                            transition: "0.3s",
-                          }}
-                        />
-                      </Box>
+                      <StudyChapterMenus
+                        isCBSEActive={isCBSEActive}
+                        chapterError={chapterError}
+                        isXS={isXS}
+                        selectedChapterMeta={selectedChapterMeta}
+                        studyMenuAnchorEl={studyMenuAnchorEl}
+                        isStudyMenuOpen={isStudyMenuOpen}
+                        onCloseStudyMenus={closeStudyMenus}
+                        chaptersLoading={chaptersLoading}
+                        chapterStructure={chapterStructure}
+                        onStudyClassOpen={handleStudyClassOpen}
+                        selectedClass={selectedClass}
+                        studyClassMenuAnchorEl={studyClassMenuAnchorEl}
+                        activeStudyClass={activeStudyClass}
+                        onCloseStudyClassMenu={handleStudyClassMenuClose}
+                        onStudySubjectOpen={handleStudySubjectOpen}
+                        selectedSubject={selectedSubject}
+                        studySubjectMenuAnchorEl={studySubjectMenuAnchorEl}
+                        activeStudySubject={activeStudySubject}
+                        onCloseStudySubjectMenu={handleStudySubjectMenuClose}
+                        onStudyChapterSelect={handleStudyChapterSelect}
+                        selectedChapter={selectedChapter}
+                        onStudyTriggerClick={handleStudyTriggerClick}
+                        onDeselectChapter={handleDeselectChapter}
+                      />
 
-                      {isCBSEActive && (
-                        <Select
-                          size="small"
-                          displayEmpty
-                          value={selectedChapter}
-                          onChange={(e) => {
-                            setSelectedChapter(e.target.value);
-                            setChapterError("");
-                          }}
-                          error={!!chapterError}
-                          sx={{
-                            width: { xs: "135px", sm: "190px" },
-                            backgroundColor: "#fff",
-                            borderRadius: "10px",
-                            fontSize: "14px",
-                            "& .MuiSelect-select": {
-                              padding: "6px 14px",
-                              display: "flex",
-                              alignItems: "center",
-                            },
-                            "& .MuiOutlinedInput-notchedOutline": {
-                              borderColor: chapterError ? "#d32f2f" : "rgba(0, 0, 0, 0.23)",
-                            },
-                          }}
-                          renderValue={(selected) => {
-                            if (!selected) {
-                              return <span style={{ color: "gray" }}>Select Chapter</span>;
-                            }
-                            const found = chapters.find((c) => c.id === selected);
-                            return found ? found.name : selected;
-                          }}
-                          MenuProps={{
-                            disablePortal: true,
-                            PaperProps: {
-                              style: { maxHeight: 300, borderRadius: "10px" },
-                            },
-                          }}
-                        >
-                          <MenuItem value="" disabled>
-                            Select Chapter
-                          </MenuItem>
-                          {chapters.length > 0 ? (
-                            chapters.map((chapter) => (
-                              <MenuItem key={chapter.id} value={chapter.id}>
-                                {chapter.name}
-                              </MenuItem>
-                            ))
-                          ) : (
-                            <MenuItem disabled>No chapters found</MenuItem>
-                          )}
-                        </Select>
-                      )}
 
                       {/* Response Length Dropdown removed for WrdsAI Nxt as requested */}
 
                       <IconButton
                         onClick={() => handleSend()}
+                        disabled={
+                          (!input.trim() && selectedFiles.length === 0) ||
+                          isSending ||
+                          isTypingResponse
+                        }
                         sx={{
-                          bgcolor: "#1268fb",
-                          color: "white",
-                          width: isXS ? "30px" : "40px",
-                          height: isXS ? "30px" : "40px",
-                          ml: 1,
-                          "&:hover": { bgcolor: "#204BC4" },
+                          bgcolor:
+                            input.trim() || selectedFiles.length > 0
+                              ? "#1268fb"
+                              : "#f4f4f4",
+                          color:
+                            input.trim() || selectedFiles.length > 0
+                              ? "#ffffff"
+                              : "#1f1f1f",
+                          width: isXS ? "32px" : "44px",
+                          height: isXS ? "32px" : "44px",
+                          ml: 0.5,
+                          "&:hover": {
+                            bgcolor:
+                              input.trim() || selectedFiles.length > 0
+                                ? "#0f5be0"
+                                : "#eef1f5",
+                          },
                           borderRadius: "50%",
-                        }}
+                          "&.Mui-disabled": {
+                            bgcolor: "#f1f3f5",
+                              color: "rgba(15,23,42,0.35)",
+                            },
+                          }}
                       >
                         <SendIcon
                           sx={{
-                            width: isXS ? "15px" : "25px",
-                            height: isXS ? "15px" : "25px",
+                            width: isXS ? "16px" : "21px",
+                            height: isXS ? "16px" : "21px",
                           }}
                         />
                       </IconButton>
@@ -8447,16 +8517,27 @@ const ChatUI = () => {
                   </Box>
                 </Box>
 
-                <Box sx={{ mt: 1, pt: 1, width: "100%", textAlign: "center" }}>
+                <Box
+                  sx={{
+                    mt: { xs: 0.05, sm: 0.2 },
+                    pt: 0,
+                    pb: { xs: 0, sm: 0.25 },
+                    width: "100%",
+                    textAlign: "center",
+                    lineHeight: 1,
+                  }}
+                >
                   <Typography
                     sx={{
                       color: "gray",
                       fontSize: {
-                        xs: "13px",
-                        sm: "15px",
-                        md: "16px",
-                        lg: "18px",
+                        xs: "10px",
+                        sm: "13px",
+                        md: "14px",
+                        lg: "15px",
                       },
+                      lineHeight: { xs: 1.1, sm: 1.35 },
+                      m: 0,
                     }}
                   >
                     WrdsAI Nxt can make mistakes, so double-check.
@@ -8711,7 +8792,7 @@ const ChatUI = () => {
                               <>
                                 <Typography
                                   sx={{
-                                    fontSize: "17px",
+                                    fontSize: "19px",
                                     fontFamily: "Calibri, sans-serif",
                                     fontWeight: 400,
                                   }}
@@ -8820,14 +8901,7 @@ const ChatUI = () => {
                             />
                             {console.log(
                               group.botName,
-                              group.botName.charAt(0).toUpperCase() ===
-                                "chatgpt-5-mini"
-                                ? "ChatGPT"
-                                : group.botName.charAt(0).toUpperCase() +
-                                      group.botName.slice(1) ===
-                                    "grok"
-                                  ? "Grok"
-                                  : "",
+                              getBotDisplayName(group.botName),
                               "group",
                             )}
                             {/* ✅ Bot name + AI Assistant */}
@@ -8899,12 +8973,14 @@ const ChatUI = () => {
                               ) : (
                                 <div
                                   style={{
-                                    fontSize: "17px",
+                                    fontSize: "19px",
                                     fontFamily: "Calibri, sans-serif",
                                     fontWeight: 400, // Regular weight
                                   }}
                                   dangerouslySetInnerHTML={{
-                                    __html: group.responses[group.currentSlide],
+                                    __html: formatChatResponseHtml(
+                                      group.responses[group.currentSlide],
+                                    ),
                                   }}
                                 />
                               )}
@@ -9269,31 +9345,6 @@ const ChatUI = () => {
                         gap: "6px",
                       }}
                     >
-                      {/* ▼ Dropdown */}
-                      <TextField
-                        select
-                        size="small"
-                        value={responseLength}
-                        onChange={(e) => setResponseLength(e.target.value)}
-                        sx={{
-                          // width: "150px",
-                          width: isXS ? "112px" : "150px",
-                          "& fieldset": { border: "none" },
-                          bgcolor: "#f6f6f6",
-                          borderRadius: "10px",
-                          textAlign: "left",
-                          fontSize: "14px",
-                          paddingLeft: "4px",
-                        }}
-                      >
-                        <MenuItem value="Short">Short</MenuItem>
-                        <MenuItem value="Concise">Concise</MenuItem>
-                        <MenuItem value="Long">Long</MenuItem>
-                        <MenuItem value="NoOptimisation">
-                          No Optimisation
-                        </MenuItem>
-                      </TextField>
-
                       {/* ➤ Send Button */}
                       <IconButton
                         onClick={() => handleSend()}
@@ -9610,7 +9661,7 @@ const ChatUI = () => {
                               <>
                                 <Typography
                                   sx={{
-                                    fontSize: "17px",
+                                    fontSize: "19px",
                                     fontFamily: "Calibri, sans-serif",
                                     fontWeight: 400,
                                   }}
@@ -9719,14 +9770,7 @@ const ChatUI = () => {
                             />
                             {console.log(
                               group.botName,
-                              group.botName.charAt(0).toUpperCase() ===
-                                "chatgpt-5-mini"
-                                ? "ChatGPT 5-Mini"
-                                : group.botName.charAt(0).toUpperCase() +
-                                      group.botName.slice(1) ===
-                                    "grok"
-                                  ? "Grok 3-Mini"
-                                  : "",
+                              getBotDisplayName(group.botName),
                               "group",
                             )}
                             {/* ✅ Bot name + AI Assistant */}
@@ -9798,12 +9842,14 @@ const ChatUI = () => {
                               ) : (
                                 <div
                                   style={{
-                                    fontSize: "17px",
+                                    fontSize: "19px",
                                     fontFamily: "Calibri, sans-serif",
                                     fontWeight: 400, // Regular weight
                                   }}
                                   dangerouslySetInnerHTML={{
-                                    __html: group.responses[group.currentSlide],
+                                    __html: formatChatResponseHtml(
+                                      group.responses[group.currentSlide],
+                                    ),
                                   }}
                                 />
                               )}
@@ -10197,47 +10243,6 @@ const ChatUI = () => {
                       flexShrink: 0,
                     }}
                   >
-                    {activeView !== "WrdsAI Nxt" && (
-                      <TextField
-                        select
-                        size="small"
-                        value={responseLength}
-                        onChange={(e) => {
-                          setResponseLength(e.target.value);
-                          lastSelectedResponseLength.current = e.target.value; // ✅ store last selected
-                        }}
-                        sx={{
-                          width: { xs: "140px", sm: "179px" },
-                          "& .MuiOutlinedInput-root": {
-                            borderRadius: "10px",
-                            backgroundColor: "#fff",
-                            textAlign: "center",
-                          },
-                        }}
-                        SelectProps={{
-                          displayEmpty: true,
-                          MenuProps: {
-                            disablePortal: true,
-                            PaperProps: {
-                              style: { maxHeight: 200, borderRadius: "10px" },
-                            },
-                          },
-                        }}
-                      >
-                        <MenuItem value="" disabled>
-                          Response Length:
-                        </MenuItem>
-                        <MenuItem value="Short">Short (50-100 words)</MenuItem>
-                        <MenuItem value="Concise">
-                          Concise (150-250 words)
-                        </MenuItem>
-                        <MenuItem value="Long">Long (300-500 words)</MenuItem>
-                        <MenuItem value="NoOptimisation">
-                          No Optimisation
-                        </MenuItem>
-                      </TextField>
-                    )}
-
                     <IconButton
                       onClick={() => handleSend()}
                       disabled={!input.trim() || isSending || isTypingResponse}
@@ -10290,1619 +10295,93 @@ const ChatUI = () => {
             setSessionRemainingTokens={setSessionRemainingTokens}
           />
         ) : activeView === "allUserData" ? (
-          <Box
-            sx={{
-              flexGrow: 1,
-              overflow: "auto",
-              p: { xs: 1, md: 3 },
-              height: "100%",
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                mb: 2,
-              }}
-            >
-              <Typography variant="h5" sx={{ fontWeight: "bold" }}>
-                User Management
-              </Typography>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => setAddUserOpen(true)}
-                sx={{
-                  backgroundColor: "#2F67F6",
-                  textTransform: "none",
-                  borderRadius: 2,
-                  "&:hover": { backgroundColor: "#1e54d9" },
-                }}
-              >
-                Add User
-              </Button>
-            </Box>
-            <Paper
-              sx={{
-                width: "100%",
-                overflow: "hidden",
-                borderRadius: 3,
-                boxShadow: "0px 4px 20px rgba(0,0,0,0.08)",
-              }}
-            >
-              {allUsersLoading ? (
-                <Box sx={{ display: "flex", justifyContent: "center", p: 5 }}>
-                  <CircularProgress />
-                </Box>
-              ) : (
-                <TableContainer sx={{ maxHeight: "75vh" }}>
-                  <Table stickyHeader aria-label="sticky table">
-                    <TableHead>
-                      <TableRow>
-                        {[
-                          "S.No",
-                          "First Name",
-                          "Last Name",
-                          "Email",
-                          "Mobile",
-                          "Plan Name",
-                          "Subscription Date",
-                          "Tokens Consumed",
-                          "Tokens Remaining",
-                          "Action",
-                        ].map((head) => (
-                          <TableCell
-                            key={head}
-                            sx={{
-                              fontWeight: "bold",
-                              backgroundColor: "#b7b8b9",
-                              color: "#373232",
-                            }}
-                          >
-                            {head}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {allUsers
-                        .slice(
-                          page * rowsPerPage,
-                          page * rowsPerPage + rowsPerPage,
-                        )
-                        .map((row, index) => (
-                          <TableRow
-                            key={row._id}
-                            hover
-                            sx={{
-                              "&:last-child td, &:last-child th": { border: 0 },
-                            }}
-                          >
-                            <TableCell>
-                              {page * rowsPerPage + index + 1}
-                            </TableCell>
-                            <TableCell>{row.firstName}</TableCell>
-                            <TableCell>{row.lastName}</TableCell>
-                            <TableCell>{row.email}</TableCell>
-                            <TableCell>{row.mobile || "N/A"}</TableCell>
-                            <TableCell>{row.subscriptionPlan}</TableCell>
-                            <TableCell>
-                              {row.planStartDate
-                                ? new Date(
-                                    row.planStartDate,
-                                  ).toLocaleDateString("en-GB")
-                                : "N/A"}
-                            </TableCell>
-                            <TableCell>
-                              {row.tokensConsumed?.toLocaleString() || 0}
-                            </TableCell>
-                            <TableCell>
-                              {row.remainingTokens?.toLocaleString() || 0}
-                            </TableCell>
-                            <TableCell>
-                              <IconButton
-                                onClick={() => handleDeleteUser(row._id)}
-                                color="error"
-                              >
-                                <DeleteIcon />
-                              </IconButton>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              )}
-              {/* Pagination Component */}
-              <TablePagination
-                rowsPerPageOptions={[5, 10, 25, 50]}
-                component="div"
-                count={allUsers.length}
-                rowsPerPage={rowsPerPage}
-                page={page}
-                onPageChange={handleChangePage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
-              />
-            </Paper>
-          </Box>
+          <UserManagementPanel
+            allUsers={allUsers}
+            allUsersLoading={allUsersLoading}
+            page={page}
+            rowsPerPage={rowsPerPage}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            onAddUserClick={() => setAddUserOpen(true)}
+            onDeleteUser={handleDeleteUser}
+          />
         ) : null}
       </Box>
 
-      {/* Add User Dialog */}
-      <Dialog
+      <AddUserDialog
         open={addUserOpen}
-        onClose={(event, reason) => {
-          if (reason !== "backdropClick") {
-            setAddUserOpen(false);
-          }
-        }}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 4,
-            padding: 1,
-            position: "relative",
-          },
-        }}
-      >
-        <IconButton
-          aria-label="close"
-          onClick={() => setAddUserOpen(false)}
-          sx={{
-            position: "absolute",
-            right: 16,
-            top: 16,
-            color: (theme) => theme.palette.grey[500],
-            zIndex: 1,
-          }}
-        >
-          <CloseIcon />
-        </IconButton>
-        <DialogTitle sx={{ fontWeight: "bold", textAlign: "left", pt: 3, pb: 2 }}>
-          Add New User
-        </DialogTitle>
-        <DialogContent sx={{ px: 3 }}>
-          <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <Grid container spacing={2.5}>
-              {/* First & Last Name */}
-              <Grid item xs={12} sm={6}>
-                <Typography variant="body2" sx={{ mb: 0.5, fontWeight: 500, color: "#555" }}>
-                  First Name <span style={{ color: "red" }}>*</span>
-                </Typography>
-                <TextField
-                  fullWidth
-                  placeholder="First name"
-                  size="small"
-                  value={newUserData.firstName}
-                  onChange={(e) =>
-                    setNewUserData((p) => ({ ...p, firstName: e.target.value }))
-                  }
-                  sx={{ "& .MuiOutlinedInput-root": { borderRadius: 1.5 } }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="body2" sx={{ mb: 0.5, fontWeight: 500, color: "#555" }}>
-                  Last Name <span style={{ color: "red" }}>*</span>
-                </Typography>
-                <TextField
-                  fullWidth
-                  placeholder="Last name"
-                  size="small"
-                  value={newUserData.lastName}
-                  onChange={(e) =>
-                    setNewUserData((p) => ({ ...p, lastName: e.target.value }))
-                  }
-                  sx={{ "& .MuiOutlinedInput-root": { borderRadius: 1.5 } }}
-                />
-              </Grid>
+        newUserData={newUserData}
+        isCreatingUser={isCreatingUser}
+        onClose={() => setAddUserOpen(false)}
+        onDateChange={handleAddUserDateChange}
+        onFieldChange={handleAddUserFieldChange}
+        onCreateUser={handleAddUser}
+      />
 
-              {/* DOB & Age Group */}
-              <Grid item xs={12} sm={6}>
-                <Typography variant="body2" sx={{ mb: 0.5, fontWeight: 500, color: "#555" }}>
-                  Date of Birth <span style={{ color: "red" }}>*</span>
-                </Typography>
-                <DatePicker
-                  value={newUserData.dateOfBirth}
-                  onChange={handleAddUserDateChange}
-                  slotProps={{ 
-                    textField: { 
-                      fullWidth: true, 
-                      size: "small",
-                      placeholder: "MM/DD/YYYY",
-                      sx: { "& .MuiOutlinedInput-root": { borderRadius: 1.5 } }
-                    } 
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="body2" sx={{ mb: 0.5, fontWeight: 500, color: "#555" }}>
-                  Age Group <span style={{ color: "red" }}>*</span>
-                </Typography>
-                <TextField
-                  fullWidth
-                  size="small"
-                  value={newUserData.ageGroup}
-                  disabled
-                  sx={{ "& .MuiOutlinedInput-root": { borderRadius: 1.5 } }}
-                />
-              </Grid>
-
-              {/* Conditional Email / Mobile based on Age */}
-              {!["<13", "13-14", "15-17"].includes(newUserData.ageGroup) && (
-                <>
-                  <Grid item xs={12}>
-                    <Typography variant="body2" sx={{ mb: 0.5, fontWeight: 500, color: "#555" }}>
-                      Email <span style={{ color: "red" }}>*</span>
-                    </Typography>
-                    <TextField
-                      fullWidth
-                      placeholder="Email address"
-                      size="small"
-                      value={newUserData.email}
-                      onChange={(e) =>
-                        setNewUserData((p) => ({ ...p, email: e.target.value }))
-                      }
-                      sx={{ "& .MuiOutlinedInput-root": { borderRadius: 1.5 } }}
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <Typography variant="body2" sx={{ mb: 0.5, fontWeight: 500, color: "#555" }}>
-                      Mobile Number <span style={{ color: "red" }}>*</span>
-                    </Typography>
-                    <Box sx={{ display: "flex", gap: 1 }}>
-                      <FormControl sx={{ minWidth: 100 }}>
-                        <Select
-                          size="small"
-                          value={newUserData.mobileCode}
-                          onChange={(e) =>
-                            setNewUserData((p) => ({ ...p, mobileCode: e.target.value }))
-                          }
-                          sx={{ borderRadius: 1.5 }}
-                        >
-                          {allCountries.map((c) => (
-                            <MenuItem key={c.iso2} value={`+${c.dialCode}`}>
-                              +{c.dialCode}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                      <TextField
-                        fullWidth
-                        placeholder="Mobile number"
-                        size="small"
-                        value={newUserData.mobileNumber}
-                        onChange={(e) =>
-                          setNewUserData((p) => ({ ...p, mobileNumber: e.target.value }))
-                        }
-                        sx={{ "& .MuiOutlinedInput-root": { borderRadius: 1.5 } }}
-                      />
-                    </Box>
-                  </Grid>
-                </>
-              )}
-
-              {/* Parent Details for Under 18 */}
-              {["<13", "13-14", "15-17"].includes(newUserData.ageGroup) && (
-                <>
-                  <Grid item xs={12}>
-                    <Typography variant="body2" sx={{ mb: 0.5, fontWeight: 500, color: "#555" }}>
-                      Parent/Guardian Name <span style={{ color: "red" }}>*</span>
-                    </Typography>
-                    <TextField
-                      fullWidth
-                      placeholder="Parent's name"
-                      size="small"
-                      value={newUserData.parentName}
-                      onChange={(e) =>
-                        setNewUserData((p) => ({ ...p, parentName: e.target.value }))
-                      }
-                      sx={{ "& .MuiOutlinedInput-root": { borderRadius: 1.5 } }}
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <Typography variant="body2" sx={{ mb: 0.5, fontWeight: 500, color: "#555" }}>
-                      Parent Email <span style={{ color: "red" }}>*</span>
-                    </Typography>
-                    <TextField
-                      fullWidth
-                      placeholder="Parent's email"
-                      size="small"
-                      value={newUserData.parentEmail}
-                      onChange={(e) =>
-                        setNewUserData((p) => ({ ...p, parentEmail: e.target.value }))
-                      }
-                      sx={{ "& .MuiOutlinedInput-root": { borderRadius: 1.5 } }}
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <Typography variant="body2" sx={{ mb: 0.5, fontWeight: 500, color: "#555" }}>
-                      Parent Mobile <span style={{ color: "red" }}>*</span>
-                    </Typography>
-                    <Box sx={{ display: "flex", gap: 1 }}>
-                      <FormControl sx={{ minWidth: 100 }}>
-                        <Select
-                          size="small"
-                          value={newUserData.parentMobileCode}
-                          onChange={(e) =>
-                            setNewUserData((p) => ({ ...p, parentMobileCode: e.target.value }))
-                          }
-                          sx={{ borderRadius: 1.5 }}
-                        >
-                          {allCountries.map((c) => (
-                            <MenuItem key={c.iso2} value={`+${c.dialCode}`}>
-                              +{c.dialCode}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                      <TextField
-                        fullWidth
-                        placeholder="Parent mobile number"
-                        size="small"
-                        value={newUserData.parentMobileNumber}
-                        onChange={(e) =>
-                          setNewUserData((p) => ({ ...p, parentMobileNumber: e.target.value }))
-                        }
-                        sx={{ "& .MuiOutlinedInput-root": { borderRadius: 1.5 } }}
-                      />
-                    </Box>
-                  </Grid>
-                </>
-              )}
-              
-              {/* Plan Details - Moved below Mobile/Parent Mobile */}
-              <Grid size={{xs: 12, sm: 5}} >
-                <Typography variant="body2" sx={{ mb: 0.5, fontWeight: 500, color: "#555" }}>
-                  Subscription Plan <span style={{ color: "red" }}>*</span>
-                </Typography>
-                <FormControl fullWidth size="small">
-                  <Select
-                    value={newUserData.subscriptionPlan || ""}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      let defaults = {
-                        subscriptionPlan: val,
-                        childPlan: "",
-                        subscriptionType: val === "Free Trial" ? "One Time" : "Monthly"
-                      };
-                      if (val === "WrdsAI") defaults.childPlan = "Glow Up";
-                      if (val === "WrdsAIPro") defaults.childPlan = "Step Up";
-                      
-                      setNewUserData((prev) => ({ ...prev, ...defaults }));
-                    }}
-                    sx={{ borderRadius: 1.5 }}
-                    renderValue={(s) => s || "Choose a plan"}
-                  >
-                    <MenuItem value="WrdsAI">WrdsAI</MenuItem>
-                    <MenuItem value="WrdsAIPro">WrdsAI Pro</MenuItem>
-                    <MenuItem value="Free Trial">Free Trial</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-
-              {newUserData.subscriptionPlan !== "Free Trial" && (
-                <Grid size={{xs: 12, sm: 5}}>
-                  <Typography variant="body2" sx={{ mb: 0.5, fontWeight: 500, color: "#555" }}>
-                    Plan Option <span style={{ color: "red" }}>*</span>
-                  </Typography>
-                  <FormControl fullWidth size="small">
-                    <Select
-                      value={newUserData.childPlan || ""}
-                      onChange={(e) =>
-                        setNewUserData((prev) => ({ ...prev, childPlan: e.target.value }))
-                      }
-                      sx={{ borderRadius: 1.5 }}
-                      renderValue={(s) => s || "Select option"}
-                    >
-                      {newUserData.subscriptionPlan === "WrdsAI" ? [
-                        <MenuItem key="glow" value="Glow Up">Glow Up</MenuItem>,
-                        <MenuItem key="level" value="Level Up">Level Up</MenuItem>,
-                        <MenuItem key="rise" value="Rise Up">Rise Up</MenuItem>
-                      ] : [
-                        <MenuItem key="step" value="Step Up">Step Up</MenuItem>,
-                        <MenuItem key="speed" value="Speed Up">Speed Up</MenuItem>,
-                        <MenuItem key="scale" value="Scale Up">Scale Up</MenuItem>
-                      ]}
-                    </Select>
-                  </FormControl>
-                </Grid>
-              )}
-
-              <Grid size={{xs: 12, sm: 5}}>
-                <Typography variant="body2" sx={{ mb: 0.5, fontWeight: 500, color: "#555" }}>
-                  Subscription Type <span style={{ color: "red" }}>*</span>
-                </Typography>
-                <FormControl fullWidth size="small">
-                  <Select
-                    value={newUserData.subscriptionType || ""}
-                    disabled={newUserData.subscriptionPlan === "Free Trial"}
-                    onChange={(e) =>
-                      setNewUserData((prev) => ({ ...prev, subscriptionType: e.target.value }))
-                    }
-                    sx={{ borderRadius: 1.5 }}
-                    renderValue={(s) => s || "Select type"}
-                  >
-                    <MenuItem value="Monthly">Monthly</MenuItem>
-                    <MenuItem value="Yearly">Yearly</MenuItem>
-                    <MenuItem value="One Time">One Time</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-            </Grid>
-          </LocalizationProvider>
-        </DialogContent>
-        <DialogActions sx={{ p: 4, pt: 1 }}>
-          <Button
-            onClick={() => setAddUserOpen(false)}
-            color="inherit"
-            sx={{ textTransform: "none", fontWeight: 500, color: "#666" ,border:"1px solid #000000",borderRadius: 2, }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleAddUser}
-            variant="contained"
-            disabled={isCreatingUser}
-            sx={{
-              backgroundColor: "#2F67F6",
-              textTransform: "none",
-              px: isCreatingUser ? 6 : 4,
-              borderRadius: 2,
-              fontWeight: "bold",
-              "&:hover": { backgroundColor: "#1e54d9" },
-            }}
-          >
-            {isCreatingUser ? (
-              <CircularProgress size={24} sx={{ color: "white" }} />
-            ) : (
-              "Create User"
-            )}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog
+      <DeleteUserDialog
         open={deleteConfirmOpen}
         onClose={() => setDeleteConfirmOpen(false)}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-        PaperProps={{
-          sx: {
-            borderRadius: 3,
-            padding: 1,
-            minWidth: "500px",
-          },
-        }}
-      >
-        <DialogTitle id="alert-dialog-title" sx={{ fontWeight: "bold" }}>
-          {"Delete User?"}
-        </DialogTitle>
-        <DialogContent>
-          <Typography id="alert-dialog-description">
-            Are you sure you want to delete this user?
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button
-            onClick={() => setDeleteConfirmOpen(false)}
-            color="inherit"
-            sx={{ textTransform: "none", borderRadius: 2 }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={confirmDeleteUser}
-            color="error"
-            variant="contained"
-            autoFocus
-            sx={{ textTransform: "none", borderRadius: 2 }}
-          >
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onConfirm={confirmDeleteUser}
+      />
 
-      <Drawer
-        anchor="left"
+      <SidebarDrawer
         open={openSidebar}
-        onClose={() => {
-          setOpenSidebar(false);
-          setSearchSessionResults([]);
-          setSearchValue("");
-        }}
-        PaperProps={{
-          sx: {
-            width: isXS ? 207 : 300,
-            bgcolor: "#f7f7f8",
-            height: "100vh",
-            borderRight: "1px solid #e0e0e0",
-            position: "relative",
-            // p: 2,
-          },
-        }}
-      >
-        {/* Sidebar Header */}
-        {/* <Box
-          sx={{
-            display: "flex",
-            justifyContent: "end",
-          }}
-        >
+        onClose={handleCloseSidebar}
+        isXS={isXS}
+        chatImageSrc={chat}
+        searchValue={searchValue}
+        setSearchValue={setSearchValue}
+        setSearchSessionResults={setSearchSessionResults}
+        activeView={activeView}
+        user={User}
+        createNewChat={createNewChat}
+        isWrdsAIPro={isWrdsAIPro}
+        disabled={disabled}
+        onUpgradePlan={handleUpgradePlan}
+        renderBrowsingTooltip={(icon) => (
+          <CustomTooltip title="coming soon..." placement="bottom">
+            {icon}
+          </CustomTooltip>
+        )}
+        showSessionPanel={showSessionPanel}
+        setShowSessionPanel={setShowSessionPanel}
+        sessionLoading={sessionLoading}
+        searchSessionResults={searchSessionResults}
+        filteredChats={filteredChats}
+        selectedChatId={selectedChatId}
+        onSessionSelect={handleSidebarSessionSelect}
+        formatChatTime={formatChatTime}
+      />
 
-          <IconButton onClick={() => setOpenSidebar(false)}>
-            <CloseIcon />
-          </IconButton>
-        </Box> */}
-
-        {/* Close Icon - Absolute Position */}
-        <IconButton
-          onClick={() => {
-            setOpenSidebar(false);
-            setSearchSessionResults([]);
-            setSearchValue("");
-          }}
-          sx={{
-            position: "absolute",
-            top: 0,
-            right: 0,
-            zIndex: 1,
-          }}
-        >
-          <CloseIcon />
-        </IconButton>
-
-        {/* Sidebar Content Example */}
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 2,
-            p: 1.5,
-            pt: 3,
-          }}
-        >
-          <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}>
-            <img
-              src={chat}
-              alt="Chat Icon"
-              style={{
-                width: "80px",
-                height: "80px",
-                borderRadius: "10px",
-              }}
-            />
-          </Box>
-          {/* Search Box */}
-          {/* <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
-              // mt: 3,
-              px: 1,
-              py: 1,
-              bgcolor: "#fff",
-              borderRadius: "6px",
-              border: "1px solid #dcdcdc",
-              cursor: "pointer",
-            }}
-          >
-            <SearchIcon sx={{ fontSize: 22 }} />
-            <Typography sx={{ fontSize: 16, fontWeight: 500 }} onChange={(e) => {
-  const term = e.target.value.toLowerCase().trim();
-
-  if (term === "") {
-    setSearchSessionResults([]);
-  } else {
-    const filtered = filteredChats.filter((c) =>
-      c.name.toLowerCase().includes(term)
-    );
-    setSearchSessionResults(filtered);
-  }
-}}
->
-              Search
-            </Typography>
-          </Box> */}
-
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-            {/* Main Search Button */}
-            {/* SEARCH BOX */}
-
-            {/* {showTopSearch && ( */}
-            {/* <Box sx={{ px: 1 }}>
-              <TextField
-                placeholder="Search sessions..."
-                variant="outlined"
-                size="small"
-                fullWidth
-                autoFocus
-                onChange={(e) => {
-                  const term = e.target.value.toLowerCase().trim();
-                  setSearchValue(e.target.value);
-
-                  if (term === "") {
-                    setSearchSessionResults([]);
-                  } else {
-                    // Filter based on ACTIVE TAB
-                    const list =
-                      activeView === "chat"
-                        ? filteredChats
-                        : activeView === "smartAi"
-                        ? filteredChats
-                        : activeView === "wrds AiPro"
-                        ? filteredChats
-                        : [];
-
-                    const filtered = list.filter((c) =>
-                      c.name.toLowerCase().includes(term)
-                    );
-
-                    setSearchSessionResults(filtered);
-                  }
-                }}
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 1,
-                  },
-                }}
-              />
-            </Box> */}
-            <Box sx={{ px: 1 }}>
-              <TextField
-                placeholder="Search sessions..."
-                variant="outlined"
-                size="small"
-                fullWidth
-                autoFocus
-                value={searchValue}
-                onChange={(e) => {
-                  const term = e.target.value.toLowerCase().trim();
-                  setSearchValue(e.target.value);
-
-                  if (term === "") {
-                    setSearchSessionResults([]); // show all
-                  } else {
-                    const list =
-                      activeView === "chat"
-                        ? filteredChats
-                        : activeView === "smartAi"
-                          ? filteredChats
-                          : activeView === "wrds AiPro"
-                            ? filteredChats
-                            : [];
-
-                    const filtered = list.filter((c) =>
-                      c.name.toLowerCase().includes(term),
-                    );
-
-                    setSearchSessionResults(filtered);
-                  }
-                }}
-                InputProps={{
-                  startAdornment: (
-                    <SearchIcon sx={{ fontSize: 26, color: "gray", mr: 0 }} />
-                  ),
-                }}
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: "6px",
-                    bgcolor: "#fff",
-                    border: "1px solid #dcdcdc",
-                    pl: "6px",
-                  },
-                  "& .MuiOutlinedInput-input": {
-                    paddingLeft: "6px !important",
-                  },
-                }}
-              />
-            </Box>
-
-            <Box
-              sx={{
-                mt: 0,
-                display: "flex",
-                flexDirection: "column",
-                gap: 1,
-              }}
-            >
-              {/* New Chat */}
-              <Typography
-                sx={{
-                  fontSize: 18,
-                  px: 1.5,
-                  py: 0.7,
-                  // cursor: "pointer",
-                  cursor: User?.subscription?.isPlanExpired
-                    ? "not-allowed"
-                    : "pointer",
-                  position: "relative",
-                  fontWeight: activeView === "newChat" ? 600 : 400,
-                  color: User?.subscription?.isPlanExpired ? "#555" : "#000",
-                  // "&:hover": { color: "#000" },
-                  "&:hover": {
-                    color: User?.subscription?.isPlanExpired
-                      ? "#9e9e9e"
-                      : "#000",
-                  },
-
-                  opacity: User?.subscription?.isPlanExpired ? 0.6 : 1,
-                  pointerEvents: User?.subscription?.isPlanExpired
-                    ? "none"
-                    : "auto",
-                }}
-                onClick={() => {
-                  if (User?.subscription?.isPlanExpired) return;
-                  createNewChat();
-                  setOpenSidebar(false);
-                }}
-              >
-                New Chat
-                {activeView === "newChat" && (
-                  <Box
-                    sx={{
-                      position: "absolute",
-                      bottom: -3,
-                      left: 0,
-                      width: "100%",
-                      height: "3px",
-                      bgcolor: "#000",
-                      borderRadius: "2px",
-                    }}
-                  />
-                )}
-              </Typography>
-
-              {/* WrdsAI */}
-              {/* {(isWrdsAI || isFreeTrial) && (
-                <Typography
-                  sx={{
-                    fontSize: 18,
-                    cursor: User?.subscription?.isPlanExpired
-                      ? "not-allowed"
-                      : "pointer",
-                    px: 1.5,
-                    py: 0.7,
-                    borderRadius: "6px",
-                    display: "inline-block",
-                    transition: "0.25s",
-                    backgroundColor:
-                      activeView === "smartAi" &&
-                      !User?.subscription?.isPlanExpired
-                        ? "#e3e3e3ff"
-                        : "transparent",
-                    color: User?.subscription?.isPlanExpired
-                      ? "#9e9e9e"
-                      : "#000",
-                    fontWeight: activeView === "smartAi" ? 600 : 400,
-
-                   
-                    "&:hover": {
-                      backgroundColor: User?.subscription?.isPlanExpired
-                        ? "transparent"
-                        : "#eaeaea",
-                    },
-
-                    opacity: User?.subscription?.isPlanExpired ? 0.6 : 1,
-                    pointerEvents: User?.subscription?.isPlanExpired
-                      ? "none"
-                      : "auto",
-                  }}
-                  onClick={() => {
-                    if (User?.subscription?.isPlanExpired) return;
-
-                    setActiveView("smartAi");
-                    setIsSmartAI(false);
-                    setOpenSidebar(false);
-                    setSearchValue("");
-                    setSearchSessionResults([]);
-                  }}
-                >
-                  WrdsAI
-               
-                </Typography>
-              )} */}
-
-              {/* WrdsAI Pro */}
-              {/* {isWrdsAIPro && (
-                <Typography
-                  sx={{
-                    fontSize: 18,
-                    cursor: User?.subscription?.isPlanExpired
-                      ? "not-allowed"
-                      : "pointer",
-                    px: 1.5,
-                    py: 0.7,
-                    borderRadius: "6px",
-                    display: "inline-block",
-                    transition: "0.25s",
-                    backgroundColor:
-                      activeView === "wrds AiPro" &&
-                      !User?.subscription?.isPlanExpired
-                        ? "#e3e3e3ff"
-                        : "transparent",
-
-                    color: User?.subscription?.isPlanExpired
-                      ? "#9e9e9e"
-                      : "#000",
-                    fontWeight: activeView === "wrds AiPro" ? 600 : 400,
-
-                    "&:hover": {
-                      backgroundColor: User?.subscription?.isPlanExpired
-                        ? "transparent"
-                        : "#eaeaea",
-                    },
-
-                    opacity: User?.subscription?.isPlanExpired ? 0.6 : 1,
-                    pointerEvents: User?.subscription?.isPlanExpired
-                      ? "none"
-                      : "auto",
-                  }}
-                  onClick={() => {
-                    if (User?.subscription?.isPlanExpired) return;
-
-                    setActiveView("wrds AiPro");
-                    setIsSmartAIPro(false);
-                    setOpenSidebar(false);
-                    setSearchValue("");
-                    setSearchSessionResults([]);
-                  }}
-                >
-                  WrdsAI Pro
-                 
-                </Typography>
-              )} */}
-
-              {/* Chat */}
-              {/* <Typography
-                sx={{
-                  fontSize: 18,
-                  cursor: "pointer",
-                  px: 1.5,
-                  py: 0.7,
-                  borderRadius: "6px",
-                  display: "inline-block",
-                  transition: "0.25s",
-                  backgroundColor:
-                    activeView === "chat" ? "#e3e3e3ff" : "transparent",
-                  color: activeView === "chat" ? "#000" : "#000",
-                  fontWeight: activeView === "chat" ? 600 : 400,
-
-                  "&:hover": {
-                    backgroundColor:
-                      activeView === "chat" ? "#eaeaea" : "#eaeaea",
-                  },
-                }}
-                onClick={() => {
-                  setActiveView("chat");
-                  setOpenSidebar(false);
-                  setSearchValue("");
-                  setSearchSessionResults([]);
-
-                  setTimeout(() => {
-                    if (selectRef.current) {
-                      selectRef.current.focus();
-                      selectRef.current.click();
-                    }
-                  }, 100);
-                }}
-              >
-                Chat
-              </Typography> */}
-
-              {/* <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  px: 1.5,
-                  py: 0.7,
-                  borderRadius: "6px",
-                  // cursor: "pointer",
-                  cursor: User?.subscription?.isPlanExpired
-                    ? "not-allowed"
-                    : "pointer",
-                  // backgroundColor:
-                  //   activeView === "chat" ? "#e3e3e3" : "transparent",
-                  backgroundColor:
-                    activeView === "chat" && !User?.subscription?.isPlanExpired
-                      ? "#e3e3e3"
-                      : "transparent",
-
-                  transition: "0.2s",
-                  // "&:hover": { backgroundColor: "#eaeaea" },
-                  "&:hover": {
-                    backgroundColor: User?.subscription?.isPlanExpired
-                      ? "transparent"
-                      : "#eaeaea",
-                  },
-
-                  // opacity: User?.subscription?.isPlanExpired ? 0.6 : 1,
-                  // pointerEvents: User?.subscription?.isPlanExpired
-                  //   ? "none"
-                  opacity: User?.subscription?.isPlanExpired ? 0.6 : 1,
-                  pointerEvents: User?.subscription?.isPlanExpired
-                    ? "none"
-                    : "auto",
-                }}
-                onClick={() => {
-                  if (User?.subscription?.isPlanExpired) return;
-
-                  // setActiveView("chat"); // ❌ Don't switch view yet
-                  setIsBotDropdownOpen((prev) => !prev); // toggle open/close
-                  setSearchValue("");
-                  setSearchSessionResults([]);
-
-                  // ❌ Sync APIs on click - REMOVED
-                  // fetchChatSessions();
-                  //
-                  // const lastSessionId = localStorage.getItem("lastChatSessionId");
-                  // if (lastSessionId) {
-                  //   setSelectedChatId(lastSessionId);
-                  //   loadChatHistory(lastSessionId);
-                  // }
-                }}
-              >
-                <Typography
-                  sx={{
-                    fontSize: 18,
-                    fontWeight:
-                      activeView === "chat" ||
-                      activeView === "smartAi" ||
-                      activeView === "wrds AiPro"
-                        ? 600
-                        : 400,
-                    fontFamily: "Calibri, sans-serif",
-                    color: User?.subscription?.isPlanExpired
-                      ? "#9e9e9e"
-                      : "#000",
-                  }}
-                >
-                  Chat
-                </Typography>
-
-                <KeyboardArrowDownIcon
-                  sx={{
-                    transition: "0.2s",
-                    transform: isBotDropdownOpen
-                      ? "rotate(180deg)"
-                      : "rotate(0deg)",
-                    color: User?.subscription?.isPlanExpired
-                      ? "#9e9e9e"
-                      : "#000",
-                  }}
-                />
-              </Box>
-
-              {!User?.subscription?.isPlanExpired && isBotDropdownOpen && (
-                <Box
-                  sx={{
-                    mt: 1,
-                    bgcolor: "#fff",
-                    borderRadius: "6px",
-                    border: "1px solid #dcdcdc",
-                    p: 1,
-                    boxShadow: "0px 2px 6px rgba(0,0,0,0.1)",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 1,
-                  }}
-                >
-                  {finalBots.map((bot) => (
-                    <Box
-                      key={bot.value}
-                      onClick={() => {
-                        // ✅ WRDS AI
-                        if (bot.value === "wrds-ai") {
-                          setActiveView("smartAi");
-                          setIsSmartAI(false);
-                        }
-
-                        // ✅ WRDS AI PRO
-                        if (bot.value === "wrds-ai-pro") {
-                          setActiveView("wrds AiPro");
-                          setIsSmartAIPro(false);
-                        }
-
-                        // ✅ NORMAL CHAT BOTS
-                        if (
-                          bot.value !== "wrds-ai" &&
-                          bot.value !== "wrds-ai-pro"
-                        ) {
-                          setActiveView("chat");
-                          setSelectedBot(bot.value);
-                          setIsSmartAI(false);
-                          setIsSmartAIPro(false);
-
-                          // ✅ Sync APIs & Restore Session
-                          fetchChatSessions();
-                          const lastSessionId =
-                            localStorage.getItem("lastChatSessionId");
-                          if (lastSessionId) {
-                            setSelectedChatId(lastSessionId);
-                            loadChatHistory(lastSessionId);
-                          }
-                        }
-                        // setSelectedBot(bot.value);
-                        setIsBotDropdownOpen(false); // close dropdown
-                        setOpenSidebar(false);
-                        setSearchValue("");
-                        setSearchSessionResults([]);
-                      }}
-                      sx={{
-                        px: 1.5,
-                        py: 1,
-                        borderRadius: "6px",
-                        cursor: "pointer",
-                        backgroundColor:
-                          (bot.value === "wrds-ai" &&
-                            activeView === "smartAi") ||
-                          (bot.value === "wrds-ai-pro" &&
-                            activeView === "wrds AiPro") ||
-                          (bot.value !== "wrds-ai" &&
-                            bot.value !== "wrds-ai-pro" &&
-                            activeView === "chat" &&
-                            selectedBot === bot.value)
-                            ? "#e3e3e3"
-                            : "transparent",
-                        "&:hover": { backgroundColor: "#f5f5f5" },
-                        fontSize: "16px",
-                        fontFamily: "Calibri, sans-serif",
-                      }}
-                    >
-                      {bot.label}
-                    </Box>
-                  ))}
-                </Box>
-              )} */}
-
-              {/* AI Browsing */}
-              {isWrdsAIPro && (
-                <Typography
-                  sx={{
-                    fontSize: 18,
-                    // cursor: "pointer",
-                    cursor: User?.subscription?.isPlanExpired
-                      ? "not-allowed"
-                      : "pointer",
-                    px: 1.5,
-                    py: 0.7,
-                    borderRadius: "6px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    transition: "0.25s",
-                    // backgroundColor:
-                    //   activeView === "search2" ? "#e3e3e3ff" : "transparent",
-                    backgroundColor:
-                      activeView === "search2" &&
-                      !User?.subscription?.isPlanExpired
-                        ? "#e3e3e3ff"
-                        : "transparent",
-
-                    color: disabled ? "#7a7a7a" : "#000",
-                    //  color: User?.subscription?.isPlanExpired ? "#9e9e9e" : "#000",
-                    fontWeight: activeView === "search2" ? 600 : 400,
-                    // "&:hover": {
-                    //   backgroundColor:
-                    //     activeView === "search2" ? "#eaeaea" : "#eaeaea",
-                    // },
-                    "&:hover": {
-                      backgroundColor: User?.subscription?.isPlanExpired
-                        ? "transparent"
-                        : "#eaeaea",
-                    },
-
-                    opacity: User?.subscription?.isPlanExpired ? 0.6 : 1,
-                    pointerEvents: User?.subscription?.isPlanExpired
-                      ? "none"
-                      : "auto",
-                  }}
-                >
-                  AI Browsing
-                  <CustomTooltip title="coming soon..." placement="bottom">
-                    <InfoOutlinedIcon
-                      sx={{
-                        fontSize: 20,
-                        // color: "#7a7a7a",
-                        color: User?.subscription?.isPlanExpired
-                          ? "#9e9e9e"
-                          : "#7a7a7a",
-                        cursor: "pointer",
-                        ml: 1,
-                        "&:hover": { color: "#000" },
-                      }}
-                    />
-                  </CustomTooltip>
-                </Typography>
-              )}
-
-               {/* Upgrade/Renew Plan */}
-              <Typography
-                sx={{
-                  fontSize: 18,
-                  cursor: "pointer",
-                  px: 1.5,
-                  py: 0.7,
-                  borderRadius: "6px",
-                  display: "inline-block",
-                  transition: "0.25s",
-                  backgroundColor:
-                    activeView === "wrds AiPro" ? "#e3e3e3ff" : "transparent",
-                  color: activeView === "wrds AiPro" ? "#000" : "#000",
-                  fontWeight: activeView === "wrds AiPro" ? 600 : 400,
-
-                  "&:hover": {
-                    backgroundColor:
-                      activeView === "wrds AiPro" ? "#eaeaea" : "#eaeaea",
-                  },
-                }}
-                onClick={handleUpgradePlan}
-              >
-                Upgrade/ Renew Plan
-              </Typography>
-
-              <MenuItem
-                onClick={() => setShowSessionPanel((prev) => !prev)}
-                sx={{
-                  borderRadius: 1,
-                  mb: 1,
-                  backgroundColor: showSessionPanel ? "#f0f0f0" : "transparent",
-                  "&:hover": { backgroundColor: "#f5f5f5" },
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <Typography
-                  sx={{
-                    ml: "-5px",
-                    fontSize: "18px",
-                    fontWeight: 600,
-                    fontFamily: "Calibri, sans-serif",
-                  }}
-                >
-                  History
-                </Typography>
-
-                <KeyboardArrowDownIcon
-                  sx={{
-                    mr: "-4px",
-                    transform: showSessionPanel
-                      ? "rotate(180deg)"
-                      : "rotate(0deg)",
-                    transition: "0.2s",
-                  }}
-                />
-              </MenuItem>
-
-              {showSessionPanel &&
-                (activeView === "chat" ||
-                  activeView === "smartAi" ||
-                  activeView === "wrds AiPro" ||
-                  activeView === "WrdsAI Nxt") && (
-                  <>
-                    {/* SESSION LIST ONLY */}
-                    <Box sx={{ maxHeight: "220px", overflowY: "auto", mb: 1 }}>
-                      {sessionLoading ? (
-                        <Box sx={{ p: 2 }}>
-                          {[...Array(3)].map((_, i) => (
-                            <Skeleton
-                              key={i}
-                              sx={{ width: "100%", mb: 1, height: "40px" }}
-                            />
-                          ))}
-                        </Box>
-                      ) : (
-                        (searchSessionResults.length > 0
-                          ? searchSessionResults
-                          : filteredChats
-                        ).map((chat) => (
-                          <MenuItem
-                            key={chat.id}
-                            onClick={() => {
-                              if (!chat?.id) return;
-
-                              setSelectedChatId(chat.id);
-
-                              // --- CHAT ---
-                              if (activeView === "chat") {
-                                localStorage.setItem(
-                                  "lastChatSessionId",
-                                  chat.id,
-                                );
-                                loadChatHistory(chat.sessionId);
-                              }
-
-                              // --- WRDS AI ---
-                              if (activeView === "smartAi") {
-                                localStorage.setItem(
-                                  "lastSmartAISessionId",
-                                  chat.id,
-                                );
-                                loadSmartAIHistory(chat.sessionId);
-                              }
-
-                               // --- WRDS AI PRO ---
-                               if (activeView === "wrds AiPro") {
-                                 localStorage.setItem(
-                                   "lastSmartAIProSessionId",
-                                   chat.id,
-                                 );
-                                 loadSmartAIProHistory(chat.sessionId);
-                               }
-
-                               // --- WRDS AI NXT ---
-                               if (activeView === "WrdsAI Nxt") {
-                                 localStorage.setItem(
-                                   "lastSmartAINxtSessionId",
-                                   chat.id,
-                                 );
-                                 loadSmartAINxtHistory(chat.sessionId);
-                               }
-
-                              setMobileMenuAnchor(null);
-                              setShowSessionPanel(false);
-                            }}
-                            sx={{
-                              borderRadius: 1,
-                              mb: 0.5,
-                              backgroundColor:
-                                selectedChatId === chat.id
-                                  ? "#eaeaea"
-                                  : "transparent",
-                              "&:hover": { backgroundColor: "#f5f5f5" },
-                            }}
-                          >
-                            <Box
-                              sx={{
-                                display: "flex",
-                                flexDirection: "column",
-                                width: "100%",
-                              }}
-                            >
-                              <Typography
-                                sx={{
-                                  fontSize: "14px",
-                                  fontFamily: "Calibri, sans-serif",
-                                  fontWeight: 500,
-                                }}
-                              >
-                                {chat.name.replace(/\b\w/g, (char) =>
-                                  char.toUpperCase(),
-                                )}
-                              </Typography>
-
-                              <Typography
-                                sx={{
-                                  color: "gray",
-                                  fontSize: "12px",
-                                }}
-                              >
-                                {formatChatTime(new Date(chat.createTime))}
-                              </Typography>
-                            </Box>
-                          </MenuItem>
-                        ))
-                      )}
-                    </Box>
-
-                    <Divider sx={{ my: 1 }} />
-                  </>
-                )}
-            </Box>
-          </Box>
-        </Box>
-      </Drawer>
-
-      <Dialog
+      <ChangePasswordDialog
         open={openChangePassword}
+        currentPassword={currentPassword}
+        newPassword={newPassword}
+        confirmPassword={confirmPassword}
+        showCurrent={showCurrent}
+        showNew={showNew}
+        showConfirm={showConfirm}
+        onCurrentPasswordChange={setCurrentPassword}
+        onNewPasswordChange={setNewPassword}
+        onConfirmPasswordChange={setConfirmPassword}
+        onToggleCurrent={() => setShowCurrent(!showCurrent)}
+        onToggleNew={() => setShowNew(!showNew)}
+        onToggleConfirm={() => setShowConfirm(!showConfirm)}
         onClose={() => {
           resetChangePasswordForm();
           setOpenChangePassword(false);
         }}
-        PaperProps={{
-          sx: {
-            maxWidth: "540px",
-            width: "100%",
-            borderRadius: "16px",
-            p: 1,
-          },
-        }}
-      >
-        <DialogTitle>Change Password</DialogTitle>
+        onSubmit={handleChangePassword}
+      />
 
-        <DialogContent>
-          <TextField
-            fullWidth
-            margin="dense"
-            type={showCurrent ? "text" : "password"}
-            label="Current Password"
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    onClick={() => setShowCurrent(!showCurrent)}
-                    edge="end"
-                  >
-                    {showCurrent ? <VisibilityOff /> : <Visibility />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
-
-          <TextField
-            fullWidth
-            margin="dense"
-            type={showNew ? "text" : "password"}
-            label="New Password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton onClick={() => setShowNew(!showNew)} edge="end">
-                    {showNew ? <VisibilityOff /> : <Visibility />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
-
-          <TextField
-            fullWidth
-            margin="dense"
-            type={showConfirm ? "text" : "password"}
-            label="Confirm New Password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    onClick={() => setShowConfirm(!showConfirm)}
-                    edge="end"
-                  >
-                    {showConfirm ? <VisibilityOff /> : <Visibility />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
-        </DialogContent>
-
-        <DialogActions>
-          <Button
-            onClick={() => {
-              resetChangePasswordForm();
-              setOpenChangePassword(false);
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            variant="contained"
-            onClick={handleChangePassword}
-          >
-            Change Password
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog
+      <UserProfileDialog
         open={openProfile}
         onClose={() => setOpenProfile(false)}
-        maxWidth="xs"
-        fullWidth
-      >
-        {/* <DialogTitle
-          sx={{
-            textAlign: "center",
-            fontWeight: "bold",
-            borderBottom: "1px solid #e0e0e0",
-          }}
-        >
-          User Profile
-        </DialogTitle> */}
-        <DialogTitle
-          sx={{
-            textAlign: "center",
-            fontWeight: "bold",
-            borderBottom: "1px solid #e0e0e0",
-            position: "relative", // જરૂરી
-          }}
-        >
-          User Profile
-          {/* Close Button */}
-          <IconButton
-            aria-label="close"
-            onClick={() => setOpenProfile(false)}
-            size="small"
-            sx={{
-              position: "absolute",
-              right: 6,
-              top: 7,
-              color: (theme) => theme.palette.grey[500],
-            }}
-          >
-            <CloseIcon sx={{ fontSize: 20 }} />
-          </IconButton>
-        </DialogTitle>
-
-        <DialogContent sx={{ textAlign: "center", p: 3, mt: 4 }}>
-          {/* Avatar */}
-          {/* <Avatar
-            sx={{
-              bgcolor: "#1976d2",
-              width: 80,
-              height: 80,
-              fontSize: 32,
-              mx: "auto",
-              mb: 2,
-              mt: 1,
-            }}
-          >
-            {(username || email || "U").charAt(0).toUpperCase()}
-          </Avatar> */}
-
-          {/* Username */}
-          {/* <Box sx={{ mb: 2, display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{
-                display: "block",
-                fontWeight: "medium",
-                fontSize: "17px",
-              }}
-            >
-              Username:
-            </Typography>
-            <Typography variant="body1" sx={{ fontWeight: "medium" }}>
-              {(username || "Unknown User")?.charAt(0).toUpperCase() +
-                (username || "Unknown User")?.slice(1)}
-            </Typography>
-          </Box> */}
-
-          {/* Email */}
-          <Box sx={{ mb: 2, display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{
-                display: "block",
-                fontWeight: "medium",
-                fontSize: "17px",
-              }}
-            >
-              Email :
-            </Typography>
-            <Typography variant="body1" sx={{ fontWeight: "medium" }}>
-              {email || "No email"}
-            </Typography>
-          </Box>
-
-          <Box sx={{ mb: 2, display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{
-                display: "block",
-                fontWeight: "medium",
-                fontSize: "17px",
-              }}
-            >
-              Plan :
-            </Typography>
-            <Typography variant="body1" sx={{ fontWeight: "medium" }}>
-              {(User.subscription?.subscriptionPlan === "WrdsAi Nxt" || User.subscriptionPlan === "WrdsAi Nxt") 
-               ? "WrdsAI Nxt" 
-               : (User.subscription?.subscriptionPlan || User.subscriptionPlan || "No Plan")}
-            </Typography>
-          </Box>
-
-          {/* Child Plan */}
-          {(User.subscription?.childPlan || User.childPlan) && (
-            <Box sx={{ mb: 2, display: "flex", alignItems: "center", gap: 1 }}>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{
-                  display: "block",
-                  fontWeight: "medium",
-                  fontSize: "17px",
-                }}
-              >
-                Child Plan :
-              </Typography>
-              <Typography variant="body1" sx={{ fontWeight: "medium" }}>
-                {User.subscription?.childPlan || User.childPlan}
-              </Typography>
-            </Box>
-          )}
-
-          <Box sx={{ mb: 2, display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{
-                display: "block",
-                fontWeight: "medium",
-                fontSize: "17px",
-              }}
-            >
-              Subscription Type :
-            </Typography>
-            <Typography variant="body1" sx={{ fontWeight: "medium" }}>
-              {User.subscription?.subscriptionType ||
-                User.subscriptionType ||
-                "No Type"}
-            </Typography>
-          </Box>
-
-          {/* Tokens Used */}
-          <Box sx={{ mb: 2, display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{
-                display: "block",
-                fontWeight: "medium",
-                fontSize: "17px",
-              }}
-            >
-              Tokens Consumed :
-            </Typography>
-            <Typography variant="body1" sx={{ fontWeight: "medium" }}>
-              {totalTokensUsed}
-            </Typography>
-          </Box>
-
-          {/* Remaining Tokens */}
-          <Box sx={{ mb: 2, display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{
-                display: "block",
-                fontWeight: "medium",
-                fontSize: "17px",
-              }}
-            >
-              Tokens Remaining :
-            </Typography>
-            <Typography variant="body1" sx={{ fontWeight: "medium" }}>
-              {sessionRemainingTokens || 0}
-            </Typography>
-          </Box>
-
-          {/* <Box sx={{ mb: 2, display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{
-                display: "block",
-                fontWeight: "medium",
-                fontSize: "17px",
-              }}
-            >
-              Remaining Searches:
-            </Typography>
-            <Typography variant="body1" sx={{ fontWeight: "medium" }}>
-              {Math.max(50 - (totalSearches || 0), 0)}
-            </Typography>
-          </Box> */}
-        </DialogContent>
-      </Dialog>
+        email={email}
+        user={User}
+        totalTokensUsed={totalTokensUsed}
+        sessionRemainingTokens={sessionRemainingTokens}
+      />
     </Box>
   );
 };

@@ -71,7 +71,10 @@ async function countGeminiTokens(text, modelName = "gemini-3-flash-preview") {
 //   return mistralTokenizer;
 // }
 
-export async function countTokens(text, modelName = "gpt-4o-mini") {
+const GPT_NANO_BOT = "gpt-5-nano";
+const LEGACY_GPT_NANO_BOT = "chatgpt-5-mini";
+
+export async function countTokens(text, modelName = GPT_NANO_BOT) {
   try {
     if (!text) return 0;
 
@@ -188,8 +191,8 @@ export async function countTokens(text, modelName = "gpt-4o-mini") {
     }
 
     // ✅ Case 4: OpenAI models → use tiktoken
-    if (modelName === "chatgpt-5-mini") {
-      validModel = "gpt-4o-mini";
+    if (modelName === LEGACY_GPT_NANO_BOT) {
+      validModel = GPT_NANO_BOT;
     }
     const enc = encoding_for_model(validModel);
     const tokenCount = enc.encode(text).length;

@@ -6,6 +6,10 @@ import { countTokens, countWords } from "../utils/tokenCounter.js";
 import { checkGlobalTokenLimit, getGlobalTokenStats } from "../utils/tokenLimit.js";
 import User from "../model/User.js";
 import ChatSession from "../model/ChatSession.js";
+import {
+  buildSelfHarmSupportPayload,
+  shouldTriggerSelfHarmGuardrail,
+} from "../utils/selfHarmGuardrails.js";
 // import SearchHistory from "../model/SearchHistory.js";
 
 const SERPER_URL = "https://google.serper.dev/search";
@@ -637,6 +641,10 @@ export const getAISearchResults = async (req, res) => {
   try {
     const { query, category = "general", raw, email, linkCount = 5 } = req.body;
     if (!query) return res.status(400).json({ error: "Missing 'query' field" });
+
+    if (shouldTriggerSelfHarmGuardrail(query)) {
+      return res.status(403).json(buildSelfHarmSupportPayload());
+    }
 
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ error: "User not found" });

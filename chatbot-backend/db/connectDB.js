@@ -19,11 +19,15 @@ import mongoose from "mongoose";
 
 const connectDB = async () => {
   try {
+    if (!process.env.MONGO_URI) {
+      console.log("⚠️  MONGO_URI not set - MongoDB optional mode (no persistence)");
+      return;
+    }
     await mongoose.connect(process.env.MONGO_URI);
-    console.log("MongoDB connected successfully");
+    console.log("✅ MongoDB connected successfully");
   } catch (error) {
-    console.error("MongoDB connection failed:", error.message);
-    process.exit(1);
+    console.error("⚠️  MongoDB connection failed:", error.message);
+    console.log("   Continuing without database...");
   }
 };
 

@@ -3,7 +3,6 @@ import dotenv from "dotenv";
 import cors from "cors";
 import aiRoutes from "./routes/aiRoutes.js";
 import connectDB from "./db/connectDB.js";
-import searchRoutes from "./routes/searchRoutes.js"; // New search routes
 import bodyParser from "body-parser";
 import { getAISearchResults } from "./controller/searchController.js"; // Import the search controller
 import {

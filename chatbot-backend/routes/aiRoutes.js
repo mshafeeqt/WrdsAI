@@ -20,6 +20,9 @@ import { getSmartAINxtResponse } from "../controller/smartAiNxtController.js";
 import { getSmartAiNxtHistory } from "../controller/smartAiNxtController.js";
 import { getSmartAINxtAllSessions } from "../controller/smartAiNxtController.js";
 import { saveSmartAINxtPartialResponse } from "../controller/smartAiNxtController.js";
+import { getMathChapters } from "../controller/chapterController.js";
+import { getRagHealth, rebuildRagIndex } from "../controller/ragController.js";
+import testPrepRoutes from "./testPrepRoutes.js";
 
 
 const router = express.Router();
@@ -53,6 +56,10 @@ router.post("/get_smartAi_Nxt_sessions", getSmartAINxtAllSessions);
 router.get("/get_all_users", getAllUsers);
 router.delete("/delete_user/:id", deleteUser);
 router.post("/createUserManually", createUserManually);
+router.get("/math-chapters", getMathChapters);
+router.get("/rag/health", getRagHealth);
+router.post("/rag/rebuild", rebuildRagIndex);
+router.use("/test-prep", testPrepRoutes);
 
 // router.post("/translate", translatetolanguage);
 
