@@ -5,12 +5,13 @@ export const buildUserResponseByAgeGroup = (user) => {
   const isMinor = ["<13", "13-14", "15-17"].includes(user.ageGroup);
 
   return {
-    id: user._id,
+    id: user.id || user._id,
 
     firstName: user.firstName,
     lastName: user.lastName,
     dateOfBirth: user.dateOfBirth,
     ageGroup: user.ageGroup,
+    className: user.className,
 
     // 🔑 Email & Mobile (age based)
     email: isMinor ? user.parentEmail : user.email,

@@ -23,6 +23,7 @@ import { saveSmartAINxtPartialResponse } from "../controller/smartAiNxtControlle
 import { getMathChapters } from "../controller/chapterController.js";
 import { getRagHealth, rebuildRagIndex } from "../controller/ragController.js";
 import testPrepRoutes from "./testPrepRoutes.js";
+import progressRoutes from "./progressRoutes.js";
 
 
 const router = express.Router();
@@ -60,6 +61,7 @@ router.get("/math-chapters", getMathChapters);
 router.get("/rag/health", getRagHealth);
 router.post("/rag/rebuild", rebuildRagIndex);
 router.use("/test-prep", testPrepRoutes);
+router.use("/progress", progressRoutes);
 
 // router.post("/translate", translatetolanguage);
 

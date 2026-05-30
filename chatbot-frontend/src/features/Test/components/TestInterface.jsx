@@ -11,6 +11,8 @@ const TestInterface = ({ subject, chapter, difficulty, onFinish }) => {
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [startedAt, setStartedAt] = useState(null);
+  const [isFinished, setIsFinished] = useState(false);
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
   useEffect(() => {
@@ -23,6 +25,8 @@ const TestInterface = ({ subject, chapter, difficulty, onFinish }) => {
       setAnswers({});
       setCurrentQuestionIndex(0);
       setTimeLeft(TEST_DURATION_SECONDS);
+      setStartedAt(new Date().toISOString());
+      setIsFinished(false);
 
       try {
         const response = await fetch(`${apiBaseUrl}/api/ai/test-prep/questions`, {
@@ -93,6 +97,12 @@ const TestInterface = ({ subject, chapter, difficulty, onFinish }) => {
   };
 
   const finishTest = () => {
+    if (isFinished) {
+      return;
+    }
+
+    setIsFinished(true);
+
     let correctCount = 0;
     questions.forEach((question, idx) => {
       if (answers[idx] === question.correct) {
@@ -107,7 +117,14 @@ const TestInterface = ({ subject, chapter, difficulty, onFinish }) => {
       timeTaken: TEST_DURATION_SECONDS - timeLeft,
       difficulty: difficulty?.name || null,
       questions,
-      answers
+      answers: questions.map((_, index) => ({
+        selectedIndex: answers[index] ?? null
+      })),
+      startedAt,
+      submittedAt: new Date().toISOString(),
+      chapterId: chapter.id,
+      chapterName: chapter.name,
+      subjectName: subject.name
     });
   };
 

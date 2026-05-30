@@ -1,5 +1,5 @@
-const { DataTypes } = require('sequelize');
-const { sequelize } = require('../db/connectPG');
+import { DataTypes } from 'sequelize';
+import { sequelize } from '../postgres/connect.js';
 
 const User = sequelize.define('User', {
   id: {
@@ -30,6 +30,9 @@ const User = sequelize.define('User', {
   ageGroup: {
     type: DataTypes.STRING,
     allowNull: false,
+  },
+  className: {
+    type: DataTypes.STRING,
   },
   parentName: {
     type: DataTypes.STRING,
@@ -77,4 +80,4 @@ const User = sequelize.define('User', {
   timestamps: true,
 });
 
-module.exports = User;
+export default User;

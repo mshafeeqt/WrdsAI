@@ -1,9 +1,10 @@
 /**
  * Calculates the expiry date based on the subscription type and current date.
  * Logic:
- * - Monthly: Adds the total number of days in the current month to the start date.
- * - Yearly: Adds the total number of days in the current year to the start date.
- * @param {string} subscriptionType - "Monthly" or "Yearly"
+ * - Free Trial (1 week): Adds 7 days.
+ * - 1 Month/Monthly: Adds the total number of days in the current month.
+ * - 3 Months: Adds three calendar months.
+ * - 1 Year/Yearly: Adds the total number of days in the current year.
  * @returns {Date} The calculated expiry date.
  */
 export const calculatePlanExpiry = (subscriptionType) => {
@@ -18,11 +19,15 @@ export const calculatePlanExpiry = (subscriptionType) => {
   const year = startDate.getFullYear();
   const month = startDate.getMonth() + 1; // 1-12
 
-  if (subscriptionType === "Monthly") {
+  if (subscriptionType === "Free Trial (1 week)") {
+    expiryDate.setDate(expiryDate.getDate() + 7);
+  } else if (subscriptionType === "Monthly" || subscriptionType === "1 Month") {
     // Get total days in current month
     const daysInMonth = new Date(year, month, 0).getDate();
     expiryDate.setDate(expiryDate.getDate() + daysInMonth);
-  } else if (subscriptionType === "Yearly") {
+  } else if (subscriptionType === "3 Months") {
+    expiryDate.setMonth(expiryDate.getMonth() + 3);
+  } else if (subscriptionType === "Yearly" || subscriptionType === "1 Year") {
     // Get total days in current year
     const isLeap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
     const daysInYear = isLeap ? 366 : 365;

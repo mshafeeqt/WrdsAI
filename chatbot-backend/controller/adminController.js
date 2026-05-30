@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import User from "../model/User.js";
+import { PgUser } from "../postgres/models.js";
 import { getTokenLimit } from "../utils/planTokens.js";
 import { calculatePlanExpiry } from "../utils/dateUtils.js";
 import sendPasswordMail from "../middleware/sendPasswordMail.js";
@@ -7,20 +7,20 @@ import sendPasswordMail from "../middleware/sendPasswordMail.js";
 // ✅ Keep pricing same as normal registration (authController)
 const BASE_PRICES_INR = {
   WrdsAI: {
-    "Glow Up": { Monthly: 83.9, Yearly: 922.86 },
-    "Level Up": { Monthly: 168.64, Yearly: 1694.09 },
-    "Rise Up": { Monthly: 338.14, Yearly: 3388.98 },
+    "Glow Up": { Monthly: 83.9, "1 Month": 83.9, "3 Months": 251.7, Yearly: 922.86, "1 Year": 922.86 },
+    "Level Up": { Monthly: 168.64, "1 Month": 168.64, "3 Months": 505.92, Yearly: 1694.09, "1 Year": 1694.09 },
+    "Rise Up": { Monthly: 338.14, "1 Month": 338.14, "3 Months": 1014.42, Yearly: 3388.98, "1 Year": 3388.98 },
   },
   WrdsAIPro: {
-    "Step Up": { Monthly: 422.88, Yearly: 4651.69 },
-    "Speed Up": { Monthly: 761.86, Yearly: 7626.44 },
-    "Scale Up": { Monthly: 1355.09, Yearly: 13558.5 },
+    "Step Up": { Monthly: 422.88, "1 Month": 422.88, "3 Months": 1268.64, Yearly: 4651.69, "1 Year": 4651.69 },
+    "Speed Up": { Monthly: 761.86, "1 Month": 761.86, "3 Months": 2285.58, Yearly: 7626.44, "1 Year": 7626.44 },
+    "Scale Up": { Monthly: 1355.09, "1 Month": 1355.09, "3 Months": 4065.27, Yearly: 13558.5, "1 Year": 13558.5 },
   },
   "WrdsAI Nxt": {
-    "Boost Up": { Monthly: 999, Yearly: 10999 },
+    "Boost Up": { Monthly: 999, "1 Month": 999, "3 Months": 2997, Yearly: 10999, "1 Year": 10999 },
   },
   "WrdsAi Nxt": {
-    "Boost Up": { Monthly: 999, Yearly: 10999 },
+    "Boost Up": { Monthly: 999, "1 Month": 999, "3 Months": 2997, Yearly: 10999, "1 Year": 10999 },
   },
 };
  
@@ -52,6 +52,7 @@ export const createUserManually = async (req, res) => {
       email,
       mobile,
       dateOfBirth,
+      className,
       ageGroup,
       parentName,
       parentEmail,
@@ -66,7 +67,7 @@ export const createUserManually = async (req, res) => {
     const isUnder18 = parentAgeGroups.includes(finalAgeGroup);
  
     // ✅ Normalize email/mobile based on ageGroup (under 18 → parent details)
-    const finalEmail = isUnder18 ? parentEmail : email;
+    const finalEmail = (isUnder18 ? parentEmail : email)?.trim().toLowerCase();
     const finalMobile = isUnder18 ? parentMobile : mobile;
     const phoneRegex = /^\+\d{7,15}$/;
  
@@ -108,14 +109,14 @@ export const createUserManually = async (req, res) => {
     const effectiveChildPlan =
       effectiveSubscriptionPlan === "Free Trial" ? null : childPlan;
     const effectiveSubscriptionType =
-      effectiveSubscriptionPlan === "Free Trial" ? "One Time" : subscriptionType;
+      effectiveSubscriptionPlan === "Free Trial" ? "Free Trial (1 week)" : subscriptionType;
  
     if (effectiveSubscriptionPlan !== "Free Trial" && !effectiveChildPlan) {
       return res.status(400).json({ message: "childPlan is required" });
     }
  
     // ❌ duplicate check
-    const exists = await User.findOne({ email: finalEmail });
+    const exists = await PgUser.findOne({ where: { email: finalEmail } });
     if (exists) {
       return res.status(400).json({ message: "User already exists" });
     }
@@ -160,14 +161,15 @@ export const createUserManually = async (req, res) => {
         ? 0
         : Math.round((basePriceINR + gstAmount) * 100) / 100;
  
-    const user = await User.create({
+    const user = await PgUser.create({
       firstName,
       lastName,
       email: finalEmail,
       mobile: finalMobile,
       dateOfBirth: new Date(dateOfBirth),
       ageGroup: finalAgeGroup,
- 
+      className,
+
       parentName: isUnder18 ? parentName : "",
       parentEmail: isUnder18 ? parentEmail : "",
       parentMobile: isUnder18 ? parentMobile : "",
@@ -203,7 +205,7 @@ export const createUserManually = async (req, res) => {
       loginEmail: finalEmail,
       password: generatedPassword, // admin can copy
       mailSent,
-      userId: user._id,
+      userId: user.id,
     });
   } catch (err) {
     console.error(err);

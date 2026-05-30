@@ -1,11 +1,9 @@
 import axios from "axios";
-// import SearchHistory from "../model/SearchHistory.js";
-import grokSearchHistory from "../model/grokSearchHistory.js";
+import { PgGrokSearchHistory, PgUser } from "../postgres/models.js";
 import trustedSources from "../trusted_sources.json" with { type: "json" };
 import { v4 as uuidv4 } from "uuid"; // npm install uuid
-import ChatSession from "../model/ChatSession.js";
+import ChatSession from "../model/pg_ChatSession.js";
 import { checkGlobalTokenLimit, getGlobalTokenStats } from "../utils/tokenLimit.js";
-import User from "../model/User.js";
 import {
   buildSelfHarmSupportPayload,
   shouldTriggerSelfHarmGuardrail,
@@ -52,6 +50,7 @@ function handleTokenValidation(totalTokens, maxAllowed = 6000) {
 export const grokSearchResults = async (req, res) => {
   try {
     let { id, query, email, linkCount, category } = req.body;
+    email = String(email || "").trim().toLowerCase();
     if (!query) return res.status(400).json({ error: "Missing 'query'" });
 
     if (shouldTriggerSelfHarmGuardrail(query)) {
@@ -59,6 +58,8 @@ export const grokSearchResults = async (req, res) => {
     }
 
     id = id || uuidv4();
+    const user = email ? await PgUser.findOne({ where: { email } }) : null;
+    if (email && !user) return res.status(404).json({ error: "User not found" });
 
     const cat = category || "general";
     const preferredSources = trustedSources[cat] || trustedSources.general;
@@ -194,25 +195,23 @@ Return ONLY valid JSON like this:
 
       // 💾 Save History
       if (email) {
-        const record = new grokSearchHistory({
-          id,
-          email,
+        await PgGrokSearchHistory.create({
+          userId: user.id,
+          legacyEmail: email,
           query,
           summary: "",
           resultsCount: verifiedLinks.length,
           tokenUsage: { promptTokens, linkTokens, totalTokens },
         });
-        await record.save();
       }
 
       // ✅ Get remaining tokens from global stats (single source of truth)
       const globalStats = await getGlobalTokenStats(email);
 
       // 💾 Persist remaining tokens to User model
-      await User.updateOne(
-        { email },
-        { $set: { remainingTokens: globalStats.remainingTokens } }
-      );
+      if (user) {
+        await user.update({ remainingTokens: globalStats.remainingTokens });
+      }
 
       // ✅ Send response immediately (skip trusted source flow)
       return res.json({
@@ -413,13 +412,12 @@ Return ONLY JSON array of ${requestedLinks} total unique valid links (no summary
 
     // === 💾 Save Search History ===
     if (email) {
-      const record = new grokSearchHistory({
-        id,
-        email,
+      await PgGrokSearchHistory.create({
+        userId: user.id,
+        legacyEmail: email,
         query,
         summary,
         resultsCount: verifiedLinks.length,
-        // tokenUsage: totalTokens,
         tokenUsage: {
           promptTokens,
           summaryTokens,
@@ -427,32 +425,29 @@ Return ONLY JSON array of ${requestedLinks} total unique valid links (no summary
           totalTokens,
         },
       });
-      await record.save();
     }
 
 
     // === 🔗 Deduct tokens from global 10,000 pool ===
     let remainingTokensAfter = 10000;
     if (email) {
-      let session = await ChatSession.findOne({ email });
+      let session = await ChatSession.findOne({ where: { email } });
       if (!session) {
-        session = new ChatSession({
+        session = ChatSession.build({
           email,
           sessionId: `grok-${uuidv4()}`,
           history: [],
-          create_time: new Date(),
         });
       }
 
       // Get all sessions for this email (only since planStartDate)
-      const user = await User.findOne({ email });
       const planStartDate = user?.planStartDate || new Date(0);
-      const allSessions = await ChatSession.find({ email });
+      const allSessions = await ChatSession.findAll({ where: { email } });
 
       const grandTotalTokens = allSessions.reduce((sum, s) => {
         return (
           sum +
-          s.history.reduce((entrySum, e) => {
+          (s.history || []).reduce((entrySum, e) => {
             const msgDate = e.create_time ? new Date(e.create_time) : new Date(0);
             if (msgDate >= planStartDate) {
               return entrySum + (e.tokensUsed || 0);
@@ -478,6 +473,7 @@ Return ONLY JSON array of ${requestedLinks} total unique valid links (no summary
         create_time: new Date(),
       });
 
+      session.changed("history", true);
       await session.save();
     }
 
@@ -485,10 +481,9 @@ Return ONLY JSON array of ${requestedLinks} total unique valid links (no summary
     const globalStats = await getGlobalTokenStats(email);
 
     // 💾 Persist remaining tokens to User model
-    await User.updateOne(
-      { email },
-      { $set: { remainingTokens: globalStats.remainingTokens } }
-    );
+    if (user) {
+      await user.update({ remainingTokens: globalStats.remainingTokens });
+    }
 
     // === ✅ Send Final Response ===
     return res.json({
@@ -525,16 +520,21 @@ export const grokUserSearchHistory = async (req, res) => {
         .json({ error: "Missing 'email' field in request body" });
     }
 
-    const history = await grokSearchHistory
-      .find({ email })
-      .sort({ createdAt: -1 });
+    const normalizedEmail = String(email || "").trim().toLowerCase();
+    const user = await PgUser.findOne({ where: { email: normalizedEmail } });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const history = await PgGrokSearchHistory.findAll({
+      where: { userId: user.id },
+      order: [["createdAt", "DESC"]],
+    });
 
     // ✅ Calculate total tokens across all records
     const totalTokensUsed = history.reduce((acc, record) => {
       return acc + (record.tokenUsage?.totalTokens || 0);
     }, 0);
 
-    return res.json({ email, history, totalTokensUsed });
+    return res.json({ email: normalizedEmail, history, totalTokensUsed });
   } catch (err) {
     console.error("History Fetch Error:", err);
     return res.status(500).json({
@@ -548,7 +548,6 @@ export const grokUserSearchHistory = async (req, res) => {
 
 // import axios from "axios";
 // import trustedSources from "../trusted_sources.json" assert { type: "json" };
-// import SearchHistory from "../model/SearchHistory.js";
 
 // const SERPER_URL = "https://api.serper.dev/search";
 // const SERPER_API_KEY = process.env.SERPER_KEY;

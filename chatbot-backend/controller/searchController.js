@@ -1,16 +1,13 @@
 import axios from "axios";
 import trustedSources from "../trusted_sources.json" with { type: "json" };
-import SearchHistory from "../model/SearchHistory.js";
 import * as cheerio from "cheerio";
 import { countTokens, countWords } from "../utils/tokenCounter.js";
 import { checkGlobalTokenLimit, getGlobalTokenStats } from "../utils/tokenLimit.js";
-import User from "../model/User.js";
-import ChatSession from "../model/ChatSession.js";
+import { PgSearchHistory, PgUser } from "../postgres/models.js";
 import {
   buildSelfHarmSupportPayload,
   shouldTriggerSelfHarmGuardrail,
 } from "../utils/selfHarmGuardrails.js";
-// import SearchHistory from "../model/SearchHistory.js";
 
 const SERPER_URL = "https://google.serper.dev/search";
 // const SERPER_API_KEY = "49d09f756085ba3e5cc2d434cdea914b271ceb05";
@@ -646,11 +643,11 @@ export const getAISearchResults = async (req, res) => {
       return res.status(403).json(buildSelfHarmSupportPayload());
     }
 
-    const user = await User.findOne({ email });
+    const user = await PgUser.findOne({ where: { email } });
     if (!user) return res.status(404).json({ error: "User not found" });
 
     // ✅ Limit check — max 50 searches per user
-    const searchCount = await SearchHistory.countDocuments({ email });
+    const searchCount = await PgSearchHistory.count({ where: { userId: user.id } });
     if (searchCount >= 50) {
       return res.status(403).json({
         allowed: false,
@@ -727,8 +724,9 @@ export const getAISearchResults = async (req, res) => {
       });
     }
 
-    const record = new SearchHistory({
-      email,
+    const record = await PgSearchHistory.create({
+      userId: user.id,
+      legacyEmail: email,
       query,
       category,
       summary,
@@ -736,22 +734,17 @@ export const getAISearchResults = async (req, res) => {
       raw: raw || false,
       summaryWordCount: wordCount,
       summaryTokenCount: tokenCount,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
-    await record.save();
 
     // ✅ Get remaining tokens from global stats (single source of truth)
     const globalStats = await getGlobalTokenStats(email);
     const remainingTokens = globalStats.remainingTokens;
 
-    // 💾 Persist remaining tokens to User model
-    await User.updateOne(
-      { email },
-      { $set: { remainingTokens: remainingTokens } }
-    );
-
+    // 💾 user.update({ remainingTokens: globalStats.remainingTokens }  { $set: { remainingTokens: remainingTokens } }
     return res.json({
-      allowed: true,
-      summary,
+      allowed: true,      summary,
       verifiedLinks: formattedResults.organic,
       email,
       linkCount: topResults.length,
@@ -1040,7 +1033,13 @@ export const getUserSearchHistory = async (req, res) => {
       return res.status(400).json({ error: "Missing 'email' field in request body" });
     }
 
-    const history = await SearchHistory.find({ email }).sort({ createdAt: -1 });
+    const user = await PgUser.findOne({ where: { email } });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const history = await PgSearchHistory.findAll({
+      where: { userId: user.id },
+      order: [["createdAt", "DESC"]],
+    });
 
     return res.json({
       email,

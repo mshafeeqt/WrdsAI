@@ -2,7 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import aiRoutes from "./routes/aiRoutes.js";
-import connectDB from "./db/connectDB.js";
+import { connectPG } from "./postgres/connect.js";
 import bodyParser from "body-parser";
 import { getAISearchResults } from "./controller/searchController.js"; // Import the search controller
 import {
@@ -143,8 +143,7 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-// Connect to MongoDB
-connectDB();
+await connectPG(); // Connect to PostgreSQL (no sync)
 
 // Error handling for uncaught exceptions
 process.on("unhandledRejection", (err) => {

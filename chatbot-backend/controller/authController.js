@@ -1,6 +1,5 @@
 // import bcrypt from "bcryptjs";
 // // import jwt from "jsonwebtoken";
-// import User from "../model/User.js";
 
 // export const registerUser = async (req, res) => {
 //   try {
@@ -73,13 +72,13 @@
 
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import User from "../model/User.js";
+import { PgUser } from "../postgres/models.js";
 // import { sendPasswordMail } from "../services/mailService.js";
 import sendPasswordMail from "../middleware/sendPasswordMail.js";
 import sendPlanExpiredMail from "../middleware/sendPlanExpiredMail.js";
 import { getTokenLimit } from "../utils/planTokens.js";
 import { buildUserResponseByAgeGroup } from "../utils/userResponse.js";
-import { checkPlanExpiry } from "../utils/dateUtils.js";
+import { calculatePlanExpiry, checkPlanExpiry } from "../utils/dateUtils.js";
 import { getGlobalTokenStats } from "../utils/tokenLimit.js";
 import sendResetPasswordMail from "../middleware/sendResetPasswordMail.js";
 import { COUPONS } from "../utils/coupons.js";
@@ -99,7 +98,7 @@ export const loginUser = async (req, res) => {
 
     email = email.trim().toLowerCase(); // 💡 Prevents case mismatch
 
-    const user = await User.findOne({ email });
+    const user = await PgUser.findOne({ where: { email } });
 
     if (!user) return res.status(404).json({ error: "User not found" });
 
@@ -191,20 +190,20 @@ const subscriptionTypes = ["Monthly", "Yearly"];
 
 const BASE_PRICES_INR = {
   WrdsAI: {
-    "Glow Up": { Monthly: 83.9, Yearly: 922.86 },
-    "Level Up": { Monthly: 168.64, Yearly: 1694.09 },
-    "Rise Up": { Monthly: 338.14, Yearly: 3388.98 },
+    "Glow Up": { Monthly: 83.9, "1 Month": 83.9, "3 Months": 251.7, Yearly: 922.86, "1 Year": 922.86 },
+    "Level Up": { Monthly: 168.64, "1 Month": 168.64, "3 Months": 505.92, Yearly: 1694.09, "1 Year": 1694.09 },
+    "Rise Up": { Monthly: 338.14, "1 Month": 338.14, "3 Months": 1014.42, Yearly: 3388.98, "1 Year": 3388.98 },
   },
   WrdsAIPro: {
-    "Step Up": { Monthly: 422.88, Yearly: 4651.69 },
-    "Speed Up": { Monthly: 761.86, Yearly: 7626.44 },
-    "Scale Up": { Monthly: 1355.09, Yearly: 13558.5 },
+    "Step Up": { Monthly: 422.88, "1 Month": 422.88, "3 Months": 1268.64, Yearly: 4651.69, "1 Year": 4651.69 },
+    "Speed Up": { Monthly: 761.86, "1 Month": 761.86, "3 Months": 2285.58, Yearly: 7626.44, "1 Year": 7626.44 },
+    "Scale Up": { Monthly: 1355.09, "1 Month": 1355.09, "3 Months": 4065.27, Yearly: 13558.5, "1 Year": 13558.5 },
   },
   "WrdsAI Nxt": {
-    "Boost Up": { Monthly: 999, Yearly: 10999 },
+    "Boost Up": { Monthly: 999, "1 Month": 999, "3 Months": 2997, Yearly: 10999, "1 Year": 10999 },
   },
   "WrdsAi Nxt": {
-    "Boost Up": { Monthly: 999, Yearly: 10999 },
+    "Boost Up": { Monthly: 999, "1 Month": 999, "3 Months": 2997, Yearly: 10999, "1 Year": 10999 },
   },
 };
 
@@ -250,8 +249,11 @@ export const registerUser = async (req, res) => {
       firstName,
       lastName,
       email,
+      password,
+      confirmPassword,
       mobile,
       dateOfBirth,
+      className,
       // ageGroup,
       parentName,
       parentEmail,
@@ -269,12 +271,19 @@ export const registerUser = async (req, res) => {
       !firstName ||
       !lastName ||
       !dateOfBirth ||
+      !className ||
+      !password ||
+      !confirmPassword ||
       // !ageGroup ||
       !subscriptionPlan ||
       // !childPlan ||
       !subscriptionType
     ) {
       return res.status(400).json({ error: "All fields are required" });
+    }
+
+    if (password !== confirmPassword) {
+      return res.status(400).json({ error: "Password and confirm password must match" });
     }
 
     // Parent validation for minors
@@ -289,7 +298,7 @@ export const registerUser = async (req, res) => {
     const isMinor = ["<13", "13-14", "15-17"].includes(finalAgeGroup);
 
     // Final login email (for <13, parent email is used)
-    const finalEmail = isMinor ? parentEmail : email;
+    const finalEmail = (isMinor ? parentEmail : email)?.trim().toLowerCase();
     console.log("Final Email for registration::::", finalEmail);
     const finalMobile = isMinor ? parentMobile : mobile;
 
@@ -303,7 +312,7 @@ export const registerUser = async (req, res) => {
     }
 
     // Check duplicate email
-    const existingUser = await User.findOne({ email: finalEmail });
+    const existingUser = await PgUser.findOne({ where: { email: finalEmail } });
     if (existingUser) {
       return res
         .status(400)
@@ -395,7 +404,7 @@ export const registerUser = async (req, res) => {
     //   }
     // }
 
-    if (subscriptionPlan === "Free Trial") {
+    if (subscriptionPlan === "Free Trial" || subscriptionType === "Free Trial (1 week)") {
       try {
         // 1️⃣ Generate password
         const cleanName = (firstName || "").replace(/\s+/g, "").toLowerCase();
@@ -409,20 +418,21 @@ export const registerUser = async (req, res) => {
         const generatedPassword = `${passwordPart}@${year}`;
 
         // 2️⃣ Hash password
-        const hashedPassword = await bcrypt.hash(generatedPassword, 10);
+        const hashedPassword = await bcrypt.hash(password, 10);
 
         const tokenLimit = getTokenLimit({
           subscriptionPlan: "Free Trial",
         });
 
         // 3️⃣ Create user
-        const user = new User({
+        const user = await PgUser.create({
           firstName,
           lastName,
           email: finalEmail,
           mobile: finalMobile || null,
           dateOfBirth: new Date(dateOfBirth),
           ageGroup: finalAgeGroup,
+          className,
           parentName: ["<13", "13-14", "15-17"].includes(finalAgeGroup)
             ? parentName
             : null,
@@ -436,7 +446,7 @@ export const registerUser = async (req, res) => {
 
           subscriptionPlan: "Free Trial",
           childPlan: null,
-          subscriptionType: "One Time",
+          subscriptionType: "Free Trial (1 week)",
 
           basePriceINR: 0,
           gstAmount: 0,
@@ -448,10 +458,10 @@ export const registerUser = async (req, res) => {
           password: hashedPassword,
           remainingTokens: tokenLimit,
           planStartDate: new Date(),
-          planExpiryDate: calculatePlanExpiry("One Time"),
+          planExpiryDate: calculatePlanExpiry("Free Trial (1 week)"),
         });
 
-        await user.save();
+        // Removed user.save() as create already saves the user
 
         // 4️⃣ Send password email immediately
         const recipientEmail = ["<13", "13-14", "15-17"].includes(finalAgeGroup)
@@ -461,20 +471,24 @@ export const registerUser = async (req, res) => {
           ? parentName
           : firstName;
 
-        await sendPasswordMail(
+        try {
+          await sendPasswordMail(
           recipientEmail,
           recipientName,
-          generatedPassword
-        );
+          password
+          );
 
         console.log(
           `Free Trial password email sent to ${recipientEmail} → ${generatedPassword}`
-        );
+          );
+        } catch (mailError) {
+          console.error("Registration saved, but password email failed:", mailError);
+        }
 
         // 5️⃣ Return response
         return res.status(201).json({
           success: true,
-          message: "Free Trial activated. Password sent to email.",
+          message: "Registration complete.",
           loginEmail: finalEmail,
           remainingTokens: tokenLimit,
           // user: {
@@ -553,14 +567,17 @@ export const registerUser = async (req, res) => {
       childPlan,
     });
 
-    // Create user (password will be set after payment)
-    const user = new User({
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create user directly from registration. Payment is not required on this page.
+    const user = await PgUser.create({
       firstName,
       lastName,
       email: finalEmail,
       mobile: finalMobile || null,
       dateOfBirth: new Date(dateOfBirth),
       ageGroup: finalAgeGroup,
+      className,
       parentName: ["<13", "13-14", "15-17"].includes(finalAgeGroup)
         ? parentName
         : null,
@@ -585,16 +602,16 @@ export const registerUser = async (req, res) => {
       gstAmount,
       totalPriceINR: totalAmountINR / 100, // stored as rupees (with decimals)
       currency: "INR",
-      subscriptionStatus: "pending",
-      isActive: false,
+      subscriptionStatus: "active",
+      isActive: true,
+      password: hashedPassword,
+      planStartDate: new Date(),
+      planExpiryDate: calculatePlanExpiry(subscriptionType),
     });
 
-    await user.save();
-
-    // Send response with exact amount for Razorpay
     res.status(201).json({
       success: true,
-      message: "Registration successful! Starting payment...",
+      message: "Registration complete.",
       loginEmail: finalEmail,
       paymentAmount: totalAmountINR / 100, // actual rupees (e.g., 99.79)
       priceBreakdown: {
@@ -787,7 +804,7 @@ export const forgotPassword = async (req, res) => {
       return res.status(400).json({ error: "Email is required" });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user = await PgUser.findOne({ where: { email: email.toLowerCase() } });
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -807,13 +824,13 @@ export const forgotPassword = async (req, res) => {
       });
     }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET);
 
     user.resetPasswordToken = token;
     await user.save();
 
     // Generate accurate reset link pointing to FRONTEND
-    const resetLink = `${process.env.FRONTEND_URL}/reset-password?id=${user._id}&token=${token}`;
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password?id=${user.id}&token=${token}`;
 
     await sendResetPasswordMail(
       user.email,
@@ -834,7 +851,7 @@ export const forgotPassword = async (req, res) => {
 export const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const deletedUser = await User.findByIdAndDelete(id);
+    const deletedUser = await PgUser.destroy({ where: { id } });
 
     if (!deletedUser) {
       return res.status(404).json({ error: "User not found" });
@@ -859,9 +876,11 @@ export const resetPassword = async (req, res) => {
     }
 
     // Find user with valid token and expiration
-    const user = await User.findOne({
-      _id: id,
-      resetPasswordToken: token,
+    const user = await PgUser.findOne({
+      where: {
+        id,
+        resetPasswordToken: token,
+      },
     });
 
     if (!user) {
@@ -952,13 +971,19 @@ export const changePassword = async (req, res) => {
     }
 
     // 1️⃣ user find karo
-    const user = await User.findById(userId);
+    const user = await PgUser.findOne({ where: { id: userId } });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
+    if (!user.password) {
+      return res.status(400).json({
+        message: "Password not set for this account",
+      });
+    }
+
     // 2️⃣ current password check karo
-    const isMatch = bcrypt.compare(currentPassword, user.password);
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
 
     if (!isMatch) {
       return res.status(400).json({
@@ -987,7 +1012,7 @@ export const changePassword = async (req, res) => {
 
 export const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find().sort({ createdAt: -1 });
+    const users = await PgUser.findAll({ order: [["createdAt", "DESC"]] });
 
     // Use Promise.all to fetch up-to-date stats for every user
     const formattedUsers = await Promise.all(
@@ -997,7 +1022,8 @@ export const getAllUsers = async (req, res) => {
           const stats = await getGlobalTokenStats(user.email);
 
           return {
-            _id: user._id,
+            id: user.id,
+            _id: user.id,
             firstName: user.firstName,
             lastName: user.lastName,
             email: user.email,
@@ -1014,12 +1040,13 @@ export const getAllUsers = async (req, res) => {
         } catch (err) {
           console.error(`Error fetching stats for ${user.email}:`, err.message);
           // Fallback if something fails (e.g. user not found logic, though redundant here)
-          const fallbackLimit = getTokenLimitFromTokenLimit({
+          const fallbackLimit = getTokenLimit({
             subscriptionPlan: user.subscriptionPlan,
             childPlan: user.childPlan,
           });
           return {
-            _id: user._id,
+            id: user.id,
+            _id: user.id,
             firstName: user.firstName,
             lastName: user.lastName,
             email: user.email,

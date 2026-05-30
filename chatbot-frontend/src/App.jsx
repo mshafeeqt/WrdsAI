@@ -8,6 +8,7 @@ import Register from "./register";
 import ForgotPassword from "./ForgotPassword";
 import ResetPassword from "./ResetPassword";
 import TestMain from "./features/Test/TestMain";
+import MyProgress from "./features/Progress/MyProgress";
 // -----------------------------------------------------------------------------
 
 function App() {
@@ -31,6 +32,7 @@ function App() {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/home" element={<ChatUI />} />
         <Route path="/test-prep" element={<TestMain />} />
+        <Route path="/my-progress" element={<MyProgress />} />
       </Routes>
       <ToastContainer />
     </>

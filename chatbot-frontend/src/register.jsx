@@ -42,19 +42,22 @@ const Register = () => {
     firstName: "",
     lastName: "",
     email: "",
+    password: "",
+    confirmPassword: "",
     // mobile: "+91 ",
     mobileCode: "+91",
     mobileNumber: "",
     // country: "",
     dateOfBirth: null,
     ageGroup: "",
+    className: "",
     parentName: "",
     parentEmail: "",
     // parentMobile: "+91 ",
     parentMobileCode: "+91",
     parentMobileNumber: "",
-    subscriptionPlan: "",
-    childPlan: "",
+    subscriptionPlan: "WrdsAI Nxt",
+    childPlan: "Boost Up",
     subscriptionType: "",
     agree: false,
     agreeActivation: false,
@@ -99,28 +102,32 @@ const Register = () => {
     "Other",
   ];
   const ageGroups = ["<13", "13-14", "15-17", "18+"];
-  const subscriptionPlans = ["WrdsAI", "WrdsAIPro", "WrdsAI Nxt", "Free Trial"];
+  const classOptions = ["9", "10", "11"];
+  const DEFAULT_SUBSCRIPTION_PLAN = "WrdsAI Nxt";
+  const DEFAULT_CHILD_PLAN = "Boost Up";
+  const subscriptionPlans = [DEFAULT_SUBSCRIPTION_PLAN];
   const wrdsAIOptions = ["Glow Up", "Level Up", "Rise Up"];
   const wrdsAIProOptions = ["Step Up", "Speed Up", "Scale Up"];
   const wrdsAiNxtOptions = ["Boost Up"];
-  const subscriptionTypes = ["Monthly", "Yearly", "One Time"];
+  const FREE_TRIAL_TYPE = "Free Trial (1 week)";
+  const subscriptionTypes = [FREE_TRIAL_TYPE, "1 Month", "3 Months", "1 Year"];
 
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("md"));
 
   const BASE_PRICES_INR = {
     WrdsAI: {
-      "Glow Up": { Monthly: 83.9, Yearly: 922.86 },
-      "Level Up": { Monthly: 168.64, Yearly: 1694.09 },
-      "Rise Up": { Monthly: 338.14, Yearly: 3388.98 },
+      "Glow Up": { Monthly: 83.9, "1 Month": 83.9, "3 Months": 251.7, Yearly: 922.86, "1 Year": 922.86 },
+      "Level Up": { Monthly: 168.64, "1 Month": 168.64, "3 Months": 505.92, Yearly: 1694.09, "1 Year": 1694.09 },
+      "Rise Up": { Monthly: 338.14, "1 Month": 338.14, "3 Months": 1014.42, Yearly: 3388.98, "1 Year": 3388.98 },
     },
     WrdsAIPro: {
-      "Step Up": { Monthly: 422.88, Yearly: 4651.69 },
-      "Speed Up": { Monthly: 761.86, Yearly: 7626.44 },
-      "Scale Up": { Monthly: 1355.09, Yearly: 13558.5 },
+      "Step Up": { Monthly: 422.88, "1 Month": 422.88, "3 Months": 1268.64, Yearly: 4651.69, "1 Year": 4651.69 },
+      "Speed Up": { Monthly: 761.86, "1 Month": 761.86, "3 Months": 2285.58, Yearly: 7626.44, "1 Year": 7626.44 },
+      "Scale Up": { Monthly: 1355.09, "1 Month": 1355.09, "3 Months": 4065.27, Yearly: 13558.5, "1 Year": 13558.5 },
     },
     "WrdsAI Nxt": {
-      "Boost Up": { Monthly: 999, Yearly: 10999 },
+      "Boost Up": { Monthly: 999, "1 Month": 999, "3 Months": 2997, Yearly: 10999, "1 Year": 10999 },
     },
   };
 
@@ -246,6 +253,7 @@ const Register = () => {
         mobileNumber: m.number,
         dateOfBirth: dobDate,
         ageGroup: calculatedAgeGroup,
+        className: params.get("className") || params.get("class") || "",
 
         parentName: ["<13", "13-14", "15-17"].includes(calculatedAgeGroup)
           ? params.get("parentName") || ""
@@ -275,6 +283,7 @@ const Register = () => {
         mobileNumber: m.number,
         parentMobileCode: pm.code,
         parentMobileNumber: pm.number,
+        className: userData.className || userData.class || "",
       }));
     }
   }, [isUpgrade, userData, location.search]);
@@ -309,12 +318,24 @@ const Register = () => {
       setFormData((prev) => ({
         ...prev,
         subscriptionPlan: value,
-        subscriptionType: "", // ❌ no auto select
+        childPlan: value === "Free Trial" ? "" : prev.childPlan,
+        subscriptionType: value === "Free Trial" ? FREE_TRIAL_TYPE : "",
       }));
 
       // optional: child plan logic
       setChildPlanDisabled(value === "Free Trial");
 
+      return;
+    }
+
+    if (name === "subscriptionType") {
+      setFormData((prev) => ({
+        ...prev,
+        subscriptionType: value,
+        subscriptionPlan: value === FREE_TRIAL_TYPE ? "Free Trial" : DEFAULT_SUBSCRIPTION_PLAN,
+        childPlan: value === FREE_TRIAL_TYPE ? "" : DEFAULT_CHILD_PLAN,
+      }));
+      setChildPlanDisabled(value === FREE_TRIAL_TYPE);
       return;
     }
 
@@ -389,7 +410,12 @@ const Register = () => {
     });
     const data = await res.json();
     if (data.success) {
-      window.location.href = "/login"; // <-- REDIRECT HERE
+      toast.success("Registration complete! You can now log in.");
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 1800);
+    } else {
+      toast.error(data.error || "Payment verification failed. Please contact support.");
     }
 
     return data;
@@ -502,6 +528,43 @@ const Register = () => {
     ? formData.parentEmail
     : formData.email;
 
+  const registerFieldSx = {
+    "& .MuiOutlinedInput-root": {
+      borderRadius: "10px",
+      backgroundColor: "#fbfdff",
+      height: { xs: "34px !important", sm: "38px !important" },
+      minHeight: { xs: 38, sm: 42 },
+      fontSize: { xs: "14px", sm: "16px" },
+      boxShadow: "0 1px 0 rgba(15, 23, 42, 0.04)",
+      transition: "box-shadow 180ms ease, background-color 180ms ease",
+      "& fieldset": {
+        borderColor: "#b8d4ec",
+      },
+      "&:hover fieldset": {
+        borderColor: "#1268fb",
+      },
+      "&.Mui-focused fieldset": {
+        borderColor: "#1268fb",
+        borderWidth: "1px",
+      },
+      "&.Mui-focused": {
+        backgroundColor: "#fff",
+        boxShadow: "0 0 0 4px rgba(18, 104, 251, 0.12)",
+      },
+    },
+    "& .MuiInputBase-input": {
+      py: { xs: 0.8, sm: 1 },
+    },
+  };
+
+  const registerLabelSx = {
+    color: "#111",
+    fontFamily: "Calibri, sans-serif",
+    fontSize: { xs: "14px !important", sm: "15px !important" },
+    fontWeight: 700,
+    mb: 0.35,
+  };
+
   const applyCoupon = async (planPrice) => {
     try {
       const res = await axios.post(
@@ -526,6 +589,9 @@ const Register = () => {
       !formData.firstName ||
       !formData.lastName ||
       !formData.dateOfBirth ||
+      !formData.className ||
+      !formData.password ||
+      !formData.confirmPassword ||
       !formData.subscriptionPlan ||
       !formData.subscriptionType
     ) {
@@ -538,6 +604,11 @@ const Register = () => {
       !formData.email
     ) {
       toast.error("Email is required for users aged 13 or above.");
+      return false;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      toast.error("Password and confirm password must match.");
       return false;
     }
 
@@ -557,21 +628,6 @@ const Register = () => {
       return false;
     }
 
-    if (!formData.agreeActivation) {
-      toast.error(
-        "Please agree that your account will be activated within 24 hours.",
-      );
-      return false;
-    }
-
-    if (
-      ["<13", "13-14", "15-17"].includes(formData.ageGroup) &&
-      !formData.agreepermission
-    ) {
-      toast.error("Parent/guardian consent is required for users under 18.");
-      return false;
-    }
-
     if (!agreeTerms) {
       toast.error("Please agree to the Terms & Conditions.");
       return false;
@@ -584,7 +640,6 @@ const Register = () => {
   const handleSubmit = async (payableAmount = null) => {
     // e.preventDefault();
     setLoading(true);
-    setAgreeTerms(false);
 
     // upgrade plan flow
     if (isUpgradeMode) {
@@ -646,6 +701,7 @@ const Register = () => {
       dateOfBirth: formData.dateOfBirth
         ? formData.dateOfBirth.toISOString().split("T")[0]
         : null,
+      className: formData.className,
       subscriptionPlan: formData.subscriptionPlan, // 🔥 ENSURE it's included
       childPlan: formData.childPlan || null, // 🔥 ENSURE it's included
       subscriptionType: formData.subscriptionType, // 🔥 ENSURE it's included
@@ -654,36 +710,42 @@ const Register = () => {
 
     try {
       // If Free Trial -> direct register, skip payment
-      if (submitData.subscriptionPlan === "Free Trial") {
+      if (submitData.subscriptionPlan === "Free Trial" || submitData.subscriptionType === FREE_TRIAL_TYPE) {
         const res = await axios.post(
           `${apiBaseUrl}/api/ai/register`,
           submitData,
         );
         console.log("free trial dataaa :::::", res);
-        toast.success("Free Trial activated! Check email for password.");
+        toast.success("Registration complete! You can now log in.");
 
         // Form reset
         setFormData({
           firstName: "",
           lastName: "",
           email: "",
+          password: "",
+          confirmPassword: "",
           mobile: "",
           dateOfBirth: null,
           ageGroup: "",
+          className: "",
           parentName: "",
           parentEmail: "",
           parentMobile: "",
-          subscriptionPlan: "",
-          childPlan: "",
+          subscriptionPlan: DEFAULT_SUBSCRIPTION_PLAN,
+          childPlan: DEFAULT_CHILD_PLAN,
           subscriptionType: "",
           agree: false,
           agreeActivation: false,
           agreepermission: false,
         });
+        setAgreeTerms(false);
 
         // data returned should contain remainingTokens etc.
         // Reset form or redirect to login
-        // optional: navigate("/login");
+        setTimeout(() => {
+          navigate("/login");
+        }, 1800);
         setLoading(false);
         return;
       }
@@ -691,26 +753,35 @@ const Register = () => {
       const res = await axios.post(`${apiBaseUrl}/api/ai/register`, submitData);
       console.log(res);
       // ✅ Success toaster
-      toast.success("Registration successful! Redirecting to login...");
+      toast.success("Registration complete! You can now log in.");
 
       // Form reset
       setFormData({
         firstName: "",
         lastName: "",
         email: "",
+        password: "",
+        confirmPassword: "",
         mobile: "",
         dateOfBirth: null,
         ageGroup: "",
+        className: "",
         parentName: "",
         parentEmail: "",
         parentMobile: "",
-        subscriptionPlan: "",
-        childPlan: "",
+        subscriptionPlan: DEFAULT_SUBSCRIPTION_PLAN,
+        childPlan: DEFAULT_CHILD_PLAN,
         subscriptionType: "",
         agree: false,
         agreeActivation: false,
         agreepermission: false,
       });
+
+      setAgreeTerms(false);
+      setTimeout(() => {
+        navigate("/login");
+      }, 1800);
+      return;
 
       // setPriceINR(res.data.user.subscription.priceINR);
       setPriceINR(res.data.paymentAmount); // આ total INR with GST છે
@@ -747,6 +818,8 @@ const Register = () => {
           flexDirection: "column",
           height: "100vh",
           overflow: "hidden",
+          background:
+            "radial-gradient(circle at 12% 8%, rgba(18, 104, 251, 0.12), transparent 28%), linear-gradient(135deg, #f8fbff 0%, #eef5ff 44%, #ffffff 100%)",
         }}
       >
         {/* Header */}
@@ -762,13 +835,11 @@ const Register = () => {
             bgcolor: "#1268fb",
             zIndex: 100,
             width: "100%",
-            position: "fixed",
-            top: 0,
-            left: 0,
-            height: { xs: "66px", sm: "63px", md: "84px", lg: "84px" },
-            minHeight: { xs: "50px", sm: "55px", lg: "60px" },
-            boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)",
-            py: isSmallScreen ? 1 : 0,
+            position: "relative",
+            height: { xs: "48px", sm: "56px" },
+            minHeight: { xs: "48px", sm: "56px" },
+            boxShadow: "0 12px 30px rgba(18, 104, 251, 0.18)",
+            py: 0,
           }}
         >
           {/* HEADER CONTENT */}
@@ -803,51 +874,97 @@ const Register = () => {
                 lg: 196,
               },
               height: {
-                xs: 54,
-                sm: 60,
-                md: 66,
-                lg: 72,
+                xs: 42,
+                sm: 48,
+                md: 52,
+                lg: 54,
               },
               ml: "-15px",
             }}
           />
+          <Typography
+            component="h1"
+            sx={{
+              position: "absolute",
+              left: "50%",
+              transform: "translateX(-50%)",
+              color: "#fff",
+              fontSize: { xs: "19px", sm: "22px" },
+              fontWeight: 800,
+              letterSpacing: "0.01em",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Registration Page
+          </Typography>
         </Box>
         {/* height={48} width={135} */}
 
         {/* Scrollable Content Area */}
         <Box
           sx={{
-            marginTop: { xs: "108px", sm: "106px", lg: "84px" }, // Same as header height
+            marginTop: 0,
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            justifyContent: "flex-start",
-            padding: { xs: 1, sm: 2, md: 2 },
+            justifyContent: "center",
+            padding: { xs: 0.8, sm: 1, md: 0.9 },
             width: "100%",
-            height: "100%",
-            overflowY: "auto",
+            flex: 1,
+            overflowY: "hidden",
             overflowX: "hidden",
-            pb: 4, // Add bottom padding for better scrolling experience
+            pb: 0,
           }}
         >
           <Box
             sx={{
-              padding: { xs: "13px", sm: 3, md: 4 },
+              padding: { xs: 1.4, sm: 1.8, md: 1.9 },
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              // width: "100%",
-              maxWidth: { xs: "77%", sm: 450, md: 500, lg: 500 },
-              border: "1px solid #ccc",
-              borderRadius: 4,
-              boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.35)",
-              // mt: { xs: "112px", sm: 12, md: "45px" },
+              width: { xs: "100%", sm: "92%", md: "80%" },
+              maxWidth: 920,
+              maxHeight: "calc(100vh - 72px)",
+              overflow: "hidden",
+              border: "1px solid rgba(18, 104, 251, 0.16)",
+              borderRadius: { xs: "18px", sm: "24px" },
+              boxShadow:
+                "0 24px 70px rgba(15, 23, 42, 0.16), 0 1px 0 rgba(255, 255, 255, 0.9) inset",
+              bgcolor: "rgba(255, 255, 255, 0.92)",
+              backdropFilter: "blur(10px)",
+              "& .MuiInputLabel-root": registerLabelSx,
+              "& .MuiOutlinedInput-root": registerFieldSx["& .MuiOutlinedInput-root"],
+              "& .MuiInputBase-input": registerFieldSx["& .MuiInputBase-input"],
+              "& .MuiFormHelperText-root": {
+                marginTop: "2px",
+                fontSize: "11px",
+              },
+              "& .MuiCheckbox-root": {
+                padding: { xs: "3px 8px", sm: "4px 8px" },
+              },
+              "& form": {
+                display: "grid",
+                gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+                columnGap: { xs: 0, md: 3 },
+                rowGap: { xs: 0.7, md: 0.8 },
+                width: "100%",
+              },
+              "& form > .MuiGrid-container": {
+                width: "100%",
+                marginBottom: "0 !important",
+              },
+              "& form > .MuiGrid-container:first-of-type": {
+                gridColumn: "1 / -1",
+              },
+              "& form > .MuiBox-root": {
+                gridColumn: "1 / -1",
+              },
             }}
           >
             <Typography
               component="h1"
               variant="h5"
-              sx={{ mb: { xs: 2, sm: 2, md: 2 } }}
+              sx={{ display: "none" }}
             >
               {isUpgradeMode ? "Upgrade Plan" : "Create Account"}
             </Typography>
@@ -952,7 +1069,7 @@ const Register = () => {
                   />
                 </Grid>
 
-                {/* Age Group */}
+                {/* Class */}
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <InputLabel
                     sx={{
@@ -960,16 +1077,16 @@ const Register = () => {
                       fontFamily: "Calibri, sans-serif",
                     }}
                   >
-                    Age Group *
+                    Class *
                   </InputLabel>
 
                   <TextField
                     select
-                    disabled
+                    disabled={isUpgradeMode}
                     fullWidth
                     size="small"
-                    name="ageGroup"
-                    value={formData.ageGroup}
+                    name="className"
+                    value={formData.className}
                     required
                     onChange={handleChange}
                     InputProps={{
@@ -980,12 +1097,35 @@ const Register = () => {
                       },
                     }}
                   >
-                    {ageGroups.map((age) => (
-                      <MenuItem key={age} value={age}>
-                        {age}
+                    {classOptions.map((className) => (
+                      <MenuItem key={className} value={className}>
+                        {className}
                       </MenuItem>
                     ))}
                   </TextField>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Typography
+                    sx={{
+                      mt: "-4px",
+                      fontSize: "14px",
+                      fontFamily: "Calibri, sans-serif",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    <span style={{ color: "red", fontWeight: 600 }}>Note:</span>{" "}
+                    Visit{" "}
+                    <a
+                      href="https://wrdsai.com/pricing"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: "#1976d2", textDecoration: "underline" }}
+                    >
+                      https://wrdsai.com/pricing
+                    </a>{" "}
+                    before you choose your subscription type.
+                  </Typography>
                 </Grid>
               </Grid>
 
@@ -1318,6 +1458,110 @@ const Register = () => {
                   </Grid>
                 </Grid>
               )}
+
+              <Grid
+                container
+                spacing={1}
+                sx={{
+                  mb: 0,
+                  display: "flex",
+                  gridColumn: { md: "1 / -1" },
+                }}
+              >
+                <Grid item xs={12} sm={6}>
+                  <InputLabel
+                    sx={{
+                      fontSize: { xs: "17px", sm: "19px", md: "19px" },
+                      fontFamily: "Calibri, sans-serif",
+                      width: "100%",
+                    }}
+                  >
+                    Enter Password *
+                  </InputLabel>
+                  <TextField
+                    size="small"
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                    InputProps={{
+                      sx: {
+                        height: { xs: 30, sm: 42 },
+                        fontSize: { xs: "15px", sm: "17px" },
+                      },
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            onClick={() => setShowPassword(!showPassword)}
+                            edge="end"
+                            size="small"
+                          >
+                            {showPassword ? (
+                              <VisibilityOffOutlinedIcon />
+                            ) : (
+                              <VisibilityOutlinedIcon />
+                            )}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                    fullWidth
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <InputLabel
+                    sx={{
+                      fontSize: { xs: "17px", sm: "19px", md: "19px" },
+                      fontFamily: "Calibri, sans-serif",
+                      width: "100%",
+                    }}
+                  >
+                    Confirm Password *
+                  </InputLabel>
+                  <TextField
+                    size="small"
+                    type={showPassword ? "text" : "password"}
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    required
+                    error={
+                      Boolean(formData.confirmPassword) &&
+                      formData.password !== formData.confirmPassword
+                    }
+                    helperText={
+                      Boolean(formData.confirmPassword) &&
+                      formData.password !== formData.confirmPassword
+                        ? "Passwords do not match"
+                        : ""
+                    }
+                    InputProps={{
+                      sx: {
+                        height: { xs: 30, sm: 42 },
+                        fontSize: { xs: "15px", sm: "17px" },
+                      },
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            onClick={() => setShowPassword(!showPassword)}
+                            edge="end"
+                            size="small"
+                          >
+                            {showPassword ? (
+                              <VisibilityOffOutlinedIcon />
+                            ) : (
+                              <VisibilityOutlinedIcon />
+                            )}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                    fullWidth
+                  />
+                </Grid>
+              </Grid>
 
               {/* Mobile */}
               {/* {formData.ageGroup !== "<13" && ( */}
@@ -1868,7 +2112,7 @@ const Register = () => {
               <Grid
                 container
                 spacing={1}
-                sx={{ mb: 2, display: "flex", flexDirection: "column" }}
+                sx={{ mb: 2, display: "none", flexDirection: "column" }}
               >
                 {/* LABEL */}
                 <Grid item xs={12}>
@@ -1910,8 +2154,9 @@ const Register = () => {
                   <Typography
                     sx={{
                       mt: "-4px",
-                      fontSize: "15px",
+                      fontSize: "14px",
                       fontFamily: "Calibri, sans-serif",
+                      whiteSpace: "nowrap",
                     }}
                   >
                     <span style={{ color: "red", fontWeight: 600 }}>Note:</span>{" "}
@@ -1930,7 +2175,7 @@ const Register = () => {
               </Grid>
 
               {/* Sub Options */}
-              {formData.subscriptionPlan && (
+              {false && (
                 <Grid
                   container
                   spacing={1}
@@ -2027,16 +2272,7 @@ const Register = () => {
                         //     formData.subscriptionPlan
                         //   ) && type === "One Time"
                         // }
-                        disabled={
-                          // 🔴 WrdsAI / WrdsAIPro / WrdsAI Nxt → One Time disabled
-                          (["WrdsAI", "WrdsAIPro", "WrdsAI Nxt"].includes(
-                            formData.subscriptionPlan,
-                          ) &&
-                            type === "One Time") ||
-                          // 🔴 Free Trial → Monthly & Yearly disabled
-                          (formData.subscriptionPlan === "Free Trial" &&
-                            (type === "Monthly" || type === "Yearly"))
-                        }
+                        disabled={false}
                       >
                         {type}
                       </MenuItem>
@@ -2097,6 +2333,7 @@ const Register = () => {
               </Box>
 
               {/* New Activation Consent */}
+              {false && (
               <Box
                 sx={{
                   display: "flex",
@@ -2123,8 +2360,9 @@ const Register = () => {
                   I agree that my account will be activated within 24 hours.
                 </Typography>
               </Box>
+              )}
 
-              {["<13", "13-14", "15-17"].includes(formData.ageGroup) && (
+              {false && ["<13", "13-14", "15-17"].includes(formData.ageGroup) && (
                 <Box
                   sx={{
                     display: "flex",
@@ -2176,18 +2414,30 @@ const Register = () => {
                   disabled={loading}
                   size="large"
                 >
-                  {loading ? <CircularProgress size={24} /> : "Make Payment"}
+                  {loading ? <CircularProgress size={24} /> : "Register"}
                 </Button> */}
                 <Button
                   fullWidth
                   variant="contained"
                   sx={{
-                    mt: { xs: 1, sm: 2 },
-                    mb: { xs: 1, sm: 2, md: 1 },
+                    mt: { xs: 0.5, sm: 0.8 },
+                    mb: { xs: 0.5, sm: 0.8, md: 0.5 },
                     fontSize: { xs: "14px", sm: "16px" },
-                    padding: { xs: "10px", sm: "14px" },
+                    fontWeight: 800,
+                    letterSpacing: "0.02em",
+                    padding: { xs: "8px", sm: "10px" },
                     width: { xs: "230px", sm: "440px", md: "100%" },
-                    height: { xs: 36, sm: 42 },
+                    height: { xs: 36, sm: 40 },
+                    borderRadius: "12px",
+                    textTransform: "uppercase",
+                    background:
+                      "linear-gradient(135deg, #1268fb 0%, #0b76d8 55%, #075db4 100%)",
+                    boxShadow: "0 12px 24px rgba(18, 104, 251, 0.26)",
+                    "&:hover": {
+                      background:
+                        "linear-gradient(135deg, #0f5fe8 0%, #086fcf 55%, #0757a6 100%)",
+                      boxShadow: "0 16px 30px rgba(18, 104, 251, 0.32)",
+                    },
                   }}
                   disabled={loading}
                   size="large"
@@ -2198,19 +2448,13 @@ const Register = () => {
                     if (!validateForm()) return;
 
                     // 🔹 Free Trial -> Direct Submit (Skip Coupon)
-                    if (formData.subscriptionPlan === "Free Trial") {
-                      handleSubmit();
-                      return;
-                    }
+                    handleSubmit();
+                    return;
 
                     // 🔥 Open coupon modal instead of direct Razorpay
-                    setFinalAmount(priceINR);
-                    setDiscount(0);
-                    setCoupon("");
-                    setOpenCouponModal(true);
                   }}
                 >
-                  {loading ? <CircularProgress size={24} /> : "Make Payment"}
+                  {loading ? <CircularProgress size={24} /> : "Register"}
                 </Button>
               </Box>
 
@@ -2235,7 +2479,7 @@ const Register = () => {
               <Box
                 sx={{
                   textAlign: "center",
-                  fontSize: { xs: "14px", sm: "16px" },
+                  fontSize: { xs: "13px", sm: "14px" },
                   fontFamily: "Calibri, sans-serif",
                 }}
               >

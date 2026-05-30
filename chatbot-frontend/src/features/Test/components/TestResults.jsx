@@ -30,18 +30,39 @@ const getFeedback = (score) => {
   }
 };
 
-const TestResults = ({ results, onRestart, onReview }) => {
+const TestResults = ({
+  results,
+  recentScores = [],
+  recentScoresLoading = false,
+  onRestart,
+  onReview
+}) => {
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}m ${secs}s`;
   };
 
+  const formatScoreDate = (value) => {
+    if (!value) {
+      return 'No date';
+    }
+
+    return new Intl.DateTimeFormat('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(new Date(value));
+  };
+
   const feedback = getFeedback(results.score);
 
   return (
     <div className="results-container">
-      <div className="test-glass-card" style={{ padding: '3rem 2rem', maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column' }}>
+      <div className="results-layout">
+        <div className="test-glass-card results-main-card">
         <h1 style={{ fontSize: '2rem', fontWeight: 700 }}>Test Completed!</h1>
 
         <div className="score-circle" style={{ margin: '1.5rem auto' }}>
@@ -74,6 +95,46 @@ const TestResults = ({ results, onRestart, onReview }) => {
             Review Test
           </button>
         </div>
+      </div>
+
+        <aside className="test-glass-card recent-scores-card">
+          <div className="recent-scores-heading">
+            <div>
+              <h2>Your Recent Scores</h2>
+              <p className="recent-scores-subtitle">
+                This chapter only
+              </p>
+            </div>
+          </div>
+
+          {recentScoresLoading && (
+            <div className="recent-scores-empty">Loading latest scores...</div>
+          )}
+
+          {!recentScoresLoading && recentScores.length === 0 && (
+            <div className="recent-scores-empty">No saved tests for this chapter yet.</div>
+          )}
+
+          {!recentScoresLoading && recentScores.length > 0 && (
+            <div className="recent-scores-list">
+              {recentScores.map((item) => (
+                <div className="recent-score-row" key={item.id}>
+                  <div>
+                    <div className="recent-score-chapter">
+                      {item.chapterName || 'Chapter test'}
+                    </div>
+                    <div className="recent-score-date">
+                      {formatScoreDate(item.submittedAt || item.createdAt)}
+                    </div>
+                  </div>
+                  <div className="recent-score-pill">
+                    {Number(item.score || 0).toFixed(0)}%
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </aside>
       </div>
     </div>
   );

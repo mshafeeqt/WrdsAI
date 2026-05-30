@@ -17,6 +17,8 @@ const TestMain = () => {
   const [selectedChapter, setSelectedChapter] = useState(null);
   const [selectedDifficulty, setSelectedDifficulty] = useState(null); // State restored
   const [results, setResults] = useState(null);
+  const [recentScores, setRecentScores] = useState([]);
+  const [recentScoresLoading, setRecentScoresLoading] = useState(false);
 
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
@@ -59,9 +61,96 @@ const TestMain = () => {
     setView('active');
   };
 
-  const finishTest = (testResults) => {
+  const loadRecentScores = async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const email = user?.email;
+
+      if (!email) {
+        setRecentScores([]);
+        return;
+      }
+
+      setRecentScoresLoading(true);
+      const response = await fetch(`${apiBaseUrl}/api/ai/test-prep/recent-scores`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email,
+          subject: selectedSubject?.name,
+          chapterName: selectedChapter?.name
+        })
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to load recent scores');
+      }
+
+      setRecentScores(Array.isArray(data.scores) ? data.scores : []);
+    } catch (error) {
+      console.error('Failed to load recent scores:', error);
+    } finally {
+      setRecentScoresLoading(false);
+    }
+  };
+
+  const finishTest = async (testResults) => {
     setResults(testResults);
     setView('results');
+    setRecentScoresLoading(true);
+
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const email = user?.email;
+
+      if (!email) {
+        console.warn('Test result not saved: no logged-in user email found.');
+        setRecentScoresLoading(false);
+        return;
+      }
+
+      const userName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.username || '';
+
+      const response = await fetch(`${apiBaseUrl}/api/ai/test-prep/submit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email,
+          userName,
+          className: selectedClass?.name,
+          chapterId: testResults.chapterId || selectedChapter?.id,
+          subject: testResults.subjectName || selectedSubject?.name,
+          chapter: testResults.chapterName || selectedChapter?.name,
+          difficulty: testResults.difficulty || selectedDifficulty?.name || 'Easy',
+          testType: 'chapter-mcq',
+          score: testResults.score,
+          timeTakenSeconds: testResults.timeTaken,
+          startedAt: testResults.startedAt,
+          submittedAt: testResults.submittedAt,
+          questions: testResults.questions,
+          answers: testResults.answers
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to save test result');
+      }
+
+      setRecentScores(Array.isArray(data.latestScores) ? data.latestScores : []);
+    } catch (error) {
+      console.error('Failed to save test result:', error);
+      toast.error('Test completed, but result was not saved to database.');
+      await loadRecentScores();
+    } finally {
+      setRecentScoresLoading(false);
+    }
   };
 
   const openReview = () => {
@@ -197,6 +286,8 @@ const TestMain = () => {
         {view === 'results' && (
           <TestResults
             results={results}
+            recentScores={recentScores}
+            recentScoresLoading={recentScoresLoading}
             onRestart={reset}
             onReview={openReview}
           />

@@ -349,6 +349,10 @@ const ChatUI = () => {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
   const selectedChapterMeta =
     chapters.find((chapter) => chapter.id === selectedChapter) || null;
+  const selectedClassName = selectedChapterMeta?.className || selectedClass;
+  const selectedSubjectName =
+    selectedChapterMeta?.subjectName ||
+    (selectedSubject ? selectedSubject.split("/").pop() : "");
   const isStudyMenuOpen = Boolean(studyMenuAnchorEl);
 
   useEffect(() => {
@@ -436,6 +440,34 @@ const ChatUI = () => {
     setSelectedChapter("");
     setChapterError("");
   };
+
+  const renderStudyChapterMenus = () => (
+    <StudyChapterMenus
+      isCBSEActive={isCBSEActive}
+      chapterError={chapterError}
+      isXS={isXS}
+      selectedChapterMeta={selectedChapterMeta}
+      studyMenuAnchorEl={studyMenuAnchorEl}
+      isStudyMenuOpen={isStudyMenuOpen}
+      onCloseStudyMenus={closeStudyMenus}
+      chaptersLoading={chaptersLoading}
+      chapterStructure={chapterStructure}
+      onStudyClassOpen={handleStudyClassOpen}
+      selectedClass={selectedClass}
+      studyClassMenuAnchorEl={studyClassMenuAnchorEl}
+      activeStudyClass={activeStudyClass}
+      onCloseStudyClassMenu={handleStudyClassMenuClose}
+      onStudySubjectOpen={handleStudySubjectOpen}
+      selectedSubject={selectedSubject}
+      studySubjectMenuAnchorEl={studySubjectMenuAnchorEl}
+      activeStudySubject={activeStudySubject}
+      onCloseStudySubjectMenu={handleStudySubjectMenuClose}
+      onStudyChapterSelect={handleStudyChapterSelect}
+      selectedChapter={selectedChapter}
+      onStudyTriggerClick={handleStudyTriggerClick}
+      onDeselectChapter={handleDeselectChapter}
+    />
+  );
 
   const handleStudyChapterSelect = (classItem, subjectItem, chapterItem) => {
 
@@ -3637,6 +3669,8 @@ const ChatUI = () => {
       formData.append("type", messageType);
       formData.append("isCBSEActive", isCBSEActive);
       formData.append("selectedChapter", selectedChapter);
+      formData.append("selectedClassName", selectedClassName);
+      formData.append("selectedSubjectName", selectedSubjectName);
       formData.append(
         "selectedChapterName",
         selectedChapterMeta?.name || selectedChapter,
@@ -4138,7 +4172,8 @@ const ChatUI = () => {
           ml: 0,
           px: { xs: 1, sm: 2, md: 2, lg: 2 },
           flexShrink: 0,
-          bgcolor: "#1268fb",
+          background:
+            "linear-gradient(135deg, #a65bff 0%, #7458ff 46%, #28a9ff 100%)",
           zIndex: 100,
           // width: isXS ? "100%" : "100%",
           width: { xs: "97%", sm: "97%", md: "99%", lg: "99%" },
@@ -4149,7 +4184,7 @@ const ChatUI = () => {
           height: isXS ? "70px" : { sm: "71px", md: "84px", lg: "86px" },
           // isSmallScreen ? "63px" : { sm: "84px", lg: "85px" },
           minHeight: isXS ? "60px" : "auto",
-          boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)",
+          boxShadow: "0 14px 34px rgba(43, 24, 104, 0.28)",
           py: isSmallScreen ? 1 : 0,
         }}
       >
@@ -6136,7 +6171,8 @@ const ChatUI = () => {
                           <Paper
                             sx={{
                               p: { xs: 1, sm: 1.5 },
-                              bgcolor: "#1268fb",
+                              background:
+                                "linear-gradient(145deg, rgba(46, 31, 105, 0.98), rgba(39, 39, 105, 0.96))",
                               color: "#fff",
                               borderRadius: 3,
                               minWidth: {
@@ -6799,6 +6835,8 @@ const ChatUI = () => {
                       }}
                     >
                       {/* ➤ Send Button */}
+                      {renderStudyChapterMenus()}
+
                       <IconButton
                         onClick={() => {
                           if (User?.subscription?.isPlanExpired) return;
@@ -7051,7 +7089,8 @@ const ChatUI = () => {
                           <Paper
                             sx={{
                               p: { xs: 1, sm: 1.5 },
-                              bgcolor: "#1268fb",
+                              background:
+                                "linear-gradient(145deg, rgba(46, 31, 105, 0.98), rgba(39, 39, 105, 0.96))",
                               color: "#fff",
                               borderRadius: 3,
                               minWidth: "300px",
@@ -7672,17 +7711,23 @@ const ChatUI = () => {
                         gap: "6px",
                       }}
                     >
+                      {renderStudyChapterMenus()}
+
                       {/* ➤ Send Button */}
                       <IconButton
                         onClick={() => handleSend()}
                         // disabled={!input.trim() || isSending || isTypingResponse}
                         sx={{
-                          bgcolor: "#1268fb",
-                          color: "white",
+                          background:
+                            "linear-gradient(135deg, #ffe66d, #ff9bd2)",
+                          color: "#221246",
                           width: isXS ? "30px" : "40px",
                           height: isXS ? "30px" : "40px",
                           ml: 1,
-                          "&:hover": { bgcolor: "#204BC4" },
+                          "&:hover": {
+                            background:
+                              "linear-gradient(135deg, #fff08a, #ffaddb)",
+                          },
                           borderRadius: "50%",
                         }}
                       >
@@ -7881,7 +7926,8 @@ const ChatUI = () => {
                           <Paper
                             sx={{
                               p: { xs: 1, sm: 1.5 },
-                              bgcolor: "#1268fb",
+                              background:
+                                "linear-gradient(145deg, rgba(46, 31, 105, 0.98), rgba(39, 39, 105, 0.96))",
                               color: "#fff",
                               borderRadius: 3,
                               minWidth: "300px",
@@ -8063,10 +8109,11 @@ const ChatUI = () => {
                           <Paper
                             sx={{
                               p: { xs: 1, sm: 1.5 },
-                              bgcolor: "#eef5ff",
+                              background:
+                                "linear-gradient(145deg, rgba(245, 241, 255, 0.96), rgba(234, 244, 255, 0.96))",
                               borderRadius: 3,
-                              border: "1px solid rgba(18, 104, 251, 0.08)",
-                              boxShadow: "0 2px 8px rgba(15, 23, 42, 0.06)",
+                              border: "1px solid rgba(124, 92, 255, 0.16)",
+                              boxShadow: "0 10px 26px rgba(42, 24, 102, 0.1)",
                               maxWidth: { xs: "92%", sm: "92%", md: "88%" },
                             }}
                           >
@@ -8482,21 +8529,21 @@ const ChatUI = () => {
                           isTypingResponse
                         }
                         sx={{
-                          bgcolor:
+                          background:
                             input.trim() || selectedFiles.length > 0
-                              ? "#1268fb"
+                              ? "linear-gradient(135deg, #ffe66d, #ff9bd2)"
                               : "#f4f4f4",
                           color:
                             input.trim() || selectedFiles.length > 0
-                              ? "#ffffff"
+                              ? "#221246"
                               : "#1f1f1f",
                           width: isXS ? "32px" : "44px",
                           height: isXS ? "32px" : "44px",
                           ml: 0.5,
                           "&:hover": {
-                            bgcolor:
+                            background:
                               input.trim() || selectedFiles.length > 0
-                                ? "#0f5be0"
+                                ? "linear-gradient(135deg, #fff08a, #ffaddb)"
                                 : "#eef1f5",
                           },
                           borderRadius: "50%",
@@ -8726,7 +8773,8 @@ const ChatUI = () => {
                           <Paper
                             sx={{
                               p: { xs: 1, sm: 1.5 },
-                              bgcolor: "#1268fb",
+                              background:
+                                "linear-gradient(145deg, rgba(46, 31, 105, 0.98), rgba(39, 39, 105, 0.96))",
                               color: "#fff",
                               borderRadius: 3,
                               minWidth: "300px",
@@ -9345,6 +9393,8 @@ const ChatUI = () => {
                         gap: "6px",
                       }}
                     >
+                      {renderStudyChapterMenus()}
+
                       {/* ➤ Send Button */}
                       <IconButton
                         onClick={() => handleSend()}

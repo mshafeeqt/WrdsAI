@@ -7,8 +7,6 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "migrate:pg": "node scripts/migrateMongoToPg.js",
-    "migrate:pg:dry": "node scripts/migrateMongoToPg.js --dry-run",
     "build": "npm install --omit=dev",
     "postinstall": "npx puppeteer browsers install chrome"
   },
@@ -39,7 +37,6 @@
     "jszip": "^3.10.1",
     "katex": "^0.16.27",
     "mammoth": "^1.11.0",
-    "mongoose": "^8.17.1",
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^4.0.0",
     "node-fetch": "^3.3.2",

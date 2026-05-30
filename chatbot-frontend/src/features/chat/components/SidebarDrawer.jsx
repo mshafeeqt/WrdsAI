@@ -209,6 +209,28 @@ export default function SidebarDrawer({
               Test Prep
             </Typography>
 
+            <Typography
+              sx={{
+                fontSize: 18,
+                px: 1.5,
+                py: 0.7,
+                cursor: "pointer",
+                borderRadius: "6px",
+                transition: "0.25s",
+                fontWeight: 400,
+                color: "#000",
+                "&:hover": {
+                  backgroundColor: "#eaeaea",
+                },
+              }}
+              onClick={() => {
+                navigate("/my-progress");
+                onClose();
+              }}
+            >
+              My Progress
+            </Typography>
+
             {isWrdsAIPro && (
               <Typography
                 sx={{

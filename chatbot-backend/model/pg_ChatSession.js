@@ -1,5 +1,5 @@
-const { DataTypes } = require('sequelize');
-const { sequelize } = require('../db/connectPG');
+import { DataTypes } from 'sequelize';
+import { sequelize } from '../postgres/connect.js';
 
 const ChatSession = sequelize.define('ChatSession', {
   id: {
@@ -33,4 +33,4 @@ const ChatSession = sequelize.define('ChatSession', {
   indexes: [{ fields: ['sessionId'] }, { fields: ['email'] }]
 });
 
-module.exports = ChatSession;
+export default ChatSession;

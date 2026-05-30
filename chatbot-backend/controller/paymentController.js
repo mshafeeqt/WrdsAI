@@ -3,8 +3,7 @@ import express from "express";
 import Razorpay from "razorpay";
 import crypto from "crypto";
 import bodyParser from "body-parser";
-import Transaction from "../model/Transaction.js";
-import User from "../model/User.js";
+import { PgTransaction, PgUser } from "../postgres/models.js";
 import bcrypt from "bcryptjs";
 import sendPasswordMail from "../middleware/sendPasswordMail.js";
 import sendReceiptMail from "../middleware/mailWithAttachment.js";
@@ -225,20 +224,20 @@ router.post("/create-upi", async (req, res) => {
 // ✅ Price constants (same as authController.js)
 const BASE_PRICES_INR = {
   WrdsAI: {
-    "Glow Up": { Monthly: 83.9, Yearly: 922.86 },
-    "Level Up": { Monthly: 168.64, Yearly: 1694.09 },
-    "Rise Up": { Monthly: 338.14, Yearly: 3388.98 },
+    "Glow Up": { Monthly: 83.9, "1 Month": 83.9, "3 Months": 251.7, Yearly: 922.86, "1 Year": 922.86 },
+    "Level Up": { Monthly: 168.64, "1 Month": 168.64, "3 Months": 505.92, Yearly: 1694.09, "1 Year": 1694.09 },
+    "Rise Up": { Monthly: 338.14, "1 Month": 338.14, "3 Months": 1014.42, Yearly: 3388.98, "1 Year": 3388.98 },
   },
   WrdsAIPro: {
-    "Step Up": { Monthly: 422.88, Yearly: 4651.69 },
-    "Speed Up": { Monthly: 761.86, Yearly: 7626.44 },
-    "Scale Up": { Monthly: 1355.09, Yearly: 13558.5 },
+    "Step Up": { Monthly: 422.88, "1 Month": 422.88, "3 Months": 1268.64, Yearly: 4651.69, "1 Year": 4651.69 },
+    "Speed Up": { Monthly: 761.86, "1 Month": 761.86, "3 Months": 2285.58, Yearly: 7626.44, "1 Year": 7626.44 },
+    "Scale Up": { Monthly: 1355.09, "1 Month": 1355.09, "3 Months": 4065.27, Yearly: 13558.5, "1 Year": 13558.5 },
   },
   "WrdsAI Nxt": {
-    "Boost Up": { Monthly: 999, Yearly: 10999 },
+    "Boost Up": { Monthly: 999, "1 Month": 999, "3 Months": 2997, Yearly: 10999, "1 Year": 10999 },
   },
   "WrdsAi Nxt": {
-    "Boost Up": { Monthly: 999, Yearly: 10999 },
+    "Boost Up": { Monthly: 999, "1 Month": 999, "3 Months": 2997, Yearly: 10999, "1 Year": 10999 },
   },
 };
 
@@ -246,7 +245,8 @@ router.post("/upgrade-plan", async (req, res) => {
   const { email, subscriptionPlan, childPlan, subscriptionType, couponCode } =
     req.body;
 
-  const user = await User.findOne({ email });
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  const user = await PgUser.findOne({ where: { email: normalizedEmail } });
   if (!user) {
     return res.status(404).json({ error: "User not found" });
   }
@@ -292,7 +292,7 @@ router.post("/upgrade-plan", async (req, res) => {
     totalAmountPaise: totalAmountINR, // 💳 Razorpay
     // totalAmount: 1, // ₹ (frontend display) - STATIC AS REQUESTED
     // totalAmountPaise: 100, // 💳 Razorpay (100 paise = 1 INR) - STATIC AS REQUESTED
-    userId: user._id,
+    userId: user.id,
   });
 });
 
@@ -567,16 +567,17 @@ router.post("/verify-payment", async (req, res) => {
     const payment = await razorpay.payments.fetch(razorpay_payment_id);
 
     // 🧾 Save transaction
-    await Transaction.create({
-      razorpay_order_id,
-      razorpay_payment_id,
+    await PgTransaction.create({
+      razorpayOrderId: razorpay_order_id,
+      razorpayPaymentId: razorpay_payment_id,
       amount: payment.amount / 100,
       currency: payment.currency,
       status: "success",
     });
 
     // 👤 Find user
-    const user = await User.findOne({ email });
+    const normalizedEmail = String(email || "").trim().toLowerCase();
+    const user = await PgUser.findOne({ where: { email: normalizedEmail } });
     if (!user) return res.status(404).json({ error: "User not found" });
 
     // 📆 SET PLAN DATES (NEW + UPGRADE BOTH)
@@ -900,8 +901,6 @@ export default router;
 // import Razorpay from "razorpay";
 // import crypto from "crypto";
 // import bodyParser from "body-parser";
-// import Transaction from "../model/Transaction.js";
-// import User from "../model/User.js";
 // import bcrypt from "bcryptjs";
 // import sendPasswordMail from "../middleware/sendPasswordMail.js";
 // import sendReceiptMail from "../middleware/mailWithAttachment.js";

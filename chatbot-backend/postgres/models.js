@@ -35,6 +35,7 @@ export const PgUser = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
+    className: DataTypes.STRING,
     parentName: DataTypes.STRING,
     parentEmail: DataTypes.STRING,
     parentMobile: DataTypes.STRING,
@@ -344,6 +345,281 @@ export const PgReceiptCounter = sequelize.define(
   },
 );
 
+export const PgTestAttempt = sequelize.define(
+  "PgTestAttempt",
+  {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    chapterId: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    className: DataTypes.STRING,
+    subject: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    chapter: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    testType: {
+      type: DataTypes.STRING,
+      defaultValue: "chapter-mcq",
+    },
+    difficulty: DataTypes.STRING,
+    score: {
+      type: DataTypes.FLOAT,
+      defaultValue: 0,
+    },
+    totalQuestions: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    correctAnswers: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    startedAt: DataTypes.DATE,
+    completedAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+    submissionPayload: DataTypes.JSONB,
+  },
+  {
+    tableName: "test_attempts",
+    indexes: [
+      { fields: ["userId"] },
+      { fields: ["subject"] },
+      { fields: ["chapter"] },
+      { fields: ["completedAt"] },
+    ],
+  },
+);
+
+export const PgTestQuestionResult = sequelize.define(
+  "PgTestQuestionResult",
+  {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    questionIndex: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    questionText: DataTypes.TEXT,
+    selectedIndex: DataTypes.INTEGER,
+    correctIndex: DataTypes.INTEGER,
+    isCorrect: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    subject: DataTypes.STRING,
+    chapter: DataTypes.STRING,
+    explanation: DataTypes.TEXT,
+    payload: DataTypes.JSONB,
+  },
+  {
+    tableName: "test_question_results",
+    indexes: [
+      { fields: ["testAttemptId"] },
+      { unique: true, fields: ["testAttemptId", "questionIndex"] },
+    ],
+  },
+);
+
+export const PgTestData = sequelize.define(
+  "PgTestData",
+  {
+    id: {
+      type: DataTypes.BIGINT,
+      autoIncrement: true,
+      primaryKey: true,
+    },
+    userEmail: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+      field: "user_email",
+    },
+    userName: {
+      type: DataTypes.TEXT,
+      field: "user_name",
+    },
+    className: {
+      type: DataTypes.TEXT,
+      field: "class_name",
+    },
+    subject: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+    },
+    chapterName: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+      field: "chapter_name",
+    },
+    attempts: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+      validate: {
+        min: 0,
+      },
+    },
+    score: {
+      type: DataTypes.DECIMAL(10, 2),
+      validate: {
+        min: 0,
+      },
+    },
+    timeTaken: {
+      type: "INTERVAL",
+      field: "time_taken",
+    },
+    startedAt: {
+      type: DataTypes.DATE,
+      field: "started_at",
+    },
+    submittedAt: {
+      type: DataTypes.DATE,
+      field: "submitted_at",
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW,
+      field: "created_at",
+    },
+  },
+  {
+    tableName: "test_data",
+    timestamps: false,
+    indexes: [
+      { fields: ["user_email"] },
+      { fields: ["class_name"] },
+      { fields: ["subject"] },
+      { fields: ["chapter_name"] },
+      { fields: ["created_at"] },
+    ],
+  },
+);
+
+export const PgLlmData = sequelize.define(
+  "PgLlmData",
+  {
+    id: {
+      type: DataTypes.BIGINT,
+      autoIncrement: true,
+      primaryKey: true,
+    },
+    userEmail: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+      field: "user_email",
+    },
+    userName: {
+      type: DataTypes.TEXT,
+      field: "user_name",
+    },
+    userClass: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+      field: "user_class",
+    },
+    subject: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+    },
+    questionsAsked: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+      field: "questions_asked",
+      validate: {
+        min: 0,
+      },
+    },
+    questionsAskedRag: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+      field: "questions_asked_rag",
+      validate: {
+        min: 0,
+      },
+    },
+    tokensUsed: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+      field: "tokens_used",
+      validate: {
+        min: 0,
+      },
+    },
+    lastUsedAt: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW,
+      field: "last_used_at",
+    },
+  },
+  {
+    tableName: "llm_data",
+    timestamps: false,
+    indexes: [
+      { unique: true, fields: ["user_email", "user_class", "subject"] },
+      { fields: ["user_email"] },
+      { fields: ["subject"] },
+      { fields: ["last_used_at"] },
+    ],
+  },
+);
+
+export const PgUserQuestionEvent = sequelize.define(
+  "PgUserQuestionEvent",
+  {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    source: {
+      type: DataTypes.STRING,
+      defaultValue: "chat",
+    },
+    subject: DataTypes.STRING,
+    chapter: DataTypes.STRING,
+    chapterId: DataTypes.STRING,
+    eventType: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: "question_asked",
+    },
+    questionCount: {
+      type: DataTypes.INTEGER,
+      defaultValue: 1,
+    },
+    payload: DataTypes.JSONB,
+  },
+  {
+    tableName: "user_question_events",
+    indexes: [
+      { fields: ["userId"] },
+      { fields: ["subject"] },
+      { fields: ["chapter"] },
+      { fields: ["eventType"] },
+      { fields: ["createdAt"] },
+    ],
+  },
+);
+
 PgUser.hasMany(PgChatSession, { foreignKey: "userId" });
 PgChatSession.belongsTo(PgUser, { foreignKey: "userId" });
 
@@ -364,6 +640,15 @@ PgGrokSearchHistory.belongsTo(PgUser, { foreignKey: "userId" });
 
 PgUser.hasMany(PgTransaction, { foreignKey: "userId" });
 PgTransaction.belongsTo(PgUser, { foreignKey: "userId" });
+
+PgUser.hasMany(PgTestAttempt, { foreignKey: "userId" });
+PgTestAttempt.belongsTo(PgUser, { foreignKey: "userId" });
+
+PgTestAttempt.hasMany(PgTestQuestionResult, { foreignKey: "testAttemptId" });
+PgTestQuestionResult.belongsTo(PgTestAttempt, { foreignKey: "testAttemptId" });
+
+PgUser.hasMany(PgUserQuestionEvent, { foreignKey: "userId" });
+PgUserQuestionEvent.belongsTo(PgUser, { foreignKey: "userId" });
 
 export async function syncPostgresModels() {
   await sequelize.sync({ alter: true });

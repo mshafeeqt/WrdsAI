@@ -1,14 +1,15 @@
-// import ReceiptCounter from "../models/ReceiptCounter.js";
-import ReceiptCounter from "../model/ReceiptCounter.js";
+import { PgReceiptCounter } from "../postgres/models.js";
 
 export const generateReceiptNo = async () => {
   const currentYear = new Date().getFullYear();
 
-  const counter = await ReceiptCounter.findOneAndUpdate(
-    { year: currentYear },
-    { $inc: { seq: 1 } },
-    { new: true, upsert: true }
-  );
+  const [counter] = await PgReceiptCounter.findOrCreate({
+    where: { year: currentYear },
+    defaults: { year: currentYear, seq: 0 },
+  });
+
+  await counter.increment("seq");
+  await counter.reload();
 
   const serial = String(counter.seq).padStart(3, "0");
 

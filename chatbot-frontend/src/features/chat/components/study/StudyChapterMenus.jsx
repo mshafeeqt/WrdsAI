@@ -35,18 +35,20 @@ export default function StudyChapterMenus({
       <Box
         onClick={onStudyTriggerClick}
         sx={{
-          minWidth: isCBSEActive ? { xs: "120px", sm: "160px" } : { xs: "80px", sm: "100px" },
-          maxWidth: "320px",
+          minWidth: isCBSEActive ? { xs: "190px", sm: "230px" } : { xs: "80px", sm: "100px" },
+          maxWidth: isCBSEActive ? { xs: "220px", sm: "320px" } : "320px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           gap: "8px",
-          bgcolor: isCBSEActive ? "rgba(18, 104, 251, 0.08)" : "#ffffff",
+          background: isCBSEActive
+            ? "#ffffff"
+            : "linear-gradient(135deg, #ffe66d, #ff9bd2)",
           border: chapterError
             ? "1.5px solid #ef4444"
             : isCBSEActive
-              ? "1.5px solid #1268fb"
-              : "1.5px solid rgba(15, 23, 42, 0.08)",
+              ? "1.5px solid rgba(255, 230, 109, 0.72)"
+              : "1.5px solid rgba(255,255,255,0.28)",
           borderRadius: "999px",
           pl: 1.5,
           pr: isCBSEActive ? 0.5 : 1.5,
@@ -54,10 +56,12 @@ export default function StudyChapterMenus({
           cursor: "pointer",
           height: "38px",
           transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-          boxShadow: isCBSEActive ? "0 4px 12px rgba(18, 104, 251, 0.12)" : "none",
+          boxShadow: isCBSEActive ? "0 8px 18px rgba(43, 24, 104, 0.18)" : "0 8px 18px rgba(255, 202, 84, 0.16)",
           "&:hover": {
-            bgcolor: isCBSEActive ? "rgba(18, 104, 251, 0.12)" : "#f8fafc",
-            borderColor: isCBSEActive ? "#1268fb" : "rgba(15, 23, 42, 0.2)",
+            background: isCBSEActive
+              ? "#fffaf0"
+              : "linear-gradient(135deg, #fff08a, #ffaddb)",
+            borderColor: "rgba(255, 230, 109, 0.82)",
             transform: "translateY(-1px)",
           },
           "&:active": {
@@ -71,19 +75,22 @@ export default function StudyChapterMenus({
             alignItems: "center",
             gap: "8px",
             minWidth: 0,
+            flex: 1,
           }}
         >
           <AutoStoriesRoundedIcon
             sx={{
               fontSize: 18,
-              color: isCBSEActive ? "#1268fb" : "rgba(15, 23, 42, 0.6)",
+              color: "#221246",
             }}
           />
           <Typography
             sx={{
               fontSize: "13px",
               fontWeight: 600,
-              color: isCBSEActive ? "#1268fb" : "#1e293b",
+              color: "#221246",
+              minWidth: 0,
+              flex: 1,
               whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -104,19 +111,19 @@ export default function StudyChapterMenus({
             }}
             sx={{
               padding: "2px",
-              bgcolor: "rgba(18, 104, 251, 0.1)",
+              bgcolor: "rgba(255, 230, 109, 0.45)",
               "&:hover": {
-                bgcolor: "rgba(18, 104, 251, 0.2)",
+                bgcolor: "rgba(255, 230, 109, 0.65)",
               },
             }}
           >
-            <CloseRoundedIcon sx={{ fontSize: 14, color: "#1268fb" }} />
+            <CloseRoundedIcon sx={{ fontSize: 14, color: "#221246" }} />
           </IconButton>
         ) : (
           <KeyboardArrowDownIcon
             sx={{
               fontSize: 18,
-              color: "rgba(15, 23, 42, 0.4)",
+              color: "#221246",
               transition: "transform 0.3s",
               transform: isStudyMenuOpen ? "rotate(180deg)" : "none",
             }}
