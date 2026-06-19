@@ -21,6 +21,7 @@ import Swal from "sweetalert2";
 import Zomato1 from "././assets/File_Zomato.svg";
 // import gofig from "././assets/gofig.png";
 import gofig from "././assets/gofig1.png";
+import sirat from "././assets/sirat.png";
 
 import insead from "././assets/insead1.png";
 import search from "././assets/search_icon.png";
