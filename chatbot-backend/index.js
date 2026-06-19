@@ -11,9 +11,8 @@ import {
 } from "./controller/searchController.js";
 import { grokSearchResults } from "./controller/groksearchController.js";
 import { grokUserSearchHistory } from "./controller/groksearchController.js";
-// import { createUPIPayment } from "./controller/paymentController.js";
-import paymentRoutes from "./controller/paymentController.js";
 import nodemailer from "nodemailer";
+import { requireAuth } from "./middleware/auth.js";
 // import { runAuto } from "./scripts/auto.js";
 
 // Load environment variables first
@@ -29,6 +28,7 @@ console.log(
 );
 
 const app = express();
+const isProduction = process.env.NODE_ENV === "production";
 
 //  CORS middleware add karo
 // app.use(
@@ -39,16 +39,27 @@ const app = express();
 //   })
 // );
 
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  ...(isProduction ? [] : ["http://localhost:5173", "http://127.0.0.1:5173"]),
+].filter(Boolean);
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL,
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS blocked origin: ${origin}`));
+    },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
   })
 );
-app.use(express.json());
+app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || "1mb" }));
 // Middleware to parse JSON requests
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: process.env.JSON_BODY_LIMIT || "1mb" }));
 
 // app.use((req, res, next) => {
 //   const year = 2026;
@@ -93,7 +104,6 @@ app.use(bodyParser.json());
 // });
 
 app.use("/api/ai", aiRoutes);
-app.use("/api/payments", paymentRoutes); // ✅ New AI Search Routes
 // app.use("/api", searchRoutes);
 
 app.use((req, res, next) => {
@@ -101,12 +111,20 @@ app.use((req, res, next) => {
   next();
 });
 
-app.post("/search", getAISearchResults);
-app.post("/Searchhistory", getUserSearchHistory); // changed to POST
-app.post("/userTokenStats", getUserTokenStats); // combined chat+search token stats for profile
+const useAuthenticatedEmail = (req, res, next) => {
+  req.body = {
+    ...(req.body || {}),
+    email: req.user.email,
+  };
+  next();
+};
 
-app.post("/grokSearch", grokSearchResults); // changed to POST
-app.post("/grokSearchhistory", grokUserSearchHistory); // changed to POST
+app.post("/search", requireAuth, useAuthenticatedEmail, getAISearchResults);
+app.post("/Searchhistory", requireAuth, useAuthenticatedEmail, getUserSearchHistory); // changed to POST
+app.post("/userTokenStats", requireAuth, useAuthenticatedEmail, getUserTokenStats); // combined chat+search token stats for profile
+
+app.post("/grokSearch", requireAuth, useAuthenticatedEmail, grokSearchResults); // changed to POST
+app.post("/grokSearchhistory", requireAuth, useAuthenticatedEmail, grokUserSearchHistory); // changed to POST
 
 // app.use(express.static("public"));
 app.use("/assets", express.static("assets"));
@@ -135,8 +153,6 @@ app.get("/test-mail", async (req, res) => {
     res.send("SMTP error: " + err.message);
   }
 });
-
-// app.post("/api/create-upi", createUPIPayment);
 
 const PORT = process.env.PORT || 4040;
 app.listen(PORT, () => {

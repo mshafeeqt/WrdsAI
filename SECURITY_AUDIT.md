@@ -7,11 +7,11 @@
 
 ```javascript
 // EXPOSED KEYS:
-const SERPER_API_KEY = "030caba1631ac33e868536cda190dd632ea99d82";  // ← ACTIVE
+const SERPER_API_KEY = "[REDACTED_SERPER_KEY]";  // ← ACTIVE
 
 // COMMENTED OUT (also exposed):
-// const SERPER_API_KEY = "49d09f756085ba3e5cc2d434cdea914b271ceb05";
-// const SERPER_API_KEY = "4065c8aa208d00278c9dfedbc5bbeaae7aaed872";
+// const SERPER_API_KEY = "[REDACTED_SERPER_KEY]";
+// const SERPER_API_KEY = "[REDACTED_SERPER_KEY]";
 ```
 
 **Risk Level**: 🔴 **CRITICAL**
@@ -115,9 +115,9 @@ api_key: process.env.CLOUDINARY_API_KEY,
 1. **Revoke Serper API Keys** (All 3)
    - Go to https://serper.dev/dashboard
    - Delete keys:
-     - `030caba1631ac33e868536cda190dd632ea99d82`
-     - `49d09f756085ba3e5cc2d434cdea914b271ceb05`
-     - `4065c8aa208d00278c9dfedbc5bbeaae7aaed872`
+     - `[REDACTED_SERPER_KEY]`
+     - `[REDACTED_SERPER_KEY]`
+     - `[REDACTED_SERPER_KEY]`
    - Generate new key
    - Add to `.env` file
 
@@ -132,7 +132,7 @@ api_key: process.env.CLOUDINARY_API_KEY,
    RAZORPAY_KEY_SECRET=...
    CLOUDINARY_NAME=...
    CLOUDINARY_API_KEY=...
-   CLOUDINARY_API_SECRET=...
+   CLOUDINARY_API_SECRET=
    BREVO_API_KEY=...
    FRONTEND_URL=http://localhost:5173
    GROK_API_KEY=sk-...
@@ -169,7 +169,7 @@ RAZORPAY_KEY_SECRET=...
 # Required for File Upload
 CLOUDINARY_NAME=...
 CLOUDINARY_API_KEY=...
-CLOUDINARY_API_SECRET=...
+CLOUDINARY_API_SECRET=
 
 # Required for Email
 BREVO_API_KEY=...
@@ -221,7 +221,7 @@ Replace hardcoded key with environment variable:
 
 **Current (BAD):**
 ```javascript
-const SERPER_API_KEY = "030caba1631ac33e868536cda190dd632ea99d82";
+const SERPER_API_KEY = "[REDACTED_SERPER_KEY]";
 ```
 
 **Fixed (GOOD):**

@@ -1,12 +1,25 @@
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 function resolveBackendBasePath() {
-  let basePath = path.join(process.cwd(), "chatbot-backend");
-  if (!fs.existsSync(basePath)) {
-    basePath = process.cwd();
+  const candidates = [
+    path.resolve(__dirname, ".."),
+    path.join(process.cwd(), "chatbot-backend"),
+    path.join(process.cwd(), "CARBON_CHATBOT", "chatbot-backend"),
+    process.cwd(),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(path.join(candidate, "Math_Data"))) {
+      return candidate;
+    }
   }
-  return basePath;
+
+  return path.resolve(__dirname, "..");
 }
 
 function getClassSortOrder(className = "") {
@@ -20,6 +33,10 @@ function sortClassDirectories(entries = []) {
     if (classDiff !== 0) return classDiff;
     return a.name.localeCompare(b.name);
   });
+}
+
+function isClassDirectory(entry) {
+  return entry.isDirectory() && /^Class\s+\d+$/i.test(entry.name);
 }
 
 const SUBJECT_SORT_PRIORITY = ["Science", "Maths", "Mathematics"];
@@ -59,7 +76,7 @@ export const getMathChapters = async (_req, res) => {
     const classDirs = sortClassDirectories(
       fs
       .readdirSync(mathDataDir, { withFileTypes: true })
-      .filter((entry) => entry.isDirectory())
+      .filter(isClassDirectory)
     );
 
     for (const classDir of classDirs) {
@@ -67,7 +84,15 @@ export const getMathChapters = async (_req, res) => {
       const subjectDirs = sortSubjectDirectories(
         fs
         .readdirSync(classPath, { withFileTypes: true })
-        .filter((entry) => entry.isDirectory())
+        .filter((entry) => {
+          if (!entry.isDirectory()) return false;
+          const subjectPath = path.join(classPath, entry.name);
+          return fs
+            .readdirSync(subjectPath, { withFileTypes: true })
+            .some((subjectEntry) =>
+              subjectEntry.isFile() && subjectEntry.name.toLowerCase().endsWith(".pdf"),
+            );
+        })
       );
 
       const subjects = subjectDirs.map((subjectDir) => {

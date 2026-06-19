@@ -6,7 +6,7 @@ dotenv.config();
 const postgresUrl = (process.env.POSTGRES_URL || "").trim();
 
 if (!postgresUrl) {
-  throw new Error("POSTGRES_URL is required for PostgreSQL migration");
+  throw new Error("POSTGRES_URL is required");
 }
 
 const useSsl =
@@ -29,23 +29,60 @@ export const sequelize = new Sequelize(postgresUrl, {
     : {},
 });
 
-export async function connectPG({ sync = false } = {}) {
-  await sequelize.authenticate();
-  console.log("✅ PostgreSQL connected successfully");
-  await ensureUserSchema();
-  if (sync) {
-    await sequelize.sync({ alter: true });
+const requiredColumns = {
+  users: ["className", "userRole"],
+  llm_data: ["user_role", "platform_context", "activity_type"],
+  user_question_events: ["userRole", "platformContext", "activityType"],
+};
+
+async function getExistingTableColumns(tableName) {
+  const [rows] = await sequelize.query(
+    `
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = :tableName
+    `,
+    { replacements: { tableName } },
+  );
+
+  return new Set(rows.map((row) => row.column_name));
+}
+
+export async function validatePostgresSchema() {
+  const missing = [];
+
+  for (const [tableName, columns] of Object.entries(requiredColumns)) {
+    const existingColumns = await getExistingTableColumns(tableName);
+
+    if (!existingColumns.size) {
+      missing.push(`${tableName} table`);
+      continue;
+    }
+
+    for (const columnName of columns) {
+      if (!existingColumns.has(columnName)) {
+        missing.push(`${tableName}.${columnName}`);
+      }
+    }
+  }
+
+  if (missing.length) {
+    throw new Error(
+      [
+        "PostgreSQL schema is not up to date.",
+        `Missing: ${missing.join(", ")}`,
+        "Run `npm run migrate` from chatbot-backend before starting the server.",
+      ].join(" "),
+    );
   }
 }
 
-async function ensureUserSchema() {
-  await sequelize.query(`
-    DO $$
-    BEGIN
-      IF to_regclass('public.users') IS NOT NULL THEN
-        ALTER TABLE "users"
-          ADD COLUMN IF NOT EXISTS "className" VARCHAR(255);
-      END IF;
-    END $$;
-  `);
+export async function connectPG({ validateSchema = true } = {}) {
+  await sequelize.authenticate();
+  console.log("PostgreSQL connected successfully✅");
+
+  if (validateSchema) {
+    await validatePostgresSchema();
+  }
 }

@@ -3,9 +3,15 @@ import TestDashboard from './components/TestDashboard';
 import TestInterface from './components/TestInterface';
 import TestResults from './components/TestResults';
 import TestReview from './components/TestReview';
-import wrdsAiLogo from '../../assets/wrdsai1.png';
+import wrdsAiLogo from '../../assets/words1.png';
+import AppSidebarMenu from '../shared/AppSidebarMenu';
 import './styles/testStyles.css';
 import { toast } from 'react-toastify';
+import { fetchCurrentUser } from '../auth/authClient';
+import {
+  getLockedStudentClass,
+  getVisibleSubjectsForStudent,
+} from '../curriculum/studentCurriculum';
 
 const TestMain = () => {
   const [view, setView] = useState('class-selection');
@@ -19,14 +25,41 @@ const TestMain = () => {
   const [results, setResults] = useState(null);
   const [recentScores, setRecentScores] = useState([]);
   const [recentScoresLoading, setRecentScoresLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUserLoaded, setCurrentUserLoaded] = useState(false);
 
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+  const lockedStudentClass = getLockedStudentClass(chapterStructure, currentUser);
+  const visibleSubjects = selectedClass
+    ? (lockedStudentClass ? getVisibleSubjectsForStudent(selectedClass) : selectedClass.subjects || [])
+    : [];
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetchCurrentUser()
+      .then((user) => {
+        if (!cancelled) setCurrentUser(user);
+      })
+      .catch(() => {
+        if (!cancelled) setCurrentUser(null);
+      })
+      .finally(() => {
+        if (!cancelled) setCurrentUserLoaded(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const fetchMathChapters = async () => {
       setLoading(true);
       try {
-        const response = await fetch(`${apiBaseUrl}/api/ai/math-chapters`);
+        const response = await fetch(`${apiBaseUrl}/api/ai/math-chapters`, {
+          credentials: 'include',
+        });
         const data = await response.json();
 
         if (!response.ok) {
@@ -44,6 +77,17 @@ const TestMain = () => {
 
     fetchMathChapters();
   }, [apiBaseUrl]);
+
+  useEffect(() => {
+    if (!lockedStudentClass) return;
+
+    setSelectedClass((currentValue) =>
+      currentValue?.id === lockedStudentClass.id ? currentValue : lockedStudentClass,
+    );
+    setView((currentView) =>
+      currentView === 'class-selection' ? 'subject-selection' : currentView,
+    );
+  }, [lockedStudentClass]);
 
   const selectClass = (cls) => {
     setSelectedClass(cls);
@@ -63,7 +107,7 @@ const TestMain = () => {
 
   const loadRecentScores = async () => {
     try {
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const user = currentUser || {};
       const email = user?.email;
 
       if (!email) {
@@ -74,6 +118,7 @@ const TestMain = () => {
       setRecentScoresLoading(true);
       const response = await fetch(`${apiBaseUrl}/api/ai/test-prep/recent-scores`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json'
         },
@@ -103,7 +148,7 @@ const TestMain = () => {
     setRecentScoresLoading(true);
 
     try {
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const user = currentUser || {};
       const email = user?.email;
 
       if (!email) {
@@ -116,6 +161,7 @@ const TestMain = () => {
 
       const response = await fetch(`${apiBaseUrl}/api/ai/test-prep/submit`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json'
         },
@@ -158,8 +204,8 @@ const TestMain = () => {
   };
 
   const reset = () => {
-    setView('class-selection');
-    setSelectedClass(null);
+    setView(lockedStudentClass ? 'subject-selection' : 'class-selection');
+    setSelectedClass(lockedStudentClass || null);
     setSelectedSubject(null);
     setSelectedChapter(null);
     setSelectedDifficulty(null);
@@ -168,8 +214,10 @@ const TestMain = () => {
 
   const handleBack = () => {
     if (view === 'subject-selection') {
-      setView('class-selection');
-      setSelectedClass(null);
+      if (!lockedStudentClass) {
+        setView('class-selection');
+        setSelectedClass(null);
+      }
     } else if (view === 'chapter-selection') {
       setView('subject-selection');
       setSelectedSubject(null);
@@ -187,11 +235,11 @@ const TestMain = () => {
     }
   };
 
-  if (loading) {
+  if (loading || !currentUserLoaded) {
     return (
       <div className="test-container" style={{ justifyContent: 'center', alignItems: 'center' }}>
         <div className="test-glass-card" style={{ padding: '2rem' }}>
-          Loading curriculum...
+          Loading test...
         </div>
       </div>
     );
@@ -201,7 +249,8 @@ const TestMain = () => {
     <div className="test-container">
       <header className="test-header">
         <div className="test-header-side test-header-left">
-          {view !== 'class-selection' && (
+          <AppSidebarMenu />
+          {(view !== 'class-selection' || lockedStudentClass) && view !== 'subject-selection' && (
             <button
               className="secondary-btn"
               style={{ padding: '0.4rem 1.2rem', fontSize: '0.9rem', color: 'var(--test-cyan)', border: '1px solid var(--test-cyan)' }}
@@ -216,7 +265,7 @@ const TestMain = () => {
         </div>
 
         <div className="test-header-title">
-          Test Prep
+          Test
         </div>
 
         <div className="test-header-side test-header-right">
@@ -248,7 +297,7 @@ const TestMain = () => {
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', minHeight: 0, overflow: 'hidden' }}>
         {view === 'class-selection' && (
           <TestDashboard
-            title="Select Your Class"
+            title="Select Class"
             subtitle="Choose your grade level to access relevant practice tests."
             items={chapterStructure}
             onSelectItem={selectClass}
@@ -257,16 +306,20 @@ const TestMain = () => {
 
         {view === 'subject-selection' && selectedClass && (
           <TestDashboard
-            title={`Select ${selectedClass.name} Subject`}
-            subtitle="Only core subjects are enabled for practice assessments currently."
-            items={selectedClass.subjects || []}
+            title="Select Subject"
+            subtitle={
+              lockedStudentClass
+                ? `Choose a subject from ${selectedClass.name}.`
+                : 'Only core subjects are enabled for practice assessments currently.'
+            }
+            items={visibleSubjects}
             onSelectItem={selectSubject}
           />
         )}
 
         {view === 'chapter-selection' && selectedSubject && (
           <TestDashboard
-            title={`Select ${selectedSubject.name} Chapter`}
+            title="Select Chapter"
             subtitle="Select a specific chapter to start your assessment."
             items={selectedSubject.chapters || []}
             onSelectItem={selectChapter}

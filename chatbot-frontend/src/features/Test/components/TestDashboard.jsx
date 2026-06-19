@@ -11,7 +11,7 @@ const TestDashboard = ({ title, subtitle, items, onSelectItem, isSmall = false }
       overflow: 'hidden'
     }}>
       <header style={{ marginBottom: isSmall ? '1.5rem' : '3rem', flexShrink: 0 }}>
-        <h1 style={{ fontSize: isSmall ? '2rem' : '2.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>
+        <h1 style={{ fontSize: isSmall ? '1.8rem' : '2.35rem', fontWeight: 700, marginBottom: '0.5rem' }}>
           {title}
         </h1>
         <p style={{ color: 'var(--test-text-muted)', fontSize: '1.1rem' }}>

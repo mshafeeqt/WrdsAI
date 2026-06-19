@@ -51,6 +51,14 @@ pwsh ./run_rag_service.ps1
 
 Because dependencies were installed into the project-local `.packages` folder, the launcher script sets `PYTHONPATH` for you.
 
+You can also start the service directly from this folder:
+
+```bash
+uvicorn main:app --host 0.0.0.0 --port 8001
+```
+
+`main.py` is the production entrypoint and re-exports the FastAPI app from `app/main.py`.
+
 ## Rebuild the vector index
 
 ```bash

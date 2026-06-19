@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from "react";
+import React, { createContext, useState, useContext } from "react";
 
 const GrokContext = createContext();
 
@@ -8,10 +8,7 @@ export const GrokProvider = ({ children }) => {
   const [tokenCount, setTokenCount] = useState(0);
 
   // ✅ Initialize sessionRemainingTokens from localStorage
-  const [sessionRemainingTokens, setSessionRemainingTokens] = useState(() => {
-    const saved = localStorage.getItem("globalRemainingTokens");
-    return saved ? Number(saved) : 0;
-  });
+  const [sessionRemainingTokens, setSessionRemainingTokens] = useState(0);
 
   const [results, setResults] = useState([]);
   const [grokhistoryList, setGrokHistoryList] = useState([]);
@@ -19,10 +16,6 @@ export const GrokProvider = ({ children }) => {
   const [totalSearches, setTotalSearches] = useState(0);
 
   // ✅ Sync sessionRemainingTokens with localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem("globalRemainingTokens", sessionRemainingTokens);
-  }, [sessionRemainingTokens]);
-
   return (
     <GrokContext.Provider
       value={{

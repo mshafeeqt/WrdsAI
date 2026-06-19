@@ -21,6 +21,7 @@ const MAX_CONTEXT_CHARS = 9000;
 const MIN_FALLBACK_CONTEXT_SENTENCES = 8;
 const PRIMARY_TEST_MODEL = "gpt-5-nano";
 const FALLBACK_TEST_MODEL = "gpt-4o-mini";
+const VERIFY_TEST_ANSWERS_WITH_AI = process.env.TEST_PREP_VERIFY_ANSWERS === "true";
 
 function parseChapterMeta(chapterId = "") {
   const parts = String(chapterId || "").split("/").filter(Boolean);
@@ -761,6 +762,10 @@ ${feedback}`.trim(),
 
   try {
     const parsedQuestions = parseQuestionsPayload(rawContent);
+    if (!VERIFY_TEST_ANSWERS_WITH_AI) {
+      return parsedQuestions;
+    }
+
     const verifiedContent = await verifyQuestionsJson({
       rawQuestions: parsedQuestions,
       className,
@@ -776,6 +781,10 @@ ${feedback}`.trim(),
       throw parseError;
     }
     const repairedQuestions = parseQuestionsPayload(repairedContent);
+    if (!VERIFY_TEST_ANSWERS_WITH_AI) {
+      return repairedQuestions;
+    }
+
     const verifiedContent = await verifyQuestionsJson({
       rawQuestions: repairedQuestions,
       className,
@@ -1094,6 +1103,7 @@ export async function generateTestPrepQuestions(req, res) {
     const difficultyLabel = getDifficultyLabel(requestedDifficulty);
     let contextText = "";
     let ragLoaded = false;
+    // TODO: Use ExerciseQuestionIndex and chapter RAG as first step for chapter-specific MCQ generation instead of fallback-only RAG.
 
     for (let attempt = 1; attempt <= 3; attempt++) {
       const remainingCount = QUESTION_COUNT - questions.length;

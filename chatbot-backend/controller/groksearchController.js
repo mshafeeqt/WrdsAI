@@ -2,7 +2,7 @@ import axios from "axios";
 import { PgGrokSearchHistory, PgUser } from "../postgres/models.js";
 import trustedSources from "../trusted_sources.json" with { type: "json" };
 import { v4 as uuidv4 } from "uuid"; // npm install uuid
-import ChatSession from "../model/pg_ChatSession.js";
+import ChatSession from "../services/chat/chatSessionStore.js";
 import { checkGlobalTokenLimit, getGlobalTokenStats } from "../utils/tokenLimit.js";
 import {
   buildSelfHarmSupportPayload,
@@ -14,6 +14,7 @@ dotenv.config();
 const GROK_MODEL = "gpt-5-nano";
 const GROK_API_URL = "https://api.openai.com/v1/chat/completions";
 const GROK_API_KEY = process.env.OPENAI_API_KEY;
+const AI_REQUEST_TIMEOUT_MS = Number(process.env.AI_REQUEST_TIMEOUT_MS || 45000);
 
 // Delay helper
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -163,6 +164,7 @@ Return ONLY valid JSON like this:
             Authorization: `Bearer ${GROK_API_KEY}`,
             "Content-Type": "application/json",
           },
+          timeout: AI_REQUEST_TIMEOUT_MS,
         }
       );
 
@@ -301,6 +303,7 @@ Return output ONLY in this exact JSON structure:
           Authorization: `Bearer ${GROK_API_KEY}`,
           "Content-Type": "application/json",
         },
+        timeout: AI_REQUEST_TIMEOUT_MS,
       }
     );
 
@@ -391,6 +394,7 @@ Return ONLY JSON array of ${requestedLinks} total unique valid links (no summary
             Authorization: `Bearer ${GROK_API_KEY}`,
             "Content-Type": "application/json",
           },
+          timeout: AI_REQUEST_TIMEOUT_MS,
         }
       );
 

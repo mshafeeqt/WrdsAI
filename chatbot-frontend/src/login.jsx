@@ -268,8 +268,13 @@ import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import Words2 from "././assets/words2.png"; // path adjust karo
 import { useTheme, useMediaQuery } from "@mui/material";
 import { useGrok } from "./context/GrokContext";
-import Wrds from "././assets/Wrds White.webp";
-import Wrds1 from "././assets/wrdsai1.png";
+import Wrds from "././assets/words1.png";
+import Wrds1 from "././assets/words1.png";
+import {
+  fetchCurrentUser,
+  setAuthenticatedUserCache,
+} from "./features/auth/authClient";
+import { getRoleHomePath } from "./features/auth/roleAccess";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -298,9 +303,12 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const res = await axios.post(`${apiBaseUrl}/api/ai/login`, formData);
+      const res = await axios.post(`${apiBaseUrl}/api/ai/login`, formData, {
+        withCredentials: true,
+      });
 
       const userData = res.data.data;
+      setAuthenticatedUserCache(userData);
       setMessage(res.data.message);
 
       setUser(userData);
@@ -319,17 +327,22 @@ const Login = () => {
       //   // Add any other fields you need
       // };
 
-      localStorage.setItem("user", JSON.stringify(userData));
-
       const remainingTokens = userData.subscription?.remainingTokens || 0;
 
       setSessionRemainingTokens(remainingTokens);
-      localStorage.setItem("globalRemainingTokens", remainingTokens);
 
-      //  navigate to home after success
-      navigate("/home");
+      navigate(getRoleHomePath(userData.userRole));
+
+      fetchCurrentUser().catch((error) => {
+        console.warn("Session refresh after login failed:", error);
+      });
     } catch (err) {
-      setMessage(err.response?.data?.error || "Login failed");
+      setMessage(
+        err.response?.data?.error ||
+          err.response?.data?.message ||
+          err.message ||
+          "Login failed",
+      );
     } finally {
       setLoading(false);
     }
@@ -352,7 +365,8 @@ const Login = () => {
           alignItems: "center",
           justifyContent: "flex-start",
           px: { xs: 1, sm: 2, md: 2, lg: 2 },
-          bgcolor: "#1268fb",
+          background:
+            "linear-gradient(118deg, #b552ff 0%, #705cff 48%, #2eb8ff 100%)",
           zIndex: 100,
           width: "100%",
           position: "fixed",
@@ -362,7 +376,7 @@ const Login = () => {
           //   ? "auto"
           height: { xs: "84px", sm: "84px", md: "84px", lg: "84px" },
           minHeight: { xs: "50px", sm: "55px", lg: "60px" },
-          boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)",
+          boxShadow: "0 12px 30px rgba(73, 43, 170, 0.24)",
           py: 0,
         }}
       >
@@ -381,17 +395,13 @@ const Login = () => {
           sx={{
             // width: 186,
             width: {
-              xs: 150,
-              sm: 166,
-              md: 186,
-              lg: 196,
+              xs: 165,
+              sm: 220,
+              md: 220,
+              lg: 220,
             },
-            height: {
-              xs: 54,
-              sm: 60,
-              md: 66,
-              lg: 72,
-            },
+            height: "auto",
+            objectFit: "contain",
             ml: "-15px",
           }}
         />
@@ -620,7 +630,18 @@ const Login = () => {
                   type="submit"
                   fullWidth
                   variant="contained"
-                  sx={{ mt: 2, mb: 2 }}
+                  sx={{
+                    mt: 2,
+                    mb: 2,
+                    background:
+                      "linear-gradient(118deg, #b552ff 0%, #705cff 48%, #2eb8ff 100%)",
+                    boxShadow: "0 10px 22px rgba(73, 43, 170, 0.28)",
+                    "&:hover": {
+                      background:
+                        "linear-gradient(118deg, #a84cff 0%, #6453f2 48%, #24aef5 100%)",
+                      boxShadow: "0 14px 28px rgba(73, 43, 170, 0.34)",
+                    },
+                  }}
                   disabled={loading}
                 >
                   {loading ? (

@@ -85,8 +85,8 @@
 
 .test-logo-image {
   display: block;
-  height: 42px;
-  width: auto;
+  width: 220px;
+  height: auto;
   object-fit: contain;
 }
 
@@ -108,8 +108,9 @@
 
 .test-dashboard header h1 {
   color: #fff;
-  font-weight: 950 !important;
-  letter-spacing: -0.03em;
+  font-weight: 700 !important;
+  letter-spacing: 0;
+  line-height: 1.12;
   text-transform: capitalize;
 }
 
@@ -441,8 +442,8 @@
 }
 
 .review-question-marks-zero {
-  background: rgba(255, 255, 255, 0.16);
-  color: #e5dcff;
+  background: rgba(239, 68, 68, 0.18);
+  color: #fecaca;
 }
 
 .review-question-title {
@@ -525,8 +526,9 @@
 
 .review-unanswered-note {
   margin-top: 0.9rem;
-  color: #bbf7d0;
+  color: #fde68a;
   font-size: 0.95rem;
+  font-weight: 700;
 }
 
 .review-explanation {

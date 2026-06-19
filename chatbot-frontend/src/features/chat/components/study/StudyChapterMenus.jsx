@@ -8,7 +8,6 @@ import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 export default function StudyChapterMenus({
   isCBSEActive,
   chapterError,
-  isXS,
   selectedChapterMeta,
   studyMenuAnchorEl,
   isStudyMenuOpen,
@@ -29,7 +28,15 @@ export default function StudyChapterMenus({
   selectedChapter,
   onStudyTriggerClick,
   onDeselectChapter,
+  modeLabel = "Study",
+  hideClassSelection = false,
+  lockedStudyClass = null,
 }) {
+  const studyRootClass = hideClassSelection ? lockedStudyClass : activeStudyClass;
+  const studySubjectItems = hideClassSelection
+    ? lockedStudyClass?.subjects || []
+    : activeStudyClass?.subjects || [];
+
   return (
     <>
       <Box
@@ -97,8 +104,8 @@ export default function StudyChapterMenus({
             }}
           >
             {isCBSEActive && selectedChapterMeta
-              ? `Study: ${selectedChapterMeta.name}`
-              : "Study"}
+              ? `${modeLabel}: ${selectedChapterMeta.name}`
+              : modeLabel}
           </Typography>
         </Box>
 
@@ -160,7 +167,6 @@ export default function StudyChapterMenus({
             },
           },
         }}
-
       >
         <MenuItem
           disabled
@@ -170,11 +176,33 @@ export default function StudyChapterMenus({
             fontWeight: 600,
           }}
         >
-          Select class
+          {hideClassSelection ? "Select subject" : "Select class"}
         </MenuItem>
         <Divider />
         {chaptersLoading ? (
-          <MenuItem disabled>Loading classes...</MenuItem>
+          <MenuItem disabled>
+            {hideClassSelection ? "Loading subjects..." : "Loading classes..."}
+          </MenuItem>
+        ) : hideClassSelection ? (
+          studySubjectItems.length > 0 ? (
+            studySubjectItems.map((subjectItem) => (
+              <MenuItem
+                key={subjectItem.id}
+                onClick={(event) => onStudySubjectOpen(event, subjectItem)}
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 2,
+                  fontWeight: selectedSubject === subjectItem.id ? 600 : 400,
+                }}
+              >
+                {subjectItem.name}
+                <KeyboardArrowRightIcon fontSize="small" />
+              </MenuItem>
+            ))
+          ) : (
+            <MenuItem disabled>No subjects found</MenuItem>
+          )
         ) : chapterStructure.length > 0 ? (
           chapterStructure.map((classItem) => (
             <MenuItem
@@ -196,66 +224,67 @@ export default function StudyChapterMenus({
         )}
       </Menu>
 
-      <Menu
-        anchorEl={studyClassMenuAnchorEl}
-        open={Boolean(studyClassMenuAnchorEl && activeStudyClass)}
-        onClose={onCloseStudyClassMenu}
-        anchorOrigin={{ vertical: "top", horizontal: "right" }}
-        transformOrigin={{ vertical: "top", horizontal: "left" }}
-        PaperProps={{
-          sx: {
-            minWidth: 220,
-            borderRadius: "16px",
-            boxShadow: "0 20px 50px rgba(15, 23, 42, 0.18)",
-            border: "1px solid rgba(15, 23, 42, 0.05)",
-            "& .MuiMenuItem-root": {
-              fontSize: "13.5px",
-              py: 1.25,
-              px: 2,
-              mx: 0.5,
-              borderRadius: "8px",
-              transition: "0.2s",
-              "&:hover": {
-                bgcolor: "rgba(18, 104, 251, 0.05)",
-                color: "#1268fb",
+      {!hideClassSelection && (
+        <Menu
+          anchorEl={studyClassMenuAnchorEl}
+          open={Boolean(studyClassMenuAnchorEl && activeStudyClass)}
+          onClose={onCloseStudyClassMenu}
+          anchorOrigin={{ vertical: "top", horizontal: "right" }}
+          transformOrigin={{ vertical: "top", horizontal: "left" }}
+          PaperProps={{
+            sx: {
+              minWidth: 220,
+              borderRadius: "16px",
+              boxShadow: "0 20px 50px rgba(15, 23, 42, 0.18)",
+              border: "1px solid rgba(15, 23, 42, 0.05)",
+              "& .MuiMenuItem-root": {
+                fontSize: "13.5px",
+                py: 1.25,
+                px: 2,
+                mx: 0.5,
+                borderRadius: "8px",
+                transition: "0.2s",
+                "&:hover": {
+                  bgcolor: "rgba(18, 104, 251, 0.05)",
+                  color: "#1268fb",
+                },
               },
             },
-          },
-        }}
-
-      >
-        <MenuItem
-          onClick={onCloseStudyClassMenu}
-          sx={{
-            color: "rgba(17, 24, 39, 0.7)",
-            gap: 1,
-            fontWeight: 600,
           }}
         >
-          <ArrowBackRoundedIcon sx={{ fontSize: 18 }} />
-          Back to classes
-        </MenuItem>
-        <Divider />
-        {activeStudyClass?.subjects?.length ? (
-          activeStudyClass.subjects.map((subjectItem) => (
-            <MenuItem
-              key={subjectItem.id}
-              onClick={(event) => onStudySubjectOpen(event, subjectItem)}
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                gap: 2,
-                fontWeight: selectedSubject === subjectItem.id ? 600 : 400,
-              }}
-            >
-              {subjectItem.name}
-              <KeyboardArrowRightIcon fontSize="small" />
-            </MenuItem>
-          ))
-        ) : (
-          <MenuItem disabled>No subjects found</MenuItem>
-        )}
-      </Menu>
+          <MenuItem
+            onClick={onCloseStudyClassMenu}
+            sx={{
+              color: "rgba(17, 24, 39, 0.7)",
+              gap: 1,
+              fontWeight: 600,
+            }}
+          >
+            <ArrowBackRoundedIcon sx={{ fontSize: 18 }} />
+            Back to classes
+          </MenuItem>
+          <Divider />
+          {activeStudyClass?.subjects?.length ? (
+            activeStudyClass.subjects.map((subjectItem) => (
+              <MenuItem
+                key={subjectItem.id}
+                onClick={(event) => onStudySubjectOpen(event, subjectItem)}
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 2,
+                  fontWeight: selectedSubject === subjectItem.id ? 600 : 400,
+                }}
+              >
+                {subjectItem.name}
+                <KeyboardArrowRightIcon fontSize="small" />
+              </MenuItem>
+            ))
+          ) : (
+            <MenuItem disabled>No subjects found</MenuItem>
+          )}
+        </Menu>
+      )}
 
       <Menu
         anchorEl={studySubjectMenuAnchorEl}
@@ -307,7 +336,7 @@ export default function StudyChapterMenus({
               key={chapterItem.id}
               onClick={() =>
                 onStudyChapterSelect(
-                  activeStudyClass,
+                  studyRootClass,
                   activeStudySubject,
                   chapterItem,
                 )

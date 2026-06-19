@@ -10,8 +10,8 @@ import {
 } from "@mui/material";
 import axios from "axios";
 import { toast } from "react-toastify";
-import Wrds from "././assets/Wrds White.webp";
-import Wrds1 from "././assets/wrdsai1.png";
+import Wrds from "././assets/words1.png";
+import Wrds1 from "././assets/words1.png";
 import { useTheme, useMediaQuery } from "@mui/material";
 
 const ForgotPassword = () => {
@@ -82,17 +82,13 @@ const ForgotPassword = () => {
           sx={{
             // width: 186,
             width: {
-              xs: 150,
-              sm: 166,
-              md: 186,
-              lg: 196,
+              xs: 165,
+              sm: 220,
+              md: 220,
+              lg: 220,
             },
-            height: {
-              xs: 54,
-              sm: 60,
-              md: 66,
-              lg: 72,
-            },
+            height: "auto",
+            objectFit: "contain",
             ml: "-15px",
           }}
         />

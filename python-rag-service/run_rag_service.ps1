@@ -13,4 +13,4 @@ $env:PYTHONIOENCODING = "utf-8"
 Remove-Item Env:HTTP_PROXY,Env:HTTPS_PROXY,Env:ALL_PROXY -ErrorAction SilentlyContinue
 
 Set-Location $serviceRoot
-py -m uvicorn app.main:app --host 0.0.0.0 --port 8001
+py -m uvicorn main:app --host 0.0.0.0 --port 8001

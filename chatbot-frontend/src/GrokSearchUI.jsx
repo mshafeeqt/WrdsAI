@@ -18,17 +18,15 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import { useGrok } from "./context/GrokContext";
 import Swal from "sweetalert2";
-import zomato from "././assets/zomato.png";
-import Zomato1 from "././assets/Zomato1.png";
+import Zomato1 from "././assets/File_Zomato.svg";
 // import gofig from "././assets/gofig.png";
 import gofig from "././assets/gofig1.png";
-// import sirat from "././assets/sirat.png";
-import sirat from "././assets/sirat.gif";
-// import insead from "././assets/insead.png";
+
 import insead from "././assets/insead1.png";
 import search from "././assets/search_icon.png";
+import { fetchCurrentUser } from "./features/auth/authClient";
 
-// import insead from "././assets/insead.png";
+
 
 export default function GrokSearchUI(props) {
   const { selectedGrokQuery } = props;
@@ -37,6 +35,7 @@ export default function GrokSearchUI(props) {
   // const [results, setResults] = useState(null);
   // const [loading, setLoading] = useState(false);
   const [linkCount, setLinkCount] = useState(3); // ✅ default value = 3 links
+  const [currentUser, setCurrentUser] = useState(null);
   // const [error, setError] = useState(null);
   // const [tokenCount, setTokenCount] = useState(0);
   const {
@@ -60,6 +59,22 @@ export default function GrokSearchUI(props) {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
   useEffect(() => {
+    let cancelled = false;
+
+    fetchCurrentUser()
+      .then((user) => {
+        if (!cancelled) setCurrentUser(user);
+      })
+      .catch(() => {
+        if (!cancelled) setCurrentUser(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     const saved = localStorage.getItem("lastGrokSearch");
     if (saved) {
       const { query, results } = JSON.parse(saved);
@@ -75,13 +90,14 @@ export default function GrokSearchUI(props) {
   useEffect(() => {
     const fetchSearchHistory = async () => {
       try {
-        const user = JSON.parse(localStorage.getItem("user"));
+        const user = currentUser || {};
         const email = user?.email;
         if (!email) return;
 
         const res = await fetch(`${apiBaseUrl}/Searchhistory`, {
           // const res = await fetch(`${apiBaseUrl}/grokSearchhistory`, {
           method: "POST",
+          credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email }),
         });
@@ -109,7 +125,7 @@ export default function GrokSearchUI(props) {
     };
 
     fetchSearchHistory();
-  }, [apiBaseUrl]);
+  }, [apiBaseUrl, currentUser, setGrokHistoryList, setTokenCount]);
 
   useEffect(() => {
     // if (selectedGrokQuery) {
@@ -172,12 +188,13 @@ export default function GrokSearchUI(props) {
     setError(null);
     setTokenCount(0);
 
-    const user = JSON.parse(localStorage.getItem("user"));
+    const user = currentUser || {};
     const email = user?.email;
 
     try {
       const response = await fetch(`${apiBaseUrl}/search`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           query: finalQuery,
@@ -273,7 +290,7 @@ export default function GrokSearchUI(props) {
       try {
         const statsRes = await fetch(`${apiBaseUrl}/userTokenStats`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({ email }),
         });
         if (statsRes.ok) {
@@ -283,10 +300,6 @@ export default function GrokSearchUI(props) {
           }
           if (typeof stats.remainingTokens === "number") {
             setSessionRemainingTokens(stats.remainingTokens);
-            localStorage.setItem(
-              "globalRemainingTokens",
-              stats.remainingTokens
-            );
           }
         }
       } catch (e) {
@@ -316,6 +329,7 @@ export default function GrokSearchUI(props) {
 
       await fetch(`${apiBaseUrl}/Searchhistory`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       })

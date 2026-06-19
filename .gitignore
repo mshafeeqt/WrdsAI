@@ -1,5 +1,5 @@
 .env
-.env.*
+.env*
 !.env.example
 venv/
 .venv/
@@ -7,7 +7,10 @@ node_modules/
 dist/
 build/
 __pycache__/
+**/__pycache__/
 *.log
+.packages/
+.tmp/
 
 # Python RAG local/runtime artifacts
 python-rag-service/.env

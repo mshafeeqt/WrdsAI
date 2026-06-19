@@ -55,6 +55,7 @@
 import React, { useState, useEffect } from "react";
 import { TextField, InputAdornment, IconButton, Box } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
+import { fetchCurrentUser } from "./features/auth/authClient";
 
 export default function SearchUI(props) {
   const { setHistoryList, selectedQuery } = props;
@@ -63,8 +64,25 @@ export default function SearchUI(props) {
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
 
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetchCurrentUser()
+      .then((user) => {
+        if (!cancelled) setCurrentUser(user);
+      })
+      .catch(() => {
+        if (!cancelled) setCurrentUser(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const saved = localStorage.getItem("lastSearch");
@@ -79,12 +97,13 @@ export default function SearchUI(props) {
   useEffect(() => {
     const fetchSearchHistory = async () => {
       try {
-        const user = JSON.parse(localStorage.getItem("user"));
+        const user = currentUser || {};
         const email = user?.email;
         if (!email) return;
 
         const res = await fetch(`${apiBaseUrl}/Searchhistory`, {
           method: "POST",
+          credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email }),
         });
@@ -97,7 +116,7 @@ export default function SearchUI(props) {
     };
 
     fetchSearchHistory();
-  }, [apiBaseUrl]);
+  }, [apiBaseUrl, currentUser]);
 
   // ✅ Whenever dropdown selects a new query → update input field
   useEffect(() => {
@@ -187,12 +206,13 @@ export default function SearchUI(props) {
     setLoading(true);
     setError(null);
 
-    const user = JSON.parse(localStorage.getItem("user"));
+    const user = currentUser || {};
     const email = user?.email;
 
     try {
       const response = await fetch(`${apiBaseUrl}/search`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -221,6 +241,7 @@ export default function SearchUI(props) {
       // 🔹 2. After search success → Call Search History API
       await fetch(`${apiBaseUrl}/Searchhistory`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       })

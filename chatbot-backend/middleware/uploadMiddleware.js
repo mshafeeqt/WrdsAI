@@ -246,23 +246,39 @@ import path from "path";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import cloudinary from "../config/cloudinary.js";
 
-// Allowed file extensions
+const maxFileSizeMb = Number(process.env.UPLOAD_MAX_FILE_SIZE_MB || 10);
+const maxFiles = Number(process.env.UPLOAD_MAX_FILES || 5);
+const maxFileSizeBytes = Math.max(1, maxFileSizeMb) * 1024 * 1024;
+const maxFileCount = Math.max(1, maxFiles);
+
+const allowedFileTypes = {
+  ".txt": ["text/plain"],
+  ".pdf": ["application/pdf"],
+  ".doc": ["application/msword"],
+  ".docx": ["application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
+  ".jpg": ["image/jpeg"],
+  ".jpeg": ["image/jpeg"],
+  ".png": ["image/png"],
+  ".pptx": ["application/vnd.openxmlformats-officedocument.presentationml.presentation"],
+  ".xlsx": ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"],
+  ".csv": ["text/csv", "application/csv", "application/vnd.ms-excel"],
+};
+
 const fileFilter = (req, file, cb) => {
-  const allowedExtensions = [
-    ".txt",
-    ".pdf",
-    ".doc",
-    ".docx",
-    ".jpg",
-    ".jpeg",
-    ".png",
-    ".pptx",
-    ".xlsx",
-    ".csv",
-  ];
   const ext = path.extname(file.originalname).toLowerCase();
-  if (allowedExtensions.includes(ext)) cb(null, true);
-  else cb(new Error(`Invalid file type: ${ext}`), false);
+  const allowedMimeTypes = allowedFileTypes[ext];
+
+  if (!allowedMimeTypes) {
+    cb(new Error(`Invalid file type: ${ext}`), false);
+    return;
+  }
+
+  if (!allowedMimeTypes.includes(file.mimetype)) {
+    cb(new Error(`Invalid file MIME type: ${file.mimetype}`), false);
+    return;
+  }
+
+  cb(null, true);
 };
 
 const storage = new CloudinaryStorage({
@@ -293,7 +309,13 @@ const storage = new CloudinaryStorage({
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024, files: 5 },
+  limits: {
+    fileSize: maxFileSizeBytes,
+    files: maxFileCount,
+    fields: 30,
+    fieldNameSize: 100,
+    fieldSize: 256 * 1024,
+  },
 });
 
 export default upload;

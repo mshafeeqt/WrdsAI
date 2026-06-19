@@ -10,7 +10,7 @@ RAG assets are still file/vector-store based and are not stored in PostgreSQL:
 - `python-rag-service/data/vector_db`
 - `python-rag-service/data/index_manifest.json`
 
-This is expected. Chapter lists, PDFs, and vector indexes are separate from user/chat/payment/test data.
+This is expected. Chapter lists, PDFs, and vector indexes are separate from user/chat/test data.
 
 ## PostgreSQL data now used by the app
 
@@ -22,14 +22,12 @@ Runtime data is stored in PostgreSQL tables/models, including:
 - `chat_files`
 - `search_history`
 - `grok_search_history`
-- `transactions`
-- `receipt_counters`
 - `test_attempts`
 - `test_question_results`
 - `user_question_events`
 - `llm_data`
 
-Some legacy-compatible PostgreSQL tables/models also exist, such as `"ChatSessions"` and `"Users"`, to preserve the old frontend chat-history JSON shape while keeping the database as PostgreSQL.
+Legacy Sequelize model files have been removed from the active codebase. If the old `"ChatSessions"` table still exists in a deployed database, it is treated as read-only migration input: `services/chat/chatSessionStore.js` reads old JSON `history` rows directly with SQL and migrates them into `chat_sessions`, `chat_messages`, and `chat_files` on access.
 
 ## User and analytics status
 
@@ -38,10 +36,9 @@ Implemented PostgreSQL paths include:
 - registration and login using PostgreSQL users
 - admin/manual user creation using PostgreSQL users
 - chat/token/search history moving through PostgreSQL models
-- Smart AI, Smart AI Pro, and Smart AI Nxt using PostgreSQL session storage
+- WrdsAI Nxt chat history using normalized PostgreSQL session/message/file tables
 - test attempt and question-event analytics tables/endpoints
 - aggregated LLM usage table for one row per `user_email + user_class + subject`
-- receipt counter generation using PostgreSQL
 
 ## Required environment
 
@@ -54,9 +51,24 @@ POSTGRES_SSL=true
 
 `POSTGRES_SSL` is optional depending on the database host.
 
+## Production migration flow
+
+The backend no longer changes table structure during server startup. Schema changes live in `chatbot-backend/postgres/migrations` and are applied explicitly.
+
+Run migrations before starting or restarting production:
+
+```bash
+cd chatbot-backend
+npm run migrate
+npm run schema:check
+npm start
+```
+
+Migration state is tracked in the `schema_migrations` table. Server startup now connects to PostgreSQL and validates required columns, but does not run `ALTER TABLE`, `CREATE INDEX`, or `sequelize.sync({ alter: true })`.
+
 ## Important note
 
-MongoDB migration scripts and Mongoose models have been removed from the active codebase. If old production Mongo data ever needs to be re-imported again, restore the migration script from git history or a backup before running a migration.
+MongoDB migration scripts, Mongoose models, and legacy PostgreSQL model files have been removed from the active codebase. Do not drop the old `"ChatSessions"` database table until production data has been verified as migrated into `chat_sessions`, `chat_messages`, and `chat_files`.
 
 ## LLM Usage Aggregation
 

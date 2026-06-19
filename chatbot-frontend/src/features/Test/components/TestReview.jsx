@@ -2,9 +2,24 @@ import React from 'react';
 import '../styles/testStyles.css';
 import MathText from './MathText';
 
+const getSelectedIndex = (answers, questionIndex) => {
+  const answer = Array.isArray(answers) ? answers[questionIndex] : answers?.[questionIndex];
+  const rawValue =
+    answer && typeof answer === 'object'
+      ? answer.selectedIndex ?? answer.answerIndex ?? answer.index
+      : answer;
+
+  if (rawValue === null || rawValue === undefined || rawValue === '') {
+    return null;
+  }
+
+  const numericValue = Number(rawValue);
+  return Number.isInteger(numericValue) ? numericValue : null;
+};
+
 const TestReview = ({ results, onBackToResults, onTakeAnotherTest }) => {
   const questions = Array.isArray(results?.questions) ? results.questions : [];
-  const answers = results?.answers || {};
+  const answers = results?.answers || [];
 
   return (
     <div className="test-review">
@@ -22,9 +37,11 @@ const TestReview = ({ results, onBackToResults, onTakeAnotherTest }) => {
 
       <div className="review-question-list">
         {questions.map((question, questionIndex) => {
-          const selectedAnswer = answers[questionIndex];
-          const isAnswered = selectedAnswer !== undefined && selectedAnswer !== null;
-          const isCorrectlyAnswered = selectedAnswer === question.correct;
+          const selectedAnswer = getSelectedIndex(answers, questionIndex);
+          const correctAnswer = Number(question.correct ?? question.correctIndex);
+          const isAnswered = selectedAnswer !== null;
+          const hasValidCorrectAnswer = Number.isInteger(correctAnswer);
+          const isCorrectlyAnswered = isAnswered && hasValidCorrectAnswer && selectedAnswer === correctAnswer;
           const awardedMarks = isCorrectlyAnswered ? 1 : 0;
 
           return (
@@ -41,7 +58,7 @@ const TestReview = ({ results, onBackToResults, onTakeAnotherTest }) => {
 
               <div className="options-container">
                 {question.options.map((option, optionIndex) => {
-                  const isCorrect = optionIndex === question.correct;
+                  const isCorrect = hasValidCorrectAnswer && optionIndex === correctAnswer;
                   const isSelected = selectedAnswer === optionIndex;
                   const isWrongSelection = isSelected && !isCorrect;
 
@@ -70,7 +87,9 @@ const TestReview = ({ results, onBackToResults, onTakeAnotherTest }) => {
                               </span>
                             )}
                             {isWrongSelection && (
-                              <span className="review-option-badge review-option-badge-wrong">Your Answer</span>
+                              <span className="review-option-badge review-option-badge-wrong">
+                                Your Response
+                              </span>
                             )}
                           </div>
                         </div>
@@ -82,7 +101,7 @@ const TestReview = ({ results, onBackToResults, onTakeAnotherTest }) => {
 
               {!isAnswered && (
                 <div className="review-unanswered-note">
-                  Not Answered
+                  Unanswered
                 </div>
               )}
 

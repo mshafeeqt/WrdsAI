@@ -10,15 +10,8 @@ import {
 } from "../utils/selfHarmGuardrails.js";
 
 const SERPER_URL = "https://google.serper.dev/search";
-// const SERPER_API_KEY = "49d09f756085ba3e5cc2d434cdea914b271ceb05";
-
-
-
-// mohmmedbhai gives key
-const SERPER_API_KEY = "030caba1631ac33e868536cda190dd632ea99d82";
-
-// meeral last uses key
-// const SERPER_API_KEY = "4065c8aa208d00278c9dfedbc5bbeaae7aaed872";
+const SERPER_API_KEY = process.env.SERPER_API_KEY;
+const AI_REQUEST_TIMEOUT_MS = Number(process.env.AI_REQUEST_TIMEOUT_MS || 45000);
 
 /**
  * Call Serper API
@@ -28,6 +21,10 @@ const SERPER_API_KEY = "030caba1631ac33e868536cda190dd632ea99d82";
  */
 async function searchAPI(query, opts = { returnRaw: false }) {
   try {
+    if (!SERPER_API_KEY) {
+      return { error: true, message: "SERPER_API_KEY is not configured" };
+    }
+
     const response = await axios.post(
       SERPER_URL,
       { q: query },
@@ -36,6 +33,7 @@ async function searchAPI(query, opts = { returnRaw: false }) {
           "X-API-KEY": SERPER_API_KEY,
           "Content-Type": "application/json",
         },
+        timeout: AI_REQUEST_TIMEOUT_MS,
         maxBodyLength: Infinity,
       }
     );

@@ -1,21 +1,47 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import wrdsAiLogo from '../../assets/wrdsai1.png';
-import { fetchMyProgress } from './api/progressApi';
+import wrdsAiLogo from '../../assets/words1.png';
+import { fetchMyProgress, fetchTeacherProgress } from './api/progressApi';
 import StatCard from './components/StatCard';
 import SubjectProgressCard from './components/SubjectProgressCard';
+import { DashboardIcon } from './components/ProgressIcons';
 import { emptyProgress } from './progressDefaults';
+import AppSidebarMenu from '../shared/AppSidebarMenu';
+import { fetchCurrentUser } from '../auth/authClient';
 import './myProgress.css';
 
-export default function MyProgress() {
+const progressPageCopy = {
+  student: {
+    title: 'My Progress',
+    heroTitle: 'Your learning dashboard',
+    heroText: 'Monthly test performance and subject-wise question activity.',
+    loadingText: 'Loading your progress...',
+    totalQuestionsHelper: 'General, Maths and Science questions this month',
+    mathsScienceHelper: 'Only Maths and Science questions this month',
+  },
+  teacher: {
+    title: 'Teacher Progress',
+    heroTitle: 'Your teaching dashboard',
+    heroText: 'Teach-mode question activity from teacher-home only.',
+    loadingText: 'Loading teacher progress...',
+    totalQuestionsHelper: 'Total questions asked this month (WrdsAI + Teach-mode)',
+    mathsScienceHelper: 'Only Teach-mode Maths and Science questions this month',
+    primaryStatLabel: 'Lesson planned this month',
+    primaryStatHelper: 'Lesson plans created this month',
+  },
+};
+
+export default function MyProgress({ audience = 'student' }) {
   const [progress, setProgress] = useState(emptyProgress);
   const [loading, setLoading] = useState(true);
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+  const isTeacherProgress = audience === 'teacher';
+  const copy = progressPageCopy[isTeacherProgress ? 'teacher' : 'student'];
 
   useEffect(() => {
     const loadProgress = async () => {
       try {
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const user = await fetchCurrentUser();
         const email = user?.email;
 
         if (!email) {
@@ -24,7 +50,8 @@ export default function MyProgress() {
           return;
         }
 
-        const data = await fetchMyProgress({ apiBaseUrl, email });
+        const fetchProgress = isTeacherProgress ? fetchTeacherProgress : fetchMyProgress;
+        const data = await fetchProgress({ apiBaseUrl, email });
         setProgress(data);
       } catch (error) {
         console.error('Failed to load progress:', error);
@@ -35,7 +62,7 @@ export default function MyProgress() {
     };
 
     loadProgress();
-  }, [apiBaseUrl]);
+  }, [apiBaseUrl, isTeacherProgress]);
 
   const summary = progress.summary || emptyProgress.summary;
   const questions = progress.questions || emptyProgress.questions;
@@ -48,60 +75,64 @@ export default function MyProgress() {
     summary.mathsScienceQuestionsAsked ??
     ((questions.maths?.totalQuestionsAsked || 0) +
       (questions.science?.totalQuestionsAsked || 0));
+  const primaryStatValue = isTeacherProgress
+    ? summary.lessonPlansThisMonth || 0
+    : summary.totalTestsTakenThisMonth || 0;
 
   return (
     <div className="progress-page">
       <header className="progress-header">
-        <button className="progress-back-btn" onClick={() => window.location.href = '/home'}>
-          Back
-        </button>
+        <AppSidebarMenu teacherMode={isTeacherProgress} />
         <img src={wrdsAiLogo} alt="WrdsAI" className="progress-logo" />
-        <h1>My Progress</h1>
+        <h1>{copy.title}</h1>
       </header>
 
       <main className="progress-content">
         <section className="progress-hero">
           <p className="progress-eyebrow">{progress.month?.label || 'Current month'}</p>
-          <h2>Your learning dashboard</h2>
-          <p>Monthly test performance and subject-wise question activity.</p>
+          <h2>{copy.heroTitle}</h2>
+          <DashboardIcon className="progress-card-corner-icon progress-dashboard-corner-icon" />
+          <p>{copy.heroText}</p>
         </section>
 
         {loading ? (
-          <div className="progress-loading">Loading your progress...</div>
+          <div className="progress-loading">{copy.loadingText}</div>
         ) : (
           <>
             <section className="progress-card-grid">
               <StatCard
-                label="Total tests taken"
-                value={summary.totalTestsTakenThisMonth || 0}
-                helper="Tests submitted this month"
+                label={copy.primaryStatLabel || 'Total tests taken'}
+                value={primaryStatValue}
+                helper={copy.primaryStatHelper || 'Tests submitted this month'}
               />
               <StatCard
                 label="Total questions asked"
                 value={totalQuestionsAsked}
-                helper="General, Maths and Science questions"
+                helper={copy.totalQuestionsHelper}
               />
               <StatCard
                 label="Maths + Science questions asked"
                 value={mathsScienceQuestionsAsked}
-                helper="Only Maths and Science questions"
+                helper={copy.mathsScienceHelper}
               />
             </section>
 
-            <section className="progress-subject-grid">
-              <SubjectProgressCard
-                title="Maths"
-                average={summary.mathsAverageScore || 0}
-                questionStats={questions.maths || emptyProgress.questions.maths}
-                testStats={mathsTestStats}
-              />
-              <SubjectProgressCard
-                title="Science"
-                average={summary.scienceAverageScore || 0}
-                questionStats={questions.science || emptyProgress.questions.science}
-                testStats={scienceTestStats}
-              />
-            </section>
+            {!isTeacherProgress && (
+              <section className="progress-subject-grid">
+                <SubjectProgressCard
+                  title="Maths"
+                  average={summary.mathsAverageScore || 0}
+                  questionStats={questions.maths || emptyProgress.questions.maths}
+                  testStats={mathsTestStats}
+                />
+                <SubjectProgressCard
+                  title="Science"
+                  average={summary.scienceAverageScore || 0}
+                  questionStats={questions.science || emptyProgress.questions.science}
+                  testStats={scienceTestStats}
+                />
+              </section>
+            )}
           </>
         )}
       </main>

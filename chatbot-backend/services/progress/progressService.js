@@ -1,6 +1,5 @@
 import { Op } from "sequelize";
 import {
-  PgLlmData,
   PgTestData,
   PgUser,
   PgUserQuestionEvent,
@@ -17,9 +16,11 @@ function normalizeSubjectKey(subject = "") {
   return normalized;
 }
 
-function getCurrentMonthStart() {
+function getCurrentMonthRange() {
   const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), 1);
+  const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  return { startDate, endDate };
 }
 
 function averageScore(rows = []) {
@@ -123,6 +124,14 @@ function getMostAskedChapter(events = [], subjectKey = "") {
   return { chapterName, questionsAsked };
 }
 
+function countMonthlyLessonPlans(events = []) {
+  return events.filter(
+    (event) =>
+      cleanText(event.activityType).toLowerCase() === "lesson_plan" &&
+      cleanText(event.eventType).toLowerCase() === "question_asked",
+  ).length;
+}
+
 function formatTestScore(row) {
   return {
     id: row.id,
@@ -136,14 +145,45 @@ function formatTestScore(row) {
   };
 }
 
+function normalizeUserRole(value = "") {
+  return String(value || "").trim().toLowerCase() === "teacher"
+    ? "Teacher"
+    : "Student";
+}
+
+function normalizePlatformContext(value = "") {
+  return String(value || "").trim().toLowerCase() === "teacher"
+    ? "teacher"
+    : "student";
+}
+
 async function findUserByEmail(email = "") {
   const normalizedEmail = cleanText(email).toLowerCase();
   if (!normalizedEmail) return null;
   return PgUser.findOne({ where: { email: normalizedEmail } });
 }
 
-export async function getUserProgress(email = "") {
+export function getStudentProgress(email = "") {
+  return buildRoleProgress(email, {
+    userRole: "Student",
+    platformContext: "student",
+    includeTests: true,
+  });
+}
+
+export function getTeacherProgress(email = "") {
+  return buildRoleProgress(email, {
+    userRole: "Teacher",
+    platformContext: "teacher",
+    includeTests: false,
+  });
+}
+
+async function buildRoleProgress(email = "", options = {}) {
   const normalizedEmail = cleanText(email).toLowerCase();
+  const progressRole = normalizeUserRole(options.userRole);
+  const platformContext = normalizePlatformContext(options.platformContext);
+  const includeTests = options.includeTests !== false;
 
   if (!normalizedEmail) {
     const error = new Error("email is required");
@@ -158,14 +198,44 @@ export async function getUserProgress(email = "") {
     throw error;
   }
 
-  const monthStart = getCurrentMonthStart();
-  const monthlyTests = await PgTestData.findAll({
-    where: {
-      userEmail: normalizedEmail,
-      createdAt: { [Op.gte]: monthStart },
-    },
-    order: [["createdAt", "DESC"]],
-  });
+  if (normalizeUserRole(user.userRole) !== progressRole) {
+    const error = new Error(
+      progressRole === "Teacher"
+        ? "Teacher progress is available only for teacher accounts"
+        : "Student progress is available only for student accounts",
+    );
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const month = getCurrentMonthRange();
+  const monthlyTests =
+    !includeTests
+      ? []
+      : await PgTestData.findAll({
+          where: {
+            userEmail: normalizedEmail,
+            [Op.or]: [
+              {
+                submittedAt: {
+                  [Op.gte]: month.startDate,
+                  [Op.lt]: month.endDate,
+                },
+              },
+              {
+                submittedAt: null,
+                createdAt: {
+                  [Op.gte]: month.startDate,
+                  [Op.lt]: month.endDate,
+                },
+              },
+            ],
+          },
+          order: [
+            ["submittedAt", "DESC"],
+            ["createdAt", "DESC"],
+          ],
+        });
 
   const mathsTests = monthlyTests.filter(
     (test) => normalizeSubjectKey(test.subject) === "maths",
@@ -177,7 +247,14 @@ export async function getUserProgress(email = "") {
     ["maths", "science"].includes(normalizeSubjectKey(test.subject)),
   );
 
-  const questionStats = await buildQuestionStats(user.id, normalizedEmail);
+  const questionEvents = await getMonthlyQuestionEvents(user.id, {
+    userRole: progressRole,
+    platformContext,
+    month,
+  });
+  const questionStats = buildQuestionStats(questionEvents);
+  const lessonPlansThisMonth =
+    platformContext === "teacher" ? countMonthlyLessonPlans(questionEvents) : 0;
 
   return {
     success: true,
@@ -186,8 +263,9 @@ export async function getUserProgress(email = "") {
       name: cleanText(`${user.firstName || ""} ${user.lastName || ""}`) || user.username || "",
     },
     month: {
-      startDate: monthStart,
-      label: monthStart.toLocaleString("en-US", {
+      startDate: month.startDate,
+      endDate: month.endDate,
+      label: month.startDate.toLocaleString("en-US", {
         month: "long",
         year: "numeric",
       }),
@@ -200,6 +278,7 @@ export async function getUserProgress(email = "") {
       totalQuestionsAsked: questionStats.all.totalQuestionsAsked,
       mathsScienceQuestionsAsked:
         questionStats.maths.totalQuestionsAsked + questionStats.science.totalQuestionsAsked,
+      lessonPlansThisMonth,
     },
     testStats: {
       maths: buildSubjectTestStats(mathsTests),
@@ -210,28 +289,42 @@ export async function getUserProgress(email = "") {
   };
 }
 
-async function buildQuestionStats(userId, email) {
-  const llmRows = await PgLlmData.findAll({
-    where: { userEmail: email },
-  });
+async function getMonthlyQuestionEvents(userId, options = {}) {
+  const userRole = normalizeUserRole(options.userRole);
+  const platformContext = normalizePlatformContext(options.platformContext);
+  const month = options.month || getCurrentMonthRange();
 
-  const questionStats = llmRows.reduce(
+  return PgUserQuestionEvent.findAll({
+    where: {
+      userId,
+      eventType: "question_asked",
+      userRole,
+      platformContext,
+      createdAt: {
+        [Op.gte]: month.startDate,
+        [Op.lt]: month.endDate,
+      },
+    },
+    raw: true,
+  });
+}
+
+function buildQuestionStats(allQuestionEvents = []) {
+  const questionStats = allQuestionEvents.reduce(
     (acc, row) => {
       const key = normalizeSubjectKey(row.subject);
-      const rowQuestionCount =
-        Number(row.questionsAsked || 0) + Number(row.questionsAskedRag || 0);
+      const rowQuestionCount = Math.max(0, Number(row.questionCount || 0));
+      const isRag = Boolean(row.payload?.isRag);
 
-      acc.all.questionsAsked += Number(row.questionsAsked || 0);
-      acc.all.ragQuestionsAsked += Number(row.questionsAskedRag || 0);
+      acc.all.questionsAsked += isRag ? 0 : rowQuestionCount;
+      acc.all.ragQuestionsAsked += isRag ? rowQuestionCount : 0;
       acc.all.totalQuestionsAsked += rowQuestionCount;
-      acc.all.tokensUsed += Number(row.tokensUsed || 0);
 
       if (!["maths", "science"].includes(key)) return acc;
 
-      acc[key].questionsAsked += Number(row.questionsAsked || 0);
-      acc[key].ragQuestionsAsked += Number(row.questionsAskedRag || 0);
+      acc[key].questionsAsked += isRag ? 0 : rowQuestionCount;
+      acc[key].ragQuestionsAsked += isRag ? rowQuestionCount : 0;
       acc[key].totalQuestionsAsked += rowQuestionCount;
-      acc[key].tokensUsed += Number(row.tokensUsed || 0);
       return acc;
     },
     {
@@ -240,14 +333,6 @@ async function buildQuestionStats(userId, email) {
       science: emptyQuestionStats(),
     },
   );
-
-  const allQuestionEvents = await PgUserQuestionEvent.findAll({
-    where: {
-      userId,
-      eventType: "question_asked",
-    },
-    raw: true,
-  });
 
   questionStats.maths.mostAskedChapter = getMostAskedChapter(allQuestionEvents, "maths");
   questionStats.science.mostAskedChapter = getMostAskedChapter(allQuestionEvents, "science");

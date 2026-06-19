@@ -12,7 +12,7 @@ export const PLAN_TOKENS = {
     "Scale Up": 2_000_000,
   },
   "Free Trial": {
-    DEFAULT: 3_000,
+    DEFAULT: 200_000,
   },
   "WrdsAI Nxt": {
     "Boost Up": 500_000,

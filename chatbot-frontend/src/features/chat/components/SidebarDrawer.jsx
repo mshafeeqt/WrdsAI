@@ -9,25 +9,25 @@ import {
   Typography,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
-import CloseIcon from "@mui/icons-material/Close";
+import MenuIcon from "@mui/icons-material/Menu";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { useNavigate } from "react-router-dom";
+import WrdsWhiteLogo from "../../../assets/words1.png";
 
 export default function SidebarDrawer({
   open,
   onClose,
   isXS,
-  chatImageSrc,
   searchValue,
   setSearchValue,
   setSearchSessionResults,
   activeView,
+  teacherMode = false,
   user,
   createNewChat,
   isWrdsAIPro,
   disabled,
-  onUpgradePlan,
   renderBrowsingTooltip,
   showSessionPanel,
   setShowSessionPanel,
@@ -73,49 +73,69 @@ export default function SidebarDrawer({
       onClose={onClose}
       PaperProps={{
         sx: {
-          width: isXS ? 207 : 300,
-          bgcolor: "#f7f7f8",
+          width: isXS ? 170 : 250,
+          bgcolor: "#8b5cf6",
+          background:
+            "linear-gradient(155deg, #d36cf3 0%, #9d5cf3 42%, #5f67f2 100%)",
           height: "100vh",
-          borderRight: "1px solid #e0e0e0",
+          borderRight: "1px solid rgba(255,255,255,0.55)",
           position: "relative",
+          overflow: "hidden",
         },
       }}
     >
-      <IconButton
-        onClick={onClose}
-        sx={{
-          position: "absolute",
-          top: 0,
-          right: 0,
-          zIndex: 1,
-        }}
-      >
-        <CloseIcon />
-      </IconButton>
-
       <Box
         sx={{
           display: "flex",
           flexDirection: "column",
-          gap: 2,
-          p: 1.5,
-          pt: 3,
+          height: "100%",
         }}
       >
-        <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}>
-          <img
-            src={chatImageSrc}
-            alt="Chat Icon"
-            style={{
-              width: "80px",
-              height: "80px",
-              borderRadius: "10px",
+        <Box
+          sx={{
+            height: 70,
+            px: 1.5,
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            borderBottom: "2px solid rgba(255,255,255,0.42)",
+            boxShadow: "0 1px 0 rgba(255,255,255,0.18)",
+          }}
+        >
+          <IconButton
+            onClick={onClose}
+            sx={{
+              p: 0.3,
+              color: "#fff",
+              "&:hover": { bgcolor: "rgba(255,255,255,0.12)" },
+            }}
+          >
+            <MenuIcon sx={{ fontSize: 24 }} />
+          </IconButton>
+
+          <Box
+            component="img"
+            src={WrdsWhiteLogo}
+            alt="WrdsAI"
+            sx={{
+              width: isXS ? 165 : 220,
+              height: "auto",
+              display: "block",
+              objectFit: "contain",
             }}
           />
         </Box>
 
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          <Box sx={{ px: 1 }}>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 1,
+            px: 2,
+            pt: 3.5,
+          }}
+        >
+          <Box sx={{ display: "none" }}>
             <TextField
               placeholder="Search sessions..."
               variant="outlined"
@@ -148,20 +168,22 @@ export default function SidebarDrawer({
               mt: 0,
               display: "flex",
               flexDirection: "column",
-              gap: 1,
+              gap: 1.65,
             }}
           >
             <Typography
               sx={{
-                fontSize: 18,
-                px: 1.5,
-                py: 0.7,
+                fontSize: isXS ? 19 : 24,
+                px: 0,
+                py: 0.2,
                 cursor: "pointer",
                 position: "relative",
-                fontWeight: activeView === "newChat" ? 600 : 400,
-                color: "#000",
+                fontWeight: 500,
+                lineHeight: 1.12,
+                color: "#fff",
                 "&:hover": {
-                  color: "#000",
+                  color: "#fff",
+                  opacity: 0.82,
                 },
                 opacity: 1,
                 pointerEvents: "auto",
@@ -171,64 +193,77 @@ export default function SidebarDrawer({
                 onClose();
               }}
             >
-              New Chat
-              {activeView === "newChat" && (
-                <Box
+              {teacherMode ? "Teach" : "Learn"}
+            </Typography>
+
+            {!teacherMode && (
+              <>
+                <Typography
                   sx={{
-                    position: "absolute",
-                    bottom: -3,
-                    left: 0,
-                    width: "100%",
-                    height: "3px",
-                    bgcolor: "#000",
-                    borderRadius: "2px",
+                    fontSize: isXS ? 19 : 24,
+                    px: 0,
+                    py: 0.2,
+                    cursor: "pointer",
+                    transition: "0.25s",
+                    fontWeight: 500,
+                    lineHeight: 1.12,
+                    color: "#fff",
+                    "&:hover": {
+                      opacity: 0.82,
+                    },
                   }}
-                />
-              )}
-            </Typography>
+                  onClick={() => {
+                    navigate("/practice");
+                    onClose();
+                  }}
+                >
+                  Practice
+                </Typography>
+
+                <Typography
+                  sx={{
+                    fontSize: isXS ? 19 : 24,
+                    px: 0,
+                    py: 0.2,
+                    cursor: "pointer",
+                    transition: "0.25s",
+                    fontWeight: 500,
+                    lineHeight: 1.12,
+                    color: "#fff",
+                    "&:hover": {
+                      opacity: 0.82,
+                    },
+                  }}
+                  onClick={() => {
+                    navigate("/test-prep");
+                    onClose();
+                  }}
+                >
+                  Test
+                </Typography>
+              </>
+            )}
 
             <Typography
               sx={{
-                fontSize: 18,
-                px: 1.5,
-                py: 0.7,
+                fontSize: isXS ? 19 : 24,
+                px: 0,
+                py: 0.2,
                 cursor: "pointer",
-                borderRadius: "6px",
                 transition: "0.25s",
-                fontWeight: 400,
-                color: "#000",
+                fontWeight: 500,
+                lineHeight: 1.12,
+                color: "#fff",
                 "&:hover": {
-                  backgroundColor: "#eaeaea",
+                  opacity: 0.82,
                 },
               }}
               onClick={() => {
-                navigate("/test-prep");
+                navigate(teacherMode ? "/teacher-progress" : "/my-progress");
                 onClose();
               }}
             >
-              Test Prep
-            </Typography>
-
-            <Typography
-              sx={{
-                fontSize: 18,
-                px: 1.5,
-                py: 0.7,
-                cursor: "pointer",
-                borderRadius: "6px",
-                transition: "0.25s",
-                fontWeight: 400,
-                color: "#000",
-                "&:hover": {
-                  backgroundColor: "#eaeaea",
-                },
-              }}
-              onClick={() => {
-                navigate("/my-progress");
-                onClose();
-              }}
-            >
-              My Progress
+              Progress
             </Typography>
 
             {isWrdsAIPro && (
@@ -277,36 +312,16 @@ export default function SidebarDrawer({
               </Typography>
             )}
 
-            <Typography
-              sx={{
-                fontSize: 18,
-                cursor: "pointer",
-                px: 1.5,
-                py: 0.7,
-                borderRadius: "6px",
-                display: "inline-block",
-                transition: "0.25s",
-                backgroundColor:
-                  activeView === "wrds AiPro" ? "#e3e3e3ff" : "transparent",
-                color: activeView === "wrds AiPro" ? "#000" : "#000",
-                fontWeight: activeView === "wrds AiPro" ? 600 : 400,
-                "&:hover": {
-                  backgroundColor:
-                    activeView === "wrds AiPro" ? "#eaeaea" : "#eaeaea",
-                },
-              }}
-              onClick={onUpgradePlan}
-            >
-              Upgrade/ Renew Plan
-            </Typography>
-
             <MenuItem
               onClick={() => setShowSessionPanel((prev) => !prev)}
               sx={{
-                borderRadius: 1,
-                mb: 1,
-                backgroundColor: showSessionPanel ? "#f0f0f0" : "transparent",
-                "&:hover": { backgroundColor: "#f5f5f5" },
+                p: 0,
+                minHeight: "auto",
+                borderRadius: 0,
+                mt: 0.25,
+                mb: 0.5,
+                backgroundColor: "transparent",
+                "&:hover": { backgroundColor: "transparent", opacity: 0.82 },
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
@@ -314,10 +329,12 @@ export default function SidebarDrawer({
             >
               <Typography
                 sx={{
-                  ml: "-5px",
-                  fontSize: "18px",
-                  fontWeight: 600,
-                  fontFamily: "Calibri, sans-serif",
+                  ml: 0,
+                  fontSize: isXS ? 19 : 24,
+                  fontWeight: 500,
+                  lineHeight: 1.12,
+                  color: "#fff",
+                  fontFamily: "inherit",
                 }}
               >
                 History
@@ -325,7 +342,7 @@ export default function SidebarDrawer({
 
               <KeyboardArrowDownIcon
                 sx={{
-                  mr: "-4px",
+                  display: "none",
                   transform: showSessionPanel ? "rotate(180deg)" : "rotate(0deg)",
                   transition: "0.2s",
                 }}
@@ -338,7 +355,7 @@ export default function SidebarDrawer({
                 activeView === "wrds AiPro" ||
                 activeView === "WrdsAI Nxt") && (
                 <>
-                  <Box sx={{ maxHeight: "220px", overflowY: "auto", mb: 1 }}>
+                  <Box sx={{ maxHeight: "260px", overflowY: "auto", mb: 1 }}>
                     {sessionLoading ? (
                       <Box sx={{ p: 2 }}>
                         {[...Array(3)].map((_, index) => (
@@ -356,9 +373,12 @@ export default function SidebarDrawer({
                           sx={{
                             borderRadius: 1,
                             mb: 0.5,
+                            color: "#fff",
                             backgroundColor:
-                              selectedChatId === chat.id ? "#eaeaea" : "transparent",
-                            "&:hover": { backgroundColor: "#f5f5f5" },
+                              selectedChatId === chat.id
+                                ? "rgba(255,255,255,0.18)"
+                                : "transparent",
+                            "&:hover": { backgroundColor: "rgba(255,255,255,0.12)" },
                           }}
                         >
                           <Box
@@ -373,6 +393,7 @@ export default function SidebarDrawer({
                                 fontSize: "14px",
                                 fontFamily: "Calibri, sans-serif",
                                 fontWeight: 500,
+                                color: "#fff",
                               }}
                             >
                               {chat.name.replace(/\b\w/g, (char) =>
@@ -382,7 +403,7 @@ export default function SidebarDrawer({
 
                             <Typography
                               sx={{
-                                color: "gray",
+                                color: "rgba(255,255,255,0.75)",
                                 fontSize: "12px",
                               }}
                             >
@@ -394,7 +415,7 @@ export default function SidebarDrawer({
                     )}
                   </Box>
 
-                  <Divider sx={{ my: 1 }} />
+                  <Divider sx={{ my: 1, borderColor: "rgba(255,255,255,0.24)" }} />
                 </>
               )}
           </Box>

@@ -11,7 +11,9 @@ export default function SubjectProgressCard({
     <div className="progress-subject-card">
       <div>
         <p className="progress-subject-kicker">Subject</p>
-        <h2>{title}</h2>
+        <h2 className={String(title || '').toLowerCase() === 'maths' ? 'progress-maths-title' : ''}>
+          <span>{title}</span>
+        </h2>
       </div>
       <div className="progress-subject-score-row">
         <div className="progress-subject-score">{average}%</div>

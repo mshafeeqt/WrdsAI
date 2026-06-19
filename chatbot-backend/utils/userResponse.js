@@ -9,6 +9,7 @@ export const buildUserResponseByAgeGroup = (user) => {
 
     firstName: user.firstName,
     lastName: user.lastName,
+    userRole: user.userRole,
     dateOfBirth: user.dateOfBirth,
     ageGroup: user.ageGroup,
     className: user.className,

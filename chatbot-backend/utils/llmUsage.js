@@ -15,12 +15,20 @@ export function parseStudyMeta({ selectedChapter = "", selectedClassName = "", s
 export async function upsertLlmUsage({
   userEmail,
   userName = "",
+  userRole = "Student",
+  platformContext = "student",
+  activityType = "chat",
   userClass = "",
   subject = "",
   tokensUsed = 0,
   isRag = false,
 } = {}) {
   const email = cleanText(userEmail).toLowerCase();
+  const normalizedRole =
+    cleanText(userRole).toLowerCase() === "teacher" ? "Teacher" : "Student";
+  const normalizedContext =
+    cleanText(platformContext).toLowerCase() === "teacher" ? "teacher" : "student";
+  const normalizedActivity = cleanText(activityType) || "chat";
   const normalizedClass = cleanText(userClass) || "Unselected";
   const normalizedSubject = cleanText(subject) || "General";
   const safeTokens = Math.max(0, Math.round(Number(tokensUsed) || 0));
@@ -37,6 +45,9 @@ export async function upsertLlmUsage({
       INSERT INTO llm_data (
         user_email,
         user_name,
+        user_role,
+        platform_context,
+        activity_type,
         user_class,
         subject,
         questions_asked,
@@ -46,13 +57,23 @@ export async function upsertLlmUsage({
       VALUES (
         :userEmail,
         :userName,
+        :userRole,
+        :platformContext,
+        :activityType,
         :userClass,
         :subject,
         :questionsAsked,
         :questionsAskedRag,
         :tokensUsed
       )
-      ON CONFLICT (user_email, user_class, subject)
+      ON CONFLICT (
+        user_email,
+        user_role,
+        platform_context,
+        activity_type,
+        user_class,
+        subject
+      )
       DO UPDATE SET
         questions_asked = llm_data.questions_asked + EXCLUDED.questions_asked,
         questions_asked_rag = llm_data.questions_asked_rag + EXCLUDED.questions_asked_rag,
@@ -64,6 +85,9 @@ export async function upsertLlmUsage({
       replacements: {
         userEmail: email,
         userName: cleanText(userName),
+        userRole: normalizedRole,
+        platformContext: normalizedContext,
+        activityType: normalizedActivity,
         userClass: normalizedClass,
         subject: normalizedSubject,
         questionsAsked: questionIncrement,

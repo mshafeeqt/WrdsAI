@@ -21,6 +21,10 @@ export const PgUser = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
+    userRole: {
+      type: DataTypes.STRING,
+      defaultValue: "Student",
+    },
     email: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -275,76 +279,6 @@ export const PgGrokSearchHistory = sequelize.define(
   },
 );
 
-export const PgTransaction = sequelize.define(
-  "PgTransaction",
-  {
-    id: {
-      type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
-      primaryKey: true,
-    },
-    legacyMongoId: {
-      type: DataTypes.STRING,
-      unique: true,
-    },
-    legacyEmail: DataTypes.STRING,
-    razorpayOrderId: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    razorpayPaymentId: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      unique: true,
-    },
-    amount: {
-      type: DataTypes.FLOAT,
-      allowNull: false,
-    },
-    currency: {
-      type: DataTypes.STRING,
-      defaultValue: "INR",
-    },
-    status: {
-      type: DataTypes.STRING,
-      defaultValue: "success",
-    },
-    legacyPayload: DataTypes.JSONB,
-  },
-  {
-    tableName: "transactions",
-    indexes: [{ fields: ["legacyEmail"] }, { fields: ["userId"] }],
-  },
-);
-
-export const PgReceiptCounter = sequelize.define(
-  "PgReceiptCounter",
-  {
-    id: {
-      type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
-      primaryKey: true,
-    },
-    legacyMongoId: {
-      type: DataTypes.STRING,
-      unique: true,
-    },
-    year: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      unique: true,
-    },
-    seq: {
-      type: DataTypes.INTEGER,
-      defaultValue: 0,
-    },
-    legacyPayload: DataTypes.JSONB,
-  },
-  {
-    tableName: "receipt_counters",
-  },
-);
-
 export const PgTestAttempt = sequelize.define(
   "PgTestAttempt",
   {
@@ -536,6 +470,24 @@ export const PgLlmData = sequelize.define(
       type: DataTypes.TEXT,
       allowNull: false,
     },
+    userRole: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+      defaultValue: "Student",
+      field: "user_role",
+    },
+    platformContext: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+      defaultValue: "student",
+      field: "platform_context",
+    },
+    activityType: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+      defaultValue: "chat",
+      field: "activity_type",
+    },
     questionsAsked: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -574,8 +526,21 @@ export const PgLlmData = sequelize.define(
     tableName: "llm_data",
     timestamps: false,
     indexes: [
-      { unique: true, fields: ["user_email", "user_class", "subject"] },
+      {
+        unique: true,
+        fields: [
+          "user_email",
+          "user_role",
+          "platform_context",
+          "activity_type",
+          "user_class",
+          "subject",
+        ],
+      },
       { fields: ["user_email"] },
+      { fields: ["user_role"] },
+      { fields: ["platform_context"] },
+      { fields: ["activity_type"] },
       { fields: ["subject"] },
       { fields: ["last_used_at"] },
     ],
@@ -591,6 +556,18 @@ export const PgUserQuestionEvent = sequelize.define(
       primaryKey: true,
     },
     source: {
+      type: DataTypes.STRING,
+      defaultValue: "chat",
+    },
+    userRole: {
+      type: DataTypes.STRING,
+      defaultValue: "Student",
+    },
+    platformContext: {
+      type: DataTypes.STRING,
+      defaultValue: "student",
+    },
+    activityType: {
       type: DataTypes.STRING,
       defaultValue: "chat",
     },
@@ -612,6 +589,9 @@ export const PgUserQuestionEvent = sequelize.define(
     tableName: "user_question_events",
     indexes: [
       { fields: ["userId"] },
+      { fields: ["userRole"] },
+      { fields: ["platformContext"] },
+      { fields: ["activityType"] },
       { fields: ["subject"] },
       { fields: ["chapter"] },
       { fields: ["eventType"] },
@@ -638,9 +618,6 @@ PgSearchHistory.belongsTo(PgUser, { foreignKey: "userId" });
 PgUser.hasMany(PgGrokSearchHistory, { foreignKey: "userId" });
 PgGrokSearchHistory.belongsTo(PgUser, { foreignKey: "userId" });
 
-PgUser.hasMany(PgTransaction, { foreignKey: "userId" });
-PgTransaction.belongsTo(PgUser, { foreignKey: "userId" });
-
 PgUser.hasMany(PgTestAttempt, { foreignKey: "userId" });
 PgTestAttempt.belongsTo(PgUser, { foreignKey: "userId" });
 
@@ -649,7 +626,3 @@ PgTestQuestionResult.belongsTo(PgTestAttempt, { foreignKey: "testAttemptId" });
 
 PgUser.hasMany(PgUserQuestionEvent, { foreignKey: "userId" });
 PgUserQuestionEvent.belongsTo(PgUser, { foreignKey: "userId" });
-
-export async function syncPostgresModels() {
-  await sequelize.sync({ alter: true });
-}

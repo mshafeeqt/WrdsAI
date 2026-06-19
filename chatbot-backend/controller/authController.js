@@ -1,92 +1,20 @@
-// import bcrypt from "bcryptjs";
-// // import jwt from "jsonwebtoken";
-
-// export const registerUser = async (req, res) => {
-//   try {
-//     const { username, email, password } = req.body;
-
-//     // Check if user already exists
-//     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
-//     if (existingUser) {
-//       return res
-//         .status(400)
-//         .json({ error: "Email or Username already exists" });
-//     }
-
-//     // Hash password
-//     const hashedPassword = await bcrypt.hash(password, 10);
-
-//     // Create normal user (no role, no extra fields)
-//     const user = new User({
-//       username,
-//       email,
-//       password: hashedPassword,
-//     });
-
-//     await user.save();
-
-//     res.status(201).json({ message: "User registered successfully", user });
-//   } catch (err) {
-//     res
-//       .status(500)
-//       .json({ error: "Registration failed", details: err.message });
-//   }
-// };
-
-// export const loginUser = async (req, res) => {
-//   try {
-//     const { email, password } = req.body;
-
-//     const user = await User.findOne({ email });
-
-//     if (!user) return res.status(404).json({ error: "User not found" });
-
-//     const isPasswordValid = await bcrypt.compare(password, user.password);
-//     if (!isPasswordValid)
-//       return res.status(400).json({ error: "Incorrect Password" });
-
-//     // console.log("user from DB:", user);
-//     // console.log("password from request:", password);
-
-//     //  Role no check karvo nathi
-//     // const token = jwt.sign(
-//     //   { id: user._id, email: user.email }, // only id & email
-//     //   process.env.JWT_SECRET,
-//     //   { expiresIn: "1d" }
-//     // );
-
-//     res.json({
-//       status: 200,
-//       message: "Login successful",
-//       //   token,
-//       data: {
-//         id: user._id,
-//         username: user.username,
-//         email: user.email,
-//       },
-//     });
-//   } catch (err) {
-//     res.status(500).json({ error: "Login failed", details: err.message });
-//   }
-// };
-
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { PgUser } from "../postgres/models.js";
 // import { sendPasswordMail } from "../services/mailService.js";
-import sendPasswordMail from "../middleware/sendPasswordMail.js";
 import sendPlanExpiredMail from "../middleware/sendPlanExpiredMail.js";
 import { getTokenLimit } from "../utils/planTokens.js";
 import { buildUserResponseByAgeGroup } from "../utils/userResponse.js";
 import { calculatePlanExpiry, checkPlanExpiry } from "../utils/dateUtils.js";
 import { getGlobalTokenStats } from "../utils/tokenLimit.js";
 import sendResetPasswordMail from "../middleware/sendResetPasswordMail.js";
-import { COUPONS } from "../utils/coupons.js";
+import {
+  AUTH_COOKIE_NAME,
+  getAuthCookieOptions,
+  signAuthToken,
+} from "../middleware/auth.js";
 
 // ... (existing imports and constants) ...
-
-// ... (registerUser function - no changes needed there as verify-payment handles user creation mostly,
-//      except for Free Trial if that logic remains, but sticking to requested scope) ...
 
 export const loginUser = async (req, res) => {
   try {
@@ -159,6 +87,9 @@ export const loginUser = async (req, res) => {
     // but saving ensures consistency if other parts of the app read from DB.
     await user.save();
 
+    const token = signAuthToken(user);
+    res.cookie(AUTH_COOKIE_NAME, token, getAuthCookieOptions());
+
     res.json({
       status: 200,
       message: "Login successful",
@@ -167,6 +98,33 @@ export const loginUser = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: "Login failed", details: err.message });
   }
+};
+
+export const getCurrentUser = async (req, res) => {
+  try {
+    const stats = await getGlobalTokenStats(req.user.email);
+    req.user.remainingTokens = stats.remainingTokens;
+    await req.user.save();
+
+    return res.json({
+      status: 200,
+      data: buildUserResponseByAgeGroup(req.user),
+    });
+  } catch (err) {
+    return res.status(500).json({
+      error: "Failed to load current user",
+      details: err.message,
+    });
+  }
+};
+
+export const logoutUser = (req, res) => {
+  res.clearCookie(AUTH_COOKIE_NAME, {
+    ...getAuthCookieOptions(),
+    maxAge: undefined,
+  });
+
+  return res.json({ status: 200, message: "Logged out successfully" });
 };
 
 const wrdsAIOptions = ["Glow Up", "Level Up", "Rise Up"];
@@ -190,20 +148,20 @@ const subscriptionTypes = ["Monthly", "Yearly"];
 
 const BASE_PRICES_INR = {
   WrdsAI: {
-    "Glow Up": { Monthly: 83.9, "1 Month": 83.9, "3 Months": 251.7, Yearly: 922.86, "1 Year": 922.86 },
-    "Level Up": { Monthly: 168.64, "1 Month": 168.64, "3 Months": 505.92, Yearly: 1694.09, "1 Year": 1694.09 },
-    "Rise Up": { Monthly: 338.14, "1 Month": 338.14, "3 Months": 1014.42, Yearly: 3388.98, "1 Year": 3388.98 },
+    "Glow Up": { Monthly: 83.9, Yearly: 922.86 },
+    "Level Up": { Monthly: 168.64, Yearly: 1694.09 },
+    "Rise Up": { Monthly: 338.14, Yearly: 3388.98 },
   },
   WrdsAIPro: {
-    "Step Up": { Monthly: 422.88, "1 Month": 422.88, "3 Months": 1268.64, Yearly: 4651.69, "1 Year": 4651.69 },
-    "Speed Up": { Monthly: 761.86, "1 Month": 761.86, "3 Months": 2285.58, Yearly: 7626.44, "1 Year": 7626.44 },
-    "Scale Up": { Monthly: 1355.09, "1 Month": 1355.09, "3 Months": 4065.27, Yearly: 13558.5, "1 Year": 13558.5 },
+    "Step Up": { Monthly: 422.88, Yearly: 4651.69 },
+    "Speed Up": { Monthly: 761.86, Yearly: 7626.44 },
+    "Scale Up": { Monthly: 1355.09, Yearly: 13558.5 },
   },
   "WrdsAI Nxt": {
-    "Boost Up": { Monthly: 999, "1 Month": 999, "3 Months": 2997, Yearly: 10999, "1 Year": 10999 },
+    "Boost Up": { Monthly: 999, Yearly: 10999 },
   },
   "WrdsAi Nxt": {
-    "Boost Up": { Monthly: 999, "1 Month": 999, "3 Months": 2997, Yearly: 10999, "1 Year": 10999 },
+    "Boost Up": { Monthly: 999, Yearly: 10999 },
   },
 };
 
@@ -248,12 +206,12 @@ export const registerUser = async (req, res) => {
     const {
       firstName,
       lastName,
+      userRole = "Student",
+      className,
       email,
       password,
-      confirmPassword,
       mobile,
       dateOfBirth,
-      className,
       // ageGroup,
       parentName,
       parentEmail,
@@ -261,19 +219,20 @@ export const registerUser = async (req, res) => {
       subscriptionPlan, // "WrdsAI" or "WrdsAI Pro"
       childPlan, // "Glow Up", "Scale Up" etc.
       subscriptionType, // "Monthly" or "Yearly"
-      couponCode,
     } = req.body;
 
     const finalAgeGroup = getAgeGroup(dateOfBirth);
+    const normalizedUserRole = String(userRole || "").trim().toLowerCase();
+    const isStudentRegistration = normalizedUserRole === "student";
+    const cleanedClassName = String(className || "").trim();
 
     // Required fields validation
     if (
       !firstName ||
       !lastName ||
-      !dateOfBirth ||
-      !className ||
+      !userRole ||
       !password ||
-      !confirmPassword ||
+      !dateOfBirth ||
       // !ageGroup ||
       !subscriptionPlan ||
       // !childPlan ||
@@ -282,8 +241,8 @@ export const registerUser = async (req, res) => {
       return res.status(400).json({ error: "All fields are required" });
     }
 
-    if (password !== confirmPassword) {
-      return res.status(400).json({ error: "Password and confirm password must match" });
+    if (isStudentRegistration && !cleanedClassName) {
+      return res.status(400).json({ error: "Class is required for students" });
     }
 
     // Parent validation for minors
@@ -301,6 +260,7 @@ export const registerUser = async (req, res) => {
     const finalEmail = (isMinor ? parentEmail : email)?.trim().toLowerCase();
     console.log("Final Email for registration::::", finalEmail);
     const finalMobile = isMinor ? parentMobile : mobile;
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const phoneRegex = /^\+\d{7,15}$/;
 
@@ -404,22 +364,8 @@ export const registerUser = async (req, res) => {
     //   }
     // }
 
-    if (subscriptionPlan === "Free Trial" || subscriptionType === "Free Trial (1 week)") {
+    if (subscriptionPlan === "Free Trial") {
       try {
-        // 1️⃣ Generate password
-        const cleanName = (firstName || "").replace(/\s+/g, "").toLowerCase();
-        const passwordPart =
-          cleanName.length >= 4
-            ? cleanName.slice(0, 4)
-            : cleanName.padEnd(4, cleanName[0] || "x");
-        const year = dateOfBirth
-          ? new Date(dateOfBirth).getFullYear()
-          : new Date().getFullYear();
-        const generatedPassword = `${passwordPart}@${year}`;
-
-        // 2️⃣ Hash password
-        const hashedPassword = await bcrypt.hash(password, 10);
-
         const tokenLimit = getTokenLimit({
           subscriptionPlan: "Free Trial",
         });
@@ -428,11 +374,12 @@ export const registerUser = async (req, res) => {
         const user = await PgUser.create({
           firstName,
           lastName,
+          userRole,
+          className: isStudentRegistration ? cleanedClassName : null,
           email: finalEmail,
           mobile: finalMobile || null,
           dateOfBirth: new Date(dateOfBirth),
           ageGroup: finalAgeGroup,
-          className,
           parentName: ["<13", "13-14", "15-17"].includes(finalAgeGroup)
             ? parentName
             : null,
@@ -446,7 +393,7 @@ export const registerUser = async (req, res) => {
 
           subscriptionPlan: "Free Trial",
           childPlan: null,
-          subscriptionType: "Free Trial (1 week)",
+          subscriptionType: "One Time",
 
           basePriceINR: 0,
           gstAmount: 0,
@@ -458,37 +405,15 @@ export const registerUser = async (req, res) => {
           password: hashedPassword,
           remainingTokens: tokenLimit,
           planStartDate: new Date(),
-          planExpiryDate: calculatePlanExpiry("Free Trial (1 week)"),
+          planExpiryDate: calculatePlanExpiry("One Time"),
         });
 
         // Removed user.save() as create already saves the user
 
-        // 4️⃣ Send password email immediately
-        const recipientEmail = ["<13", "13-14", "15-17"].includes(finalAgeGroup)
-          ? parentEmail
-          : finalEmail;
-        const recipientName = ["<13", "13-14", "15-17"].includes(finalAgeGroup)
-          ? parentName
-          : firstName;
-
-        try {
-          await sendPasswordMail(
-          recipientEmail,
-          recipientName,
-          password
-          );
-
-        console.log(
-          `Free Trial password email sent to ${recipientEmail} → ${generatedPassword}`
-          );
-        } catch (mailError) {
-          console.error("Registration saved, but password email failed:", mailError);
-        }
-
         // 5️⃣ Return response
         return res.status(201).json({
           success: true,
-          message: "Registration complete.",
+          message: "Free Trial activated. You can now log in.",
           loginEmail: finalEmail,
           remainingTokens: tokenLimit,
           // user: {
@@ -524,7 +449,7 @@ export const registerUser = async (req, res) => {
     // // Calculate final amount in INR with GST
     // const baseAmountINR = Math.round(priceUSD * usdToInrRate * 100) / 100;
     // const gstAmount = Math.round(baseAmountINR * 0.18 * 100) / 100;
-    // const totalAmountINR = Math.round((baseAmountINR + gstAmount) * 100); // in paise for Razorpay
+    // const totalAmountINR = Math.round((baseAmountINR + gstAmount) * 100);
 
     // INR price
     const priceINR =
@@ -535,29 +460,11 @@ export const registerUser = async (req, res) => {
       return res.status(400).json({ error: "Invalid plan selection" });
     }
 
-    // ---------------- COUPON LOGIC (NEW) ----------------
-    let discount = 0;
-
-    if (couponCode) {
-      const coupon = COUPONS[couponCode];
-      if (coupon && coupon.isActive) {
-        discount = Math.round((priceINR * coupon.discountPercent) / 100);
-      }
-    }
-
-    const discountedPrice = priceINR - discount;
-    // ---------------------------------------------------
-
-
     // GST (18%)
-    // const gstAmount = Math.round(priceINR * 0.18 * 100) / 100;
-    const gstAmount = Math.round(discountedPrice * 0.18 * 100) / 100;
+    const gstAmount = Math.round(priceINR * 0.18 * 100) / 100;
 
     // Total payable amount
-    // const totalAmountINR = Math.round((priceINR + gstAmount) * 100); // paise
-    const totalAmountINR = Math.round(
-      (discountedPrice + gstAmount) * 100
-    );
+    const totalAmountINR = Math.round((priceINR + gstAmount) * 100);
 
 
     // const totalAmountINR = 100; // 1 INR in paise
@@ -567,17 +474,16 @@ export const registerUser = async (req, res) => {
       childPlan,
     });
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create user directly from registration. Payment is not required on this page.
+    // Create user directly. Payment is disabled for now, so login should work immediately.
     const user = await PgUser.create({
       firstName,
       lastName,
+      userRole,
+      className: isStudentRegistration ? cleanedClassName : null,
       email: finalEmail,
       mobile: finalMobile || null,
       dateOfBirth: new Date(dateOfBirth),
       ageGroup: finalAgeGroup,
-      className,
       parentName: ["<13", "13-14", "15-17"].includes(finalAgeGroup)
         ? parentName
         : null,
@@ -598,7 +504,7 @@ export const registerUser = async (req, res) => {
       // priceUSD,
       // exchangeRateUsed: usdToInrRate,
       basePriceINR: priceINR,
-      discountINR: discount,
+      discountINR: 0,
       gstAmount,
       totalPriceINR: totalAmountINR / 100, // stored as rupees (with decimals)
       currency: "INR",
@@ -611,15 +517,14 @@ export const registerUser = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: "Registration complete.",
+      message: "Registration complete. You can now log in.",
       loginEmail: finalEmail,
-      paymentAmount: totalAmountINR / 100, // actual rupees (e.g., 99.79)
       priceBreakdown: {
         plan: `${subscriptionPlan} - ${childPlan} (${subscriptionType})`,
         // usd: `$${priceUSD}`,
         // rate: `1 USD = ₹${usdToInrRate}`,
         base: `₹${priceINR}`,
-        discount: discount ? `-₹${discount}` : "₹0",
+        discount: "₹0",
         gst: `₹${gstAmount} (18%)`,
         total: `₹${totalAmountINR / 100}`,
       },
@@ -738,7 +643,6 @@ export const registerUser = async (req, res) => {
 //     const finalAmountINR = 1;
 
 //     // -------- Generate Password --------
-//     // Password generation moved to payment success
 
 //     // Create user with all fields
 //     const user = new User({
@@ -756,18 +660,13 @@ export const registerUser = async (req, res) => {
 //       subscriptionType,
 //       priceUSD: selectedPriceUSD,
 //       priceINR: finalAmountINR,
-//       // password: hashedPassword, // Password will be set after payment
 //     });
 
 //     await user.save();
 
-//     // ---- Send Email ----
-//     // Email will be sent after payment verification (handled in paymentController)
-
 //     res.status(201).json({
 //       // message: "User registered successfully",
-//       message:
-//         "Registration successful. Please complete payment to receive login details.",
+//       message: "Registration successful.",
 //       loginEmail: finalEmail,
 //       // autoGeneratedPassword: generatedPassword,
 //       user: {
@@ -824,9 +723,12 @@ export const forgotPassword = async (req, res) => {
       });
     }
 
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET);
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
+      expiresIn: "30m",
+    });
 
     user.resetPasswordToken = token;
+    user.resetPasswordExpire = new Date(Date.now() + 30 * 60 * 1000);
     await user.save();
 
     // Generate accurate reset link pointing to FRONTEND
@@ -889,11 +791,37 @@ export const resetPassword = async (req, res) => {
         .json({ error: "Reset link is invalid or has expired." });
     }
 
+    if (
+      user.resetPasswordExpire &&
+      new Date(user.resetPasswordExpire).getTime() < Date.now()
+    ) {
+      user.resetPasswordToken = null;
+      user.resetPasswordExpire = null;
+      await user.save();
+
+      return res
+        .status(400)
+        .json({ error: "Reset link is invalid or has expired." });
+    }
+
+    try {
+      jwt.verify(token, process.env.JWT_SECRET);
+    } catch {
+      user.resetPasswordToken = null;
+      user.resetPasswordExpire = null;
+      await user.save();
+
+      return res
+        .status(400)
+        .json({ error: "Reset link is invalid or has expired." });
+    }
+
     // Hash new password
     user.password = await bcrypt.hash(password, 10);
 
     // Clear reset tokens
     user.resetPasswordToken = null;
+    user.resetPasswordExpire = null;
 
     await user.save();
 
@@ -962,7 +890,8 @@ export const changePassword = async (req, res) => {
   //   });
   // }
   try {
-    const { userId, currentPassword, newPassword } = req.body;
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user?.id;
 
     if (!userId || !currentPassword || !newPassword) {
       return res.status(400).json({
@@ -971,15 +900,9 @@ export const changePassword = async (req, res) => {
     }
 
     // 1️⃣ user find karo
-    const user = await PgUser.findOne({ where: { id: userId } });
+    const user = await PgUser.findByPk(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
-    }
-
-    if (!user.password) {
-      return res.status(400).json({
-        message: "Password not set for this account",
-      });
     }
 
     // 2️⃣ current password check karo
@@ -1022,8 +945,8 @@ export const getAllUsers = async (req, res) => {
           const stats = await getGlobalTokenStats(user.email);
 
           return {
-            id: user.id,
             _id: user.id,
+            id: user.id,
             firstName: user.firstName,
             lastName: user.lastName,
             email: user.email,
@@ -1045,8 +968,8 @@ export const getAllUsers = async (req, res) => {
             childPlan: user.childPlan,
           });
           return {
-            id: user.id,
             _id: user.id,
+            id: user.id,
             firstName: user.firstName,
             lastName: user.lastName,
             email: user.email,

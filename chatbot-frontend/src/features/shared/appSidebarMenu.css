@@ -1,0 +1,20 @@
+.app-sidebar-menu-button {
+  width: 2.45rem;
+  height: 2.45rem;
+  min-width: 2.45rem;
+  padding: 0 !important;
+  color: #fff !important;
+  border: 0 !important;
+  border-radius: 10px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  flex-shrink: 0;
+}
+
+.app-sidebar-menu-button:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+.app-sidebar-menu-button svg {
+  font-size: 1.75rem;
+}

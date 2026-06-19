@@ -73,18 +73,18 @@ echo 1. IMPORTANT: Create .env file in chatbot-backend/
 echo    Copy the template below into chatbot-backend\.env:
 echo.
 echo    ---START .env TEMPLATE---
-echo    MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/carbon-chatbot
-echo    OPENAI_API_KEY=sk-proj-your-key-here
-echo    OPENAI_FREE_API_KEY=sk-proj-your-key-here
-echo    SERPER_API_KEY=your-new-serper-key-here
-echo    RAZORPAY_KEY_ID=rzp_test_xxxxx
-echo    RAZORPAY_KEY_SECRET=xxxxx
-echo    CLOUDINARY_NAME=your-cloudinary-name
-echo    CLOUDINARY_API_KEY=xxxxx
-echo    CLOUDINARY_API_SECRET=xxxxx
-echo    BREVO_API_KEY=xxxxx
-echo    FRONTEND_URL=http://localhost:5173
-echo    GROK_API_KEY=sk-proj-your-key-here
+echo    MONGO_URI=
+echo    OPENAI_API_KEY=
+echo    OPENAI_FREE_API_KEY=
+echo    SERPER_API_KEY=
+echo    RAZORPAY_KEY_ID=
+echo    RAZORPAY_KEY_SECRET=
+echo    CLOUDINARY_NAME=
+echo    CLOUDINARY_API_KEY=
+echo    CLOUDINARY_API_SECRET=
+echo    BREVO_API_KEY=
+echo    FRONTEND_URL=
+echo    GROK_API_KEY=
 echo    ---END .env TEMPLATE---
 echo.
 echo 2. To start Backend:

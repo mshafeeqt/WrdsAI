@@ -25,7 +25,6 @@ import {
 } from "@mui/material";
 import {
   Menu as MenuIcon,
-  Add as AddIcon,
   Send as SendIcon,
   Search as SearchIcon,
   AttachFile as AttachFileIcon,
@@ -44,6 +43,12 @@ import AddUserDialog from "./features/chat/components/admin/AddUserDialog";
 import DeleteUserDialog from "./features/chat/components/admin/DeleteUserDialog";
 import SidebarDrawer from "./features/chat/components/SidebarDrawer";
 import StudyChapterMenus from "./features/chat/components/study/StudyChapterMenus";
+import {
+  getUserClassName,
+  getLockedStudentClass,
+  isStudentUser,
+  getVisibleSubjectsForStudent,
+} from "./features/curriculum/studentCurriculum";
 import FeaturedPlayListOutlinedIcon from "@mui/icons-material/FeaturedPlayListOutlined";
 import KeyboardArrowDownTwoToneIcon from "@mui/icons-material/KeyboardArrowDownTwoTone";
 import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
@@ -59,8 +64,8 @@ import Popper from "@mui/material/Popper";
 import { styled } from "@mui/material/styles";
 import PersonIcon from "@mui/icons-material/Person";
 import chat from "././assets/chat.webp";
-import Wrds from "././assets/Wrds White.webp";
-import Wrds1 from "././assets/wrdsai1.png";
+import Wrds from "././assets/words1.png";
+import Wrds1 from "././assets/words1.png";
 import Words1 from "././assets/words1.webp"; // path adjust karo
 // import Words2 from "././assets/words2.webp"; // path adjust karo
 import Words2 from "././assets/words2.png"; // path adjust karo
@@ -80,10 +85,19 @@ import { useNavigate } from "react-router-dom";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { toast } from "react-toastify";
 import LockResetRoundedIcon from "@mui/icons-material/LockResetRounded";
+import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
+import {
+  fetchCurrentUser,
+  getAuthenticatedUserCache,
+  logoutCurrentUser,
+  setAuthenticatedUserCache,
+} from "./features/auth/authClient";
 // import IconButton from "@mui/material/IconButton";
 
-const ChatUI = () => {
+const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   const [input, setInput] = useState("");
+  const [isLessonPlanMode, setIsLessonPlanMode] = useState(false);
+  const lessonPlanDraftRef = useRef("");
   const [chats, setChats] = useState([]);
   const [smartAISessions, setSmartAISessions] = useState([]);
   const [smartAIProSessions, setSmartAIProSessions] = useState([]);
@@ -183,20 +197,7 @@ const ChatUI = () => {
     return normalizedBotName;
   };
   const [selectedBot, setSelectedBot] = useState(GPT_NANO_BOT);
-  const [isBotDropdownOpen, setIsBotDropdownOpen] = useState(() => {
-    try {
-      const user = JSON.parse(localStorage.getItem("user"));
-      if (
-        user?.subscription?.subscriptionPlan === "WrdsAIPro" ||
-        user?.subscription?.subscriptionPlan === "WrdsAI"
-      ) {
-        return true;
-      }
-    } catch (e) {
-      console.error("Error reading user plan:", e);
-    }
-    return false;
-  });
+  const [isBotDropdownOpen, setIsBotDropdownOpen] = useState(false);
   const [openProfile, setOpenProfile] = useState(false);
   // const [totalTokensUsed, setTotalTokensUsed] = useState(0);
   const [mobileMenuAnchor, setMobileMenuAnchor] = useState(null);
@@ -205,40 +206,45 @@ const ChatUI = () => {
   const [showSessionPanel, setShowSessionPanel] = useState(false);
   const [openSidebar, setOpenSidebar] = useState(false);
   const [searchValue, setSearchValue] = useState("");
-  const [User, setUser] = useState(() => {
-    return JSON.parse(localStorage.getItem("user")) || {};
-  });
+  const [User, setUser] = useState({});
+  const [authenticatedUserLoaded, setAuthenticatedUserLoaded] = useState(false);
   const formatDisplayName = (value) => {
     const rawName = String(value || "").trim();
     if (!rawName) return "User";
+    if (rawName.toLowerCase() === "on the side") return "User";
     if (rawName.toLowerCase() === "qwerty") return "Onkar";
-    return rawName[0].toUpperCase() + rawName.slice(1);
+    return rawName
+      .split(/\s+/)
+      .map((part) => part[0]?.toUpperCase() + part.slice(1))
+      .join(" ");
   };
-  const displayName = formatDisplayName(User.firstName);
+  const getDisplayNameFromUser = (user = {}) => {
+    const fullName = [user.firstName, user.lastName]
+      .map((part) => String(part || "").trim())
+      .filter(Boolean)
+      .join(" ");
+    const candidates = [
+      fullName,
+      user.name,
+      user.username,
+      user.email ? String(user.email).split("@")[0] : "",
+    ];
+
+    for (const candidate of candidates) {
+      const displayValue = formatDisplayName(candidate);
+      if (displayValue !== "User") return displayValue;
+    }
+
+    return "User";
+  };
+  const displayName = getDisplayNameFromUser(User);
   const navigate = useNavigate();
   // 🔹 नवी state add करो
   // const [sessionRemainingTokens, setSessionRemainingTokens] = useState(0);
   const [chatRemainingTokens, setChatRemainingTokens] = useState(0);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [grokcustomValue, setGrokCustomValue] = useState("");
-  const [activeView, setActiveView] = useState(() => {
-    try {
-      const user = JSON.parse(localStorage.getItem("user"));
-      console.log("user subscription plan:", user);
-      if (user?.subscription?.subscriptionPlan?.toLowerCase() === "wrdsai nxt")
-        return "WrdsAI Nxt";
-      if (user?.subscription?.subscriptionPlan === "WrdsAIPro")
-        return "wrds AiPro";
-      if (
-        user?.subscription?.subscriptionPlan === "WrdsAI" ||
-        user?.subscription?.subscriptionPlan === "Free Trial"
-      )
-        return "smartAi";
-      return "smartAi"; // fallback default
-    } catch (e) {
-      console.error("Error reading user plan:", e);
-    }
-  });
+  const [activeView, setActiveView] = useState("WrdsAI Nxt");
 
   const [isCBSEActive, setIsCBSEActive] = useState(false);
   const [chapterStructure, setChapterStructure] = useState([]);
@@ -248,6 +254,8 @@ const ChatUI = () => {
   const [selectedChapter, setSelectedChapter] = useState("");
   const [chapterError, setChapterError] = useState("");
   const [chaptersLoading, setChaptersLoading] = useState(false);
+  const [basicsUsedByAnswerId, setBasicsUsedByAnswerId] = useState({});
+  const [basicsLoadingByAnswerId, setBasicsLoadingByAnswerId] = useState({});
   const [studyMenuAnchorEl, setStudyMenuAnchorEl] = useState(null);
   const [studyClassMenuAnchorEl, setStudyClassMenuAnchorEl] = useState(null);
   const [studySubjectMenuAnchorEl, setStudySubjectMenuAnchorEl] = useState(null);
@@ -272,33 +280,12 @@ const ChatUI = () => {
   const [historyList, setHistoryList] = useState([]); // store user search history
   const [selectedGrokQuery, setSelectedGrokQuery] = useState("");
 
-  const [isSmartAI, setIsSmartAI] = useState(() => {
-    try {
-      const user = JSON.parse(localStorage.getItem("user"));
-      return (
-        user?.subscription?.subscriptionPlan === "WrdsAI" ||
-        user?.subscription?.subscriptionPlan === "Free Trial"
-      );
-    } catch (e) {
-      return false;
-    }
-  });
-  const [isSmartAIPro, setIsSmartAIPro] = useState(() => {
-    try {
-      const user = JSON.parse(localStorage.getItem("user"));
-      return user?.subscription?.subscriptionPlan === "WrdsAIPro";
-    } catch (e) {
-      return false;
-    }
-  });
-  const [isSmartAINxt, setIsSmartAINxt] = useState(() => {
-    try {
-      const user = JSON.parse(localStorage.getItem("user"));
-      return user?.subscription?.subscriptionPlan?.toLowerCase() === "wrdsai nxt";
-    } catch (e) {
-      return false;
-    }
-  });
+  const isSmartAI = false;
+  const isSmartAIPro = false;
+  const isSmartAINxt = true;
+  const setIsSmartAI = () => {};
+  const setIsSmartAIPro = () => {};
+  const setIsSmartAINxt = () => {};
   // const [error, setError] = useState("");
   // const [tokenCount, setTokenCount] = useState(0);
   const [linkCount, setLinkCount] = useState(3);
@@ -349,10 +336,34 @@ const ChatUI = () => {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
   const selectedChapterMeta =
     chapters.find((chapter) => chapter.id === selectedChapter) || null;
+  const effectiveAuthenticatedUser =
+    User?.email || User?.userRole || User?.role
+      ? User
+      : getAuthenticatedUserCache() || {};
+  const hasEffectiveAuthenticatedUser = Boolean(
+    effectiveAuthenticatedUser?.email ||
+      effectiveAuthenticatedUser?.userRole ||
+      effectiveAuthenticatedUser?.role,
+  );
+  const shouldHideStudyClassSelection =
+    !teacherMode &&
+    isStudentUser(effectiveAuthenticatedUser) &&
+    Boolean(getUserClassName(effectiveAuthenticatedUser));
+  const lockedStudyClass = getLockedStudentClass(
+    chapterStructure,
+    effectiveAuthenticatedUser,
+    teacherMode,
+  );
+  const studyMenuClass = lockedStudyClass || activeStudyClass;
+  const studyMenuSubjects = lockedStudyClass
+    ? getVisibleSubjectsForStudent(lockedStudyClass)
+    : activeStudyClass?.subjects || [];
   const selectedClassName = selectedChapterMeta?.className || selectedClass;
   const selectedSubjectName =
     selectedChapterMeta?.subjectName ||
     (selectedSubject ? selectedSubject.split("/").pop() : "");
+  const isSelectedStudySubjectMaths =
+    isCBSEActive && selectedSubjectName.trim().toLowerCase().includes("math");
   const isStudyMenuOpen = Boolean(studyMenuAnchorEl);
 
   useEffect(() => {
@@ -363,7 +374,9 @@ const ChatUI = () => {
     const fetchMathChapters = async () => {
       setChaptersLoading(true);
       try {
-        const response = await fetch(`${apiBaseUrl}/api/ai/math-chapters`);
+        const response = await fetch(`${apiBaseUrl}/api/ai/math-chapters`, {
+          credentials: "include",
+        });
         const data = await response.json();
 
         if (!response.ok) {
@@ -394,6 +407,10 @@ const ChatUI = () => {
   };
 
   const handleStudyTriggerClick = (event) => {
+    if (!teacherMode && !hasEffectiveAuthenticatedUser && !authenticatedUserLoaded) {
+      return;
+    }
+
     setChapterError("");
     setStudyClassMenuAnchorEl(null);
     setStudySubjectMenuAnchorEl(null);
@@ -466,8 +483,147 @@ const ChatUI = () => {
       selectedChapter={selectedChapter}
       onStudyTriggerClick={handleStudyTriggerClick}
       onDeselectChapter={handleDeselectChapter}
+      modeLabel={studyModeLabel}
+      hideClassSelection={shouldHideStudyClassSelection}
+      lockedStudyClass={
+        shouldHideStudyClassSelection && lockedStudyClass
+          ? { ...studyMenuClass, subjects: studyMenuSubjects }
+          : null
+      }
     />
   );
+
+  const handleLessonPlanClick = () => {
+    const chapterName = selectedChapterMeta?.name || selectedChapter || "";
+    const subjectName = selectedSubjectName || "";
+    const className = selectedClassName || "";
+
+    const promptParts = [
+      "Create a teacher lesson plan.",
+      className ? `Class: ${className}` : "",
+      subjectName ? `Subject: ${subjectName}` : "",
+      chapterName ? `Chapter: ${chapterName}` : "",
+      "",
+      "Include learning objectives, prerequisite knowledge, teaching flow, board examples, student activities, quick checks, homework, and a short wrap-up.",
+      "Keep it practical for classroom teaching.",
+    ].filter(Boolean);
+
+    const lessonPlanPrompt = promptParts.join("\n");
+    const lessonPlanDisplayPrompt = [
+      "Create a Lesson plan.",
+      "Topic:",
+    ].filter(Boolean).join(" ");
+    lessonPlanDraftRef.current = lessonPlanPrompt;
+    setIsLessonPlanMode(true);
+    setInput(lessonPlanDisplayPrompt);
+  };
+
+  const getLessonPlanTopicFromPrompt = (value = "") => {
+    const match = String(value).match(/\bTopic\s*:\s*([\s\S]*)$/i);
+    return match ? match[1].trim() : "";
+  };
+
+  const handleCloseLessonPlanMode = (event) => {
+    event?.stopPropagation();
+    setIsLessonPlanMode(false);
+    if (input === lessonPlanDraftRef.current) {
+      setInput("");
+    }
+    lessonPlanDraftRef.current = "";
+  };
+
+  const renderTeacherLessonPlanButton = () =>
+    teacherMode && isLessonPlanMode ? (
+      <Box
+        sx={{
+          height: { xs: "39px", sm: "43px" },
+          minWidth: { xs: "126px", sm: "146px" },
+          borderRadius: "999px",
+          px: { xs: 1.45, sm: 1.8 },
+          display: "flex",
+          alignItems: "center",
+          gap: { xs: 0.55, sm: 0.7 },
+          background: "linear-gradient(135deg, #ffe66d, #ff9bd2)",
+          border: "1.5px solid rgba(255,255,255,0.28)",
+          color: "#221246",
+          boxShadow: "0 8px 18px rgba(255, 202, 84, 0.16)",
+        }}
+      >
+        <AssignmentOutlinedIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
+        <Typography
+          sx={{
+            fontWeight: 700,
+            fontSize: { xs: "13px", sm: "14px" },
+            lineHeight: 1,
+            whiteSpace: "nowrap",
+          }}
+        >
+          Lesson Plan
+        </Typography>
+        <IconButton
+          size="small"
+          onClick={handleCloseLessonPlanMode}
+          sx={{
+            ml: 0.3,
+            p: "2px",
+            bgcolor: "rgba(255, 255, 255, 0.42)",
+            "&:hover": {
+              bgcolor: "rgba(255, 255, 255, 0.62)",
+            },
+          }}
+        >
+          <CloseIcon sx={{ fontSize: 14, color: "#221246" }} />
+        </IconButton>
+      </Box>
+    ) : teacherMode ? (
+      <Button
+        variant="outlined"
+        size="medium"
+        startIcon={<AssignmentOutlinedIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />}
+        onClick={handleLessonPlanClick}
+        disabled={isSending || isTypingResponse}
+        sx={{
+          height: { xs: "39px", sm: "43px" },
+          borderRadius: "999px",
+          px: { xs: 1.45, sm: 2 },
+          minWidth: { xs: "126px", sm: "146px" },
+          borderColor: "rgba(255, 230, 109, 0.82)",
+          color: "#221246",
+          bgcolor: "#ffffff",
+          fontWeight: 700,
+          fontSize: { xs: "13px", sm: "14px" },
+          textTransform: "none",
+          whiteSpace: "nowrap",
+          boxShadow: "0 8px 18px rgba(43, 24, 104, 0.14)",
+          "& .MuiButton-startIcon": {
+            mr: { xs: 0.55, sm: 0.7 },
+          },
+          "&:hover": {
+            bgcolor: "#fffaf0",
+            borderColor: "#f6d84f",
+            transform: "translateY(-1px)",
+          },
+        }}
+      >
+        <Box component="span">Lesson Plan</Box>
+      </Button>
+    ) : null;
+
+  const renderTeacherLessonPlanActionRow = () =>
+    teacherMode ? (
+      <Box
+        sx={{
+          width: "100%",
+          display: "flex",
+          justifyContent: "flex-end",
+          pr: { xs: 0.6, sm: 1.2 },
+          mb: { xs: 0.55, sm: 0.75 },
+          pointerEvents: "auto",
+        }}
+      >
+        {renderTeacherLessonPlanButton()}
+      </Box>
+    ) : null;
 
   const handleStudyChapterSelect = (classItem, subjectItem, chapterItem) => {
 
@@ -562,6 +718,7 @@ const ChatUI = () => {
 
       const response = await fetch(`${apiBaseUrl}/api/ai/createUserManually`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(submitData),
       });
@@ -621,7 +778,7 @@ const ChatUI = () => {
     return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   };
 
-  const user = JSON.parse(localStorage.getItem("user"));
+  const user = User || {};
   const username = user?.username;
   const email = user?.email;
 
@@ -636,13 +793,13 @@ const ChatUI = () => {
   };
 
   useEffect(() => {
-    const saved = localStorage.getItem("globalRemainingTokens");
+    const saved = null;
     if (saved) {
       setSessionRemainingTokens(Number(saved));
     }
 
     // ✅ Refresh User state from localStorage to get latest subscription data
-    const userData = localStorage.getItem("user");
+    const userData = null;
     if (userData) {
       try {
         setUser(JSON.parse(userData));
@@ -653,8 +810,51 @@ const ChatUI = () => {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
+    const loadAuthenticatedUser = async () => {
+      const cachedUser = getAuthenticatedUserCache();
+      if (cachedUser) {
+        setUser(cachedUser);
+        setSessionRemainingTokens(
+          cachedUser.subscription?.remainingTokens || 0,
+        );
+      }
+
+      try {
+        const userData = await fetchCurrentUser();
+        if (cancelled) return;
+
+        if (!userData) {
+          if (cachedUser) return;
+          navigate("/login");
+          return;
+        }
+
+        setUser(userData);
+        setSessionRemainingTokens(userData.subscription?.remainingTokens || 0);
+        setIsBotDropdownOpen(
+          userData.subscription?.subscriptionPlan === "WrdsAIPro" ||
+            userData.subscription?.subscriptionPlan === "WrdsAI",
+        );
+      } catch (error) {
+        console.error("Failed to load authenticated user:", error);
+        if (!cancelled && !cachedUser) navigate("/login");
+      } finally {
+        if (!cancelled) setAuthenticatedUserLoaded(true);
+      }
+    };
+
+    loadAuthenticatedUser();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate, setSessionRemainingTokens]);
+
+  useEffect(() => {
     const lastSessionId = localStorage.getItem("lastChatSessionId");
-    if (lastSessionId) {
+    if (activeView === "chat" && lastSessionId) {
       setSelectedChatId(lastSessionId);
 
       // Load token count from localStorage
@@ -663,7 +863,7 @@ const ChatUI = () => {
         console.log("Restored tokens:", savedTokens);
       }
     }
-  }, []);
+  }, [activeView]);
 
   useEffect(() => {
     if (activeView === "smartAi") {
@@ -734,7 +934,9 @@ const ChatUI = () => {
   const fetchAllUsers = async () => {
     try {
       setAllUsersLoading(true);
-      const response = await fetch(`${apiBaseUrl}/api/ai/get_all_users`);
+      const response = await fetch(`${apiBaseUrl}/api/ai/get_all_users`, {
+        credentials: "include",
+      });
       if (!response.ok) throw new Error("Failed to fetch users");
       const data = await response.json();
       setAllUsers(data);
@@ -743,6 +945,21 @@ const ChatUI = () => {
       toast.error("Failed to load user data");
     } finally {
       setAllUsersLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logoutCurrentUser();
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      setMobileMenuAnchor(null);
+      handleCloseMenu();
+      setUser({});
+      setAuthenticatedUserCache(null);
+      localStorage.removeItem("user");
+      navigate("/login");
     }
   };
 
@@ -991,6 +1208,7 @@ const ChatUI = () => {
     try {
       const response = await fetch(`${apiBaseUrl}/api/ai/change-password`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -1030,6 +1248,7 @@ const ChatUI = () => {
         `${apiBaseUrl}/api/ai/delete_user/${deleteUserId}`,
         {
           method: "DELETE",
+          credentials: "include",
         },
       );
 
@@ -1051,7 +1270,7 @@ const ChatUI = () => {
   };
 
   const handleUpgradePlan = () => {
-    const user = JSON.parse(localStorage.getItem("user"));
+    const user = User || {};
 
     navigate("/register", {
       state: {
@@ -1107,20 +1326,21 @@ const ChatUI = () => {
   };
 
   const handleSearch = async (searchQuery) => {
-    const finalQuery = searchQuery || query; // ✅ use passed query if available
+    const finalQuery = searchQuery || selectedGrokQuery; // ✅ use passed query if available
     console.log("finalQuery:::====", finalQuery);
     if (!finalQuery) return; // do nothing if query is empty
     setLoading(true);
     setError(null);
     setTokenCount(0);
 
-    const user = JSON.parse(localStorage.getItem("user"));
+    const user = User || {};
     const email = user?.email;
     console.log("user:::=====", user);
     try {
       const response = await fetch(`${apiBaseUrl}/search`, {
         // const response = await fetch(`${apiBaseUrl}/grokSearch`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -1223,6 +1443,7 @@ const ChatUI = () => {
       try {
         const statsRes = await fetch(`${apiBaseUrl}/userTokenStats`, {
           method: "POST",
+          credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email }),
         });
@@ -1233,10 +1454,6 @@ const ChatUI = () => {
           }
           if (typeof stats.remainingTokens === "number") {
             setSessionRemainingTokens(stats.remainingTokens);
-            localStorage.setItem(
-              "globalRemainingTokens",
-              stats.remainingTokens,
-            );
           }
         }
       } catch (e) {
@@ -1269,6 +1486,7 @@ const ChatUI = () => {
       await fetch(`${apiBaseUrl}/Searchhistory`, {
         // await fetch(`${apiBaseUrl}/grokSearchhistory`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       })
@@ -1311,20 +1529,11 @@ const ChatUI = () => {
 
     try {
       // 👇 Dynamic endpoint
-      const endpoint =
-        activeView === "chat"
-          ? `${apiBaseUrl}/api/ai/ask`
-          : activeView === "wrds AiPro" || isSmartAIPro
-            ? `${apiBaseUrl}/api/ai/SmartAIProask`
-            : activeView === "WrdsAI Nxt" || isSmartAINxt
-              ? `${apiBaseUrl}/api/ai/SmartAINxt_ask`
-              : `${apiBaseUrl}/api/ai/SmartAIask`;
-
-      // : activeView === "wrds AiPro" || isSmartAIPro
-      // ? `${apiBaseUrl}/api/ai/SmartAIProask`
+      const endpoint = `${apiBaseUrl}/api/ai/SmartAINxt_ask`;
 
       const response = await fetch(endpoint, {
         method: "POST",
+        credentials: "include",
         body: formData, // No Content-Type header - browser will set it with boundary
         signal: controller.signal,
       });
@@ -1795,11 +2004,12 @@ const ChatUI = () => {
     if (!partialResponse || !selectedChatId) return;
 
     try {
-      const user = JSON.parse(localStorage.getItem("user"));
+      const user = User || {};
       const email = user?.email;
 
       const res = await fetch(`${apiBaseUrl}/api/ai/save_partial`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email,
@@ -1848,10 +2058,6 @@ const ChatUI = () => {
               setTotalTokensUsed(stats.totalTokensUsed);
             if (typeof stats.remainingTokens === "number") {
               setSessionRemainingTokens(stats.remainingTokens);
-              localStorage.setItem(
-                "globalRemainingTokens",
-                stats.remainingTokens,
-              );
             }
           }
         } catch (err) {
@@ -1883,11 +2089,12 @@ const ChatUI = () => {
     if (!partialResponse || !selectedChatId) return;
 
     try {
-      const user = JSON.parse(localStorage.getItem("user"));
+      const user = User || {};
       const email = user?.email;
 
-      const res = await fetch(`${apiBaseUrl}/api/ai/save_smartAi_partial`, {
+      const res = await fetch(`${apiBaseUrl}/api/ai/save_smartAi_Nxt_partial`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email,
@@ -1936,10 +2143,6 @@ const ChatUI = () => {
               setTotalTokensUsed(stats.totalTokensUsed);
             if (typeof stats.remainingTokens === "number") {
               setSessionRemainingTokens(stats.remainingTokens);
-              localStorage.setItem(
-                "globalRemainingTokens",
-                stats.remainingTokens,
-              );
             }
           }
         } catch (err) {
@@ -1971,11 +2174,12 @@ const ChatUI = () => {
     if (!partialResponse || !selectedChatId) return;
 
     try {
-      const user = JSON.parse(localStorage.getItem("user"));
+      const user = User || {};
       const email = user?.email;
 
-      const res = await fetch(`${apiBaseUrl}/api/ai/save_smartAi_Pro_partial`, {
+      const res = await fetch(`${apiBaseUrl}/api/ai/save_smartAi_Nxt_partial`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email,
@@ -2024,10 +2228,6 @@ const ChatUI = () => {
               setTotalTokensUsed(stats.totalTokensUsed);
             if (typeof stats.remainingTokens === "number") {
               setSessionRemainingTokens(stats.remainingTokens);
-              localStorage.setItem(
-                "globalRemainingTokens",
-                stats.remainingTokens,
-              );
             }
           }
         } catch (err) {
@@ -2059,11 +2259,12 @@ const ChatUI = () => {
     if (!partialResponse || !selectedChatId) return;
 
     try {
-      const user = JSON.parse(localStorage.getItem("user"));
+      const user = User || {};
       const email = user?.email;
 
       const res = await fetch(`${apiBaseUrl}/api/ai/save_smartAi_Nxt_partial`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email,
@@ -2112,10 +2313,6 @@ const ChatUI = () => {
               setTotalTokensUsed(stats.totalTokensUsed);
             if (typeof stats.remainingTokens === "number") {
               setSessionRemainingTokens(stats.remainingTokens);
-              localStorage.setItem(
-                "globalRemainingTokens",
-                stats.remainingTokens,
-              );
             }
           }
         } catch (err) {
@@ -2152,7 +2349,7 @@ const ChatUI = () => {
           ? smartAIProMessageGroups
           : messageType === "WrdsAI Nxt"
             ? smartAINxtMessageGroups
-            : chatMessageGroups;
+            : messageGroups;
 
     const lastMsgGroup = currentGroups?.[0] || [];
     const lastMsg = lastMsgGroup[lastMsgGroup.length - 1];
@@ -2162,11 +2359,12 @@ const ChatUI = () => {
   const fetchChatSessions = async () => {
     setSessionLoading(true);
     try {
-      const user = JSON.parse(localStorage.getItem("user"));
+      const user = User || {};
       if (!user || !user.email) return;
 
       const response = await fetch(`${apiBaseUrl}/api/ai/get_user_sessions`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: user.email }),
       });
@@ -2300,11 +2498,12 @@ const ChatUI = () => {
 
   const getChatHistory = async (sessionId) => {
     try {
-      const user = JSON.parse(localStorage.getItem("user"));
+      const user = User || {};
       if (!user || !user.email) return [];
 
       const response = await fetch(`${apiBaseUrl}/api/ai/history`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId, email: user.email }),
       });
@@ -2343,11 +2542,6 @@ const ChatUI = () => {
       // return filteredMessages;
 
       // ✅ Filter only type:"chat"
-      const messages = (data.response || data.messages || []).filter(
-        (msg) => msg?.type?.toLowerCase() === "chat",
-      );
-
-      return messages;
     } catch (error) {
       console.error("API Error:", error);
       return [];
@@ -2360,13 +2554,14 @@ const ChatUI = () => {
   const fetchSmartAISessions = async () => {
     setSessionLoading(true);
     try {
-      const user = JSON.parse(localStorage.getItem("user"));
+      const user = User || {};
       if (!user || !user.email) return;
 
       const response = await fetch(
-        `${apiBaseUrl}/api/ai/get_smartAi_sessions`,
+        `${apiBaseUrl}/api/ai/get_smartAi_Nxt_sessions`,
         {
           method: "POST",
+          credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: user.email }),
         },
@@ -2444,13 +2639,14 @@ const ChatUI = () => {
   const fetchSmartAIProSessions = async () => {
     setSessionLoading(true);
     try {
-      const user = JSON.parse(localStorage.getItem("user"));
+      const user = User || {};
       if (!user || !user.email) return;
 
       const response = await fetch(
-        `${apiBaseUrl}/api/ai/get_smartAi_Pro_sessions`,
+        `${apiBaseUrl}/api/ai/get_smartAi_Nxt_sessions`,
         {
           method: "POST",
+          credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: user.email }),
         },
@@ -2525,15 +2721,16 @@ const ChatUI = () => {
   };
 
   const fetchSmartAINxtSessions = async () => {
+    const user = User || {};
+    if (!user.email) return;
+
     setSessionLoading(true);
     try {
-      const user = JSON.parse(localStorage.getItem("user"));
-      if (!user || !user.email) return;
-
       const response = await fetch(
         `${apiBaseUrl}/api/ai/get_smartAi_Nxt_sessions`,
         {
           method: "POST",
+          credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: user.email }),
         },
@@ -2547,9 +2744,14 @@ const ChatUI = () => {
       let sessions = [];
 
       // ✅ Filter only type:"WrdsAI Nxt" (backend stores as "WrdsAI Nxt" → toLowerCase = "wrdsai nxt")
-      const filteredSessions = data.sessions?.filter(
-        (s) => s?.type?.toLowerCase() === "wrdsai nxt",
-      );
+      const normalizeType = (value = "") =>
+        value.toLowerCase().replace(/\s+/g, "");
+
+      const rawSessions = Array.isArray(data.sessions) ? data.sessions : [];
+      const filteredSessions = rawSessions.filter((session) => {
+        const normalizedType = normalizeType(session?.type);
+        return normalizedType.includes("nxt") || Array.isArray(session?.history);
+      });
 
       if (Array.isArray(filteredSessions) && filteredSessions.length > 0) {
         sessions = filteredSessions.reverse().map((session) => {
@@ -2577,11 +2779,27 @@ const ChatUI = () => {
 
       setSmartAINxtSessions(sessions || []);
 
-      if (sessions?.length && initialLoad && !selectedChatId) {
-        const firstSessionId = sessions[0].id;
-        setSelectedChatId(firstSessionId);
-        localStorage.setItem("lastSmartAINxtSessionId", firstSessionId);
-        loadSmartAINxtHistory(sessions[0].sessionId);
+      const savedSessionId = localStorage.getItem("lastSmartAINxtSessionId");
+
+      const selectedSessionExists = sessions.some(
+        (session) =>
+          session.id === selectedChatId || session.sessionId === selectedChatId,
+      );
+
+      if (sessions?.length && (initialLoad || !selectedSessionExists)) {
+        const sessionToOpen =
+          sessions.find(
+            (session) =>
+              session.id === savedSessionId ||
+              session.sessionId === savedSessionId,
+          ) || sessions[0];
+
+        setSelectedChatId(sessionToOpen.id);
+        localStorage.setItem("lastSmartAINxtSessionId", sessionToOpen.id);
+        loadSmartAINxtHistory(sessionToOpen.sessionId);
+      } else if (initialLoad && savedSessionId) {
+        setSelectedChatId(savedSessionId);
+        loadSmartAINxtHistory(savedSessionId);
       }
     } catch (err) {
       console.error("wrds AI nxt sessions error:", err);
@@ -2595,11 +2813,12 @@ const ChatUI = () => {
   // 🧠 Fetch Smart AI chat history
   const getSmartAIHistory = async (sessionId) => {
     try {
-      const user = JSON.parse(localStorage.getItem("user"));
+      const user = User || {};
       if (!user || !user.email) return [];
 
-      const response = await fetch(`${apiBaseUrl}/api/ai/SmartAIhistory`, {
+      const response = await fetch(`${apiBaseUrl}/api/ai/SmartAINxt_history`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId, email: user.email }),
       });
@@ -2619,11 +2838,6 @@ const ChatUI = () => {
           : [];
 
       // ✅ Filter only type:"smart Ai"
-      const messages = (data.response || data.messages || []).filter(
-        (msg) => msg?.type?.toLowerCase() === "smart ai",
-      );
-
-      return messages;
     } catch (err) {
       console.error("Smart AI history error:", err);
       return [];
@@ -2634,11 +2848,12 @@ const ChatUI = () => {
 
   const getSmartAIProHistory = async (sessionId) => {
     try {
-      const user = JSON.parse(localStorage.getItem("user"));
+      const user = User || {};
       if (!user || !user.email) return [];
 
-      const response = await fetch(`${apiBaseUrl}/api/ai/SmartAIProhistory`, {
+      const response = await fetch(`${apiBaseUrl}/api/ai/SmartAINxt_history`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId, email: user.email }),
       });
@@ -2658,11 +2873,6 @@ const ChatUI = () => {
           : [];
 
       // ✅ Filter only type:"smart Ai"
-      const messages = (data.response || data.messages || []).filter(
-        (msg) => msg?.type?.toLowerCase() === "smart ai",
-      );
-
-      return messages;
     } catch (err) {
       console.error("Smart AI history error:", err);
       return [];
@@ -2673,11 +2883,12 @@ const ChatUI = () => {
 
   const getSmartAINxtHistory = async (sessionId) => {
     try {
-      const user = JSON.parse(localStorage.getItem("user"));
+      const user = User || {};
       if (!user || !user.email) return [];
 
       const response = await fetch(`${apiBaseUrl}/api/ai/SmartAINxt_history`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId, email: user.email }),
       });
@@ -2736,15 +2947,13 @@ const ChatUI = () => {
   // }, []);
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user"));
-    if (!user || !user.email) {
-      // Redirect to login if no user data
-      window.location.href = "/login";
+    const user = User || {};
+    if (!user.email) {
       return;
     }
 
     const lastSessionId = localStorage.getItem("lastChatSessionId");
-    if (lastSessionId) {
+    if (activeView === "chat" && lastSessionId) {
       setSelectedChatId(lastSessionId);
 
       // Load token count from localStorage
@@ -2762,6 +2971,7 @@ const ChatUI = () => {
       try {
         const res = await fetch(`${apiBaseUrl}/userTokenStats`, {
           method: "POST",
+          credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: user.email }),
         });
@@ -2798,7 +3008,7 @@ const ChatUI = () => {
       console.log("💬 Loading normal chat sessions...");
       fetchChatSessions();
     }
-  }, [activeView, isSmartAI, isSmartAIPro, isSmartAINxt]);
+  }, [User?.email, activeView, isSmartAI, isSmartAIPro, isSmartAINxt]);
 
   // useEffect(() => {
   //   if (!selectedChatId) return;
@@ -3403,7 +3613,7 @@ const ChatUI = () => {
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
-    const user = JSON.parse(localStorage.getItem("user"));
+      const user = User || {};
     const email = user?.email;
 
     if (!email) {
@@ -3426,6 +3636,7 @@ const ChatUI = () => {
       // const response = await fetch(`${apiBaseUrl}/api/ai/ask`, {
       const response = await fetch(`${apiBaseUrl}/api/ai/ask`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
         signal: controller.signal,
@@ -3523,11 +3734,232 @@ const ChatUI = () => {
     }
   };
 
+  const getCurrentMessageType = () =>
+    activeView === "wrds AiPro" || isSmartAIPro
+      ? "wrds AiPro"
+      : activeView === "smartAi" || isSmartAI
+        ? "smart Ai"
+        : activeView === "WrdsAI Nxt" || isSmartAINxt
+          ? "WrdsAI Nxt"
+          : "chat";
+
+  const getMessageGroupsSetter = (messageType) =>
+    messageType === "wrds AiPro"
+      ? setSmartAIProMessageGroups
+      : messageType === "smart Ai"
+        ? setSmartAIMessageGroups
+        : messageType === "WrdsAI Nxt"
+          ? setSmartAINxtMessageGroups
+          : setMessageGroups;
+
+  const getCurrentStudySessionId = () => {
+    if (activeView === "smartAi" || isSmartAI) {
+      return selectedChatId || localStorage.getItem("lastSmartAISessionId") || "";
+    }
+    if (activeView === "wrds AiPro" || isSmartAIPro) {
+      return selectedChatId || localStorage.getItem("lastSmartAIProSessionId") || "";
+    }
+    if (activeView === "WrdsAI Nxt" || isSmartAINxt) {
+      return selectedChatId || localStorage.getItem("lastSmartAINxtSessionId") || "";
+    }
+    return selectedChatId || localStorage.getItem("lastChatSessionId") || "";
+  };
+
+  const getBotNameForMessageType = (messageType) =>
+    messageType === "smart Ai"
+      ? "Wrds AI"
+      : messageType === "wrds AiPro"
+        ? "Wrds AiPro"
+        : messageType === "WrdsAI Nxt"
+          ? "Wrds Ai Nxt"
+          : selectedBot;
+
+  const handleBasicsOfProblem = async (group) => {
+    if (!isSelectedStudySubjectMaths || !selectedChapter || !group?.id) return;
+    if (basicsUsedByAnswerId[group.id] || basicsLoadingByAnswerId[group.id]) return;
+
+    const currentAnswer = group.responses?.[group.currentSlide] || "";
+    if (!group.prompt || !currentAnswer) return;
+
+    const user = User || {};
+    if (!user?.email) {
+      toast.error("Please login again");
+      return;
+    }
+
+    const messageType = getCurrentMessageType();
+    const setMessagesFn = getMessageGroupsSetter(messageType);
+    const basicsMessageId = `basics_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+
+    setBasicsUsedByAnswerId((prev) => ({ ...prev, [group.id]: true }));
+    setBasicsLoadingByAnswerId((prev) => ({ ...prev, [group.id]: true }));
+
+    setMessagesFn((prev) => {
+      const updated = [...prev];
+      const messages = updated[0] || [];
+      updated[0] = [
+        ...messages,
+        {
+          id: basicsMessageId,
+          prompt: "Basics of this problem",
+          responses: ["Thinking..."],
+          time: currentTime(),
+          currentSlide: 0,
+          isTyping: true,
+          isComplete: false,
+          tokensUsed: null,
+          botName: getBotNameForMessageType(messageType),
+          files: [],
+          isBasicsResponse: true,
+          canShowBasicsOfProblem: false,
+        },
+      ];
+      return updated;
+    });
+
+    try {
+      const basicsPrompt = [
+        "Explain the basics needed to understand this Maths problem.",
+        "Do not solve the full problem.",
+        "Do not give the final answer.",
+        "Focus on prerequisite concepts, formulas, definitions, and what the student should identify first.",
+        "Keep it student-friendly and concise.",
+        "",
+        `Problem asked by student:\n${group.prompt}`,
+        "",
+        `Previous answer/context:\n${currentAnswer.replace(/<[^>]+>/g, " ")}`,
+      ].join("\n");
+
+      const formData = new FormData();
+      formData.append("prompt", basicsPrompt);
+      formData.append("displayPrompt", "Basics of this problem");
+      formData.append("email", user.email);
+      if (messageType === "chat") {
+        formData.append("botName", selectedBot);
+      }
+      formData.append("sessionId", getCurrentStudySessionId());
+      formData.append("type", messageType);
+      formData.append("isCBSEActive", isCBSEActive);
+      formData.append("selectedChapter", selectedChapter);
+      formData.append("selectedClassName", selectedClassName);
+      formData.append("selectedSubjectName", selectedSubjectName);
+      formData.append("selectedChapterName", selectedChapterMeta?.name || selectedChapter);
+      formData.append("platformContext", teacherMode ? "teacher" : "student");
+      formData.append("activityType", "basics_of_problem");
+
+      const result = await fetchChatbotResponseWithFiles(
+        formData,
+        getCurrentStudySessionId(),
+        messageType !== "chat",
+      );
+
+      setMessagesFn((prev) => {
+        const updated = [...prev];
+        const messages = updated[0] || [];
+        const index = messages.findIndex((message) => message.id === basicsMessageId);
+        if (index !== -1) {
+          messages[index] = {
+            ...messages[index],
+            responses: [result?.response || "Sorry, something went wrong."],
+            isTyping: false,
+            isComplete: true,
+            tokensUsed: result?.tokensUsed || 0,
+            botName: getBotNameForMessageType(messageType),
+            isError: Boolean(result?.isError),
+          };
+          updated[0] = messages;
+        }
+        return updated;
+      });
+    } catch (error) {
+      setMessagesFn((prev) => {
+        const updated = [...prev];
+        const messages = updated[0] || [];
+        const index = messages.findIndex((message) => message.id === basicsMessageId);
+        if (index !== -1) {
+          messages[index] = {
+            ...messages[index],
+            responses: [error?.message || "Sorry, something went wrong."],
+            isTyping: false,
+            isComplete: true,
+            isError: true,
+          };
+          updated[0] = messages;
+        }
+        return updated;
+      });
+    } finally {
+      setBasicsLoadingByAnswerId((prev) => ({ ...prev, [group.id]: false }));
+      setTimeout(() => scrollToBottom(), 100);
+    }
+  };
+
+  const renderBasicsButton = (group) => {
+    if (
+      !isSelectedStudySubjectMaths ||
+      !selectedChapter ||
+      !group?.id ||
+      !group.canShowBasicsOfProblem ||
+      group.isTyping ||
+      group.isError ||
+      group.isBasicsResponse
+    ) {
+      return null;
+    }
+
+    const isUsed = Boolean(basicsUsedByAnswerId[group.id]);
+    const isLoading = Boolean(basicsLoadingByAnswerId[group.id]);
+
+    return (
+      <Button
+        size="small"
+        disabled={isUsed || isLoading}
+        onClick={() => handleBasicsOfProblem(group)}
+        sx={{
+          mt: 1,
+          borderRadius: "999px",
+          px: 1.6,
+          py: 0.55,
+          fontWeight: 700,
+          textTransform: "none",
+          color: "#342171",
+          border: "1px solid #cfc7e8",
+          backgroundColor: "#f2effa",
+          opacity: isUsed ? 0.45 : 1,
+          "&:hover": {
+            backgroundColor: "#e8e2fb",
+            borderColor: "#aa9cd8",
+          },
+        }}
+      >
+        Basics of this problem
+      </Button>
+    );
+  };
+
   const handleSend = async (editedPrompt = null, editedId = null) => {
     // if (( !input.trim() && selectedFiles.length === 0) || isSending)
     isStoppedRef.current = false;
     const prompt = editedPrompt ? editedPrompt.trim() : input.trim();
     if (!prompt) return;
+    const lessonPlanTopic = getLessonPlanTopicFromPrompt(prompt);
+    const requestPrompt =
+      !editedPrompt && teacherMode && isLessonPlanMode && lessonPlanDraftRef.current
+        ? [
+            lessonPlanDraftRef.current,
+            lessonPlanTopic
+              ? [
+                  "",
+                  `Topic/context requested by teacher: ${lessonPlanTopic}`,
+                  "Plan the lesson around this topic while staying within the selected chapter.",
+                ].join("\n")
+              : "",
+          ].filter(Boolean).join("\n")
+        : prompt;
+    const displayPrompt =
+      !editedPrompt && teacherMode && isLessonPlanMode
+        ? prompt
+        : requestPrompt;
 
     if (
       (activeView === "WrdsAI Nxt" || isSmartAINxt) &&
@@ -3619,7 +4051,7 @@ const ChatUI = () => {
       const newMessage = {
         id: messageId,
         prompt:
-          prompt || `Files: ${selectedFiles.map((f) => f.name).join(", ")}`,
+          displayPrompt || `Files: ${selectedFiles.map((f) => f.name).join(", ")}`,
         responses: ["Thinking..."],
         time: currentTime(),
         currentSlide: 0,
@@ -3636,6 +4068,7 @@ const ChatUI = () => {
                 ? "Wrds Ai Nxt"
                 : selectedBot,
         files: selectedFiles.map((f) => ({ name: f.name })),
+        canShowBasicsOfProblem: isSelectedStudySubjectMaths && Boolean(selectedChapter),
       };
 
       if (editedId) {
@@ -3656,7 +4089,8 @@ const ChatUI = () => {
 
     try {
       const formData = new FormData();
-      formData.append("prompt", prompt);
+      formData.append("prompt", requestPrompt);
+      formData.append("displayPrompt", displayPrompt);
       formData.append("email", user.email);
       // formData.append("botName", selectedBot);
       if (
@@ -3675,21 +4109,102 @@ const ChatUI = () => {
         "selectedChapterName",
         selectedChapterMeta?.name || selectedChapter,
       );
+      formData.append("platformContext", teacherMode ? "teacher" : "student");
+      formData.append(
+        "activityType",
+        teacherMode
+          ? isLessonPlanMode
+            ? "lesson_plan"
+            : "teach_chat"
+          : "chat",
+      );
 
       selectedFiles.forEach((file) => {
         formData.append("files", file);
       });
 
-      const result = await fetchChatbotResponseWithFiles(
-        formData,
-        currentSessionId,
-        messageType === "smart Ai" ||
-          isSmartAI ||
-          messageType === "wrds AiPro" ||
-          isSmartAIPro ||
-          messageType === "WrdsAI Nxt" ||
-          isSmartAINxt,
-      );
+      const shouldStreamNxt =
+        messageType === "WrdsAI Nxt" && selectedFiles.length === 0;
+
+      const result = shouldStreamNxt
+        ? await fetchSmartAINxtStream({
+            payload: {
+              prompt: requestPrompt,
+              displayPrompt,
+              email: user.email,
+              sessionId: currentSessionId,
+              type: messageType,
+              isCBSEActive,
+              selectedChapter,
+              selectedClassName,
+              selectedSubjectName,
+              selectedChapterName:
+                selectedChapterMeta?.name || selectedChapter,
+              platformContext: teacherMode ? "teacher" : "student",
+              activityType: teacherMode
+                ? isLessonPlanMode
+                  ? "lesson_plan"
+                  : "teach_chat"
+                : "chat",
+            },
+            currentSessionId,
+            onStart: (event) => {
+              if (event.sessionId) {
+                setSelectedChatId(event.sessionId);
+                localStorage.setItem("lastSmartAINxtSessionId", event.sessionId);
+              }
+            },
+            onDelta: (streamedText) => {
+              setMessagesFn((prev) => {
+                const updated = [...prev];
+                const messages = updated[0] || [];
+                const index = messages.findIndex((m) => m.id === messageId);
+                if (index !== -1) {
+                  messages[index] = {
+                    ...messages[index],
+                    responses: [streamedText],
+                    isTyping: true,
+                    isComplete: false,
+                    botName: "Wrds Ai Nxt",
+                  };
+                  updated[0] = messages;
+                }
+                return updated;
+              });
+            },
+            onDone: (event) => {
+              setMessagesFn((prev) => {
+                const updated = [...prev];
+                const messages = updated[0] || [];
+                const index = messages.findIndex((m) => m.id === messageId);
+                if (index !== -1) {
+                  messages[index] = {
+                    ...messages[index],
+                    responses: [event.response || ""],
+                    isTyping: false,
+                    isComplete: true,
+                    tokensUsed: event.tokensUsed || 0,
+                    botName: event.botName || "Wrds Ai Nxt",
+                    isError: Boolean(event.isError),
+                  };
+                  updated[0] = messages;
+                }
+                return updated;
+              });
+            },
+          })
+        : await fetchChatbotResponseWithFiles(
+            formData,
+            currentSessionId,
+            messageType === "smart Ai" ||
+              isSmartAI ||
+              messageType === "wrds AiPro" ||
+              isSmartAIPro ||
+              messageType === "WrdsAI Nxt" ||
+              isSmartAINxt,
+          );
+
+      if (!result) return;
       // 🔴 HANDLE API ERROR / RESTRICTED RESPONSE
       if (result.isError) {
         setMessagesFn((prev) => {
@@ -3749,9 +4264,26 @@ const ChatUI = () => {
       }
 
       const responseText = result.response || "";
+      const completedSessionId =
+        result.sessionId || selectedChatId || currentSessionId;
+
+      await persistCompletedResponse({
+        messageType,
+        sessionId: completedSessionId,
+        prompt: displayPrompt,
+        response: responseText,
+        botName:
+          messageType === "smart Ai"
+            ? "Wrds AI"
+            : messageType === "wrds AiPro"
+              ? "Wrds AiPro"
+              : messageType === "WrdsAI Nxt"
+                ? "Wrds Ai Nxt"
+                : result.botName || selectedBot,
+      });
 
       // ✅ Typing animation effect starts here
-      if (!result.isError) {
+      if (!result.isError && !result.streamed) {
         const lines = responseText.split("\n");
         let allText = "";
 
@@ -3769,9 +4301,9 @@ const ChatUI = () => {
             if (activeView === "chat") {
               saveEndpoint = `${apiBaseUrl}/api/ai/save_partial`;
             } else if (activeView === "smartAi" || isSmartAI) {
-              saveEndpoint = `${apiBaseUrl}/api/ai/save_smartAi_partial`;
+              saveEndpoint = `${apiBaseUrl}/api/ai/save_smartAi_Nxt_partial`;
             } else if (activeView === "wrds AiPro" || isSmartAIPro) {
-              saveEndpoint = `${apiBaseUrl}/api/ai/save_smartAi_Pro_partial`;
+              saveEndpoint = `${apiBaseUrl}/api/ai/save_smartAi_Nxt_partial`;
             } else if (activeView === "WrdsAI Nxt" || isSmartAINxt) {
               saveEndpoint = `${apiBaseUrl}/api/ai/save_smartAi_Nxt_partial`;
             }
@@ -3779,11 +4311,12 @@ const ChatUI = () => {
             try {
               await fetch(saveEndpoint, {
                 method: "POST",
+                credentials: "include",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                   email,
                   sessionId: selectedChatId || currentSessionId,
-                  prompt,
+                  prompt: displayPrompt,
                   partialResponse: allText + lineText,
                   // botName: selectedBot,
                   botName:
@@ -3914,12 +4447,13 @@ const ChatUI = () => {
       // ✅ Only call userTokenStats + get_user_session if NOT stopped
       if (!isStoppedRef.current) {
         try {
-          const user = JSON.parse(localStorage.getItem("user"));
+          const user = User || {};
           const email = user?.email;
           if (email) {
             // 👉 userTokenStats
             const statsRes = await fetch(`${apiBaseUrl}/userTokenStats`, {
               method: "POST",
+              credentials: "include",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ email }),
             });
@@ -3930,10 +4464,6 @@ const ChatUI = () => {
                 setTotalTokensUsed(stats.totalTokensUsed);
               if (typeof stats.remainingTokens === "number") {
                 setSessionRemainingTokens(stats.remainingTokens);
-                localStorage.setItem(
-                  "globalRemainingTokens",
-                  stats.remainingTokens,
-                );
               }
             }
 
@@ -3955,6 +4485,203 @@ const ChatUI = () => {
           console.warn("⚠️ Failed to refresh stats after chat:", err.message);
         }
       }
+    }
+  };
+
+  const fetchSmartAINxtStream = async ({
+    payload,
+    currentSessionId,
+    onStart,
+    onDelta,
+    onDone,
+  }) => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    currentPromptRef.current = payload.prompt || "";
+    partialResponseRef.current = "";
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/ai/SmartAINxt_ask`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...payload, stream: true }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        const rawText = await response.text();
+        let data = {};
+        try {
+          data = rawText ? JSON.parse(rawText) : {};
+        } catch {
+          data = { message: rawText };
+        }
+
+        if (data?.message === "Not enough tokens") {
+          await Swal.fire({
+            title: "Not enough tokens!",
+            text: "You don't have enough tokens to continue.",
+            icon: "warning",
+            showCancelButton: true,
+            showDenyButton: false,
+            confirmButtonText: "Ok",
+            cancelButtonText: "Upgrade/ Renew Plan",
+          }).then((result) => {
+            if (
+              result.isDismissed &&
+              result.dismiss === Swal.DismissReason.cancel
+            ) {
+              handleUpgradePlan();
+            }
+          });
+        }
+
+        return {
+          response:
+            data.message ||
+            data.error ||
+            `HTTP error! status: ${response.status}`,
+          sessionId: currentSessionId,
+          botName: "Wrds Ai Nxt",
+          isError: true,
+        };
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error("Streaming is not supported by this browser.");
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let streamedText = "";
+      let finalResult = null;
+
+      const handleLine = (line) => {
+        if (!line.trim()) return;
+
+        let event;
+        try {
+          event = JSON.parse(line);
+        } catch {
+          return;
+        }
+
+        if (event.type === "start") {
+          onStart?.(event);
+          return;
+        }
+
+        if (event.type === "delta") {
+          streamedText += event.delta || "";
+          partialResponseRef.current = streamedText;
+          onDelta?.(streamedText);
+          return;
+        }
+
+        if (event.type === "done") {
+          finalResult = {
+            ...event,
+            response: event.response || streamedText,
+            botName: event.botName || "Wrds Ai Nxt",
+            streamed: true,
+          };
+          onDone?.(finalResult);
+          return;
+        }
+
+        if (event.type === "error") {
+          finalResult = {
+            response: event.message || "Sorry, something went wrong.",
+            sessionId: event.sessionId || currentSessionId,
+            botName: "Wrds Ai Nxt",
+            isError: true,
+            streamed: true,
+          };
+          onDone?.(finalResult);
+        }
+      };
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split(/\r?\n/);
+        buffer = lines.pop() || "";
+        lines.forEach(handleLine);
+      }
+
+      if (buffer.trim()) {
+        handleLine(buffer);
+      }
+
+      abortControllerRef.current = null;
+
+      return (
+        finalResult || {
+          response: streamedText,
+          sessionId: currentSessionId,
+          botName: "Wrds Ai Nxt",
+          streamed: true,
+        }
+      );
+    } catch (err) {
+      if (err?.name === "AbortError") {
+        console.log("Streaming request was aborted");
+        return null;
+      }
+
+      console.error("fetchSmartAINxtStream error:", err);
+      return {
+        response: err.message || "Sorry, something went wrong.",
+        sessionId: currentSessionId,
+        botName: "Wrds Ai Nxt",
+        isError: true,
+      };
+    }
+  };
+
+  const persistCompletedResponse = async ({
+    messageType,
+    sessionId,
+    prompt,
+    response,
+    botName,
+  }) => {
+    if (!sessionId || !prompt || !response) return;
+
+    const endpoint =
+      messageType === "chat"
+        ? `${apiBaseUrl}/api/ai/save_partial`
+        : `${apiBaseUrl}/api/ai/save_smartAi_Nxt_partial`;
+
+    try {
+      const saveResponse = await fetch(endpoint, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          sessionId,
+          prompt,
+          partialResponse: response,
+          botName,
+          isComplete: true,
+        }),
+      });
+
+      if (!saveResponse.ok) {
+        const text = await saveResponse.text();
+        console.warn("Completed response save failed:", text);
+      }
+    } catch (error) {
+      console.warn("Completed response save failed:", error?.message || error);
     }
   };
 
@@ -4050,6 +4777,8 @@ const ChatUI = () => {
   }
 
   useEffect(() => {
+    if (!User?.email) return;
+
     if (activeView === "smartAi" || isSmartAI) {
       fetchSmartAISessions();
     } else if (activeView === "wrds AiPro" || isSmartAIPro) {
@@ -4059,7 +4788,7 @@ const ChatUI = () => {
     } else {
       fetchChatSessions();
     }
-  }, [activeView, isSmartAI, isSmartAIPro, isSmartAINxt]);
+  }, [User?.email, activeView, isSmartAI, isSmartAIPro, isSmartAINxt]);
 
   const filteredChats = (
     activeView === "smartAi" || isSmartAI
@@ -4220,7 +4949,7 @@ const ChatUI = () => {
                 />
 
                 {/* Logo */}
-                <img src={Wrds1} height={61} width={162} alt="Logo" />
+                <img src={Wrds1} alt="Logo" style={{ width: 220, height: "auto", display: "block" }} />
               </Box>
 
               {/* DROPDOWN MOVED HERE ONLY FOR XS */}
@@ -4533,7 +5262,7 @@ const ChatUI = () => {
                     mt: 0.4,
                   }}
                   onClick={() => {
-                    setActiveView("smartAi");
+                    setActiveView("WrdsAI Nxt");
                     setIsSmartAI(false);
                   }}
                 >
@@ -4580,7 +5309,7 @@ const ChatUI = () => {
                     mt: 0.7,
                   }}
                   onClick={() => {
-                    setActiveView("wrds AiPro");
+                    setActiveView("WrdsAI Nxt");
                     setIsSmartAIPro(false);
                   }}
                 >
@@ -4672,7 +5401,7 @@ const ChatUI = () => {
                     mt: 0.4,
                   }}
                   onClick={() => {
-                    setActiveView("chat");
+                    setActiveView("WrdsAI Nxt");
                     setIsSmartAI(false);
                   }}
                 >
@@ -4795,7 +5524,7 @@ const ChatUI = () => {
                 />
 
                 {/* Logo */}
-                <img src={Wrds1} height={69} width={182} alt="Logo" />
+                <img src={Wrds1} alt="Logo" style={{ width: 220, height: "auto", display: "block" }} />
               </Box>
 
               {/* Hamburger Menu */}
@@ -4983,7 +5712,7 @@ const ChatUI = () => {
                     mt: 0.4,
                   }}
                   onClick={() => {
-                    setActiveView("smartAi");
+                    setActiveView("WrdsAI Nxt");
                     setIsSmartAI(false);
                   }}
                 >
@@ -5031,7 +5760,7 @@ const ChatUI = () => {
                     mt: 0.4,
                   }}
                   onClick={() => {
-                    setActiveView("wrds AiPro");
+                    setActiveView("WrdsAI Nxt");
                     setIsSmartAIPro(false);
                   }}
                 >
@@ -5077,7 +5806,7 @@ const ChatUI = () => {
                     mt: 0.4,
                   }}
                   onClick={() => {
-                    setActiveView("chat");
+                    setActiveView("WrdsAI Nxt");
                     setIsSmartAI(false);
                     setIsSmartAIPro(false);
                     // ✅ Sync APIs
@@ -5192,7 +5921,7 @@ const ChatUI = () => {
                 onClick={() => setOpenSidebar(true)}
               />
 
-              <img src={Wrds1} height={75} width={206} alt="Logo" />
+              <img src={Wrds1} alt="Logo" style={{ width: 220, height: "auto", display: "block" }} />
               {/* <img src={Wrds} height={48} width={135} alt="Logo" /> */}
 
               {/* Wrds AI Components - Only show for chat/smartAi views */}
@@ -5355,7 +6084,7 @@ const ChatUI = () => {
                     mt: 0.4,
                   }}
                   onClick={() => {
-                    setActiveView("smartAi");
+                    setActiveView("WrdsAI Nxt");
                     setIsSmartAI(false);
                   }}
                 >
@@ -5403,7 +6132,7 @@ const ChatUI = () => {
                     mt: 0.4,
                   }}
                   onClick={() => {
-                    setActiveView("wrds AiPro");
+                    setActiveView("WrdsAI Nxt");
                     setIsSmartAIPro(false);
                   }}
                 >
@@ -5449,7 +6178,7 @@ const ChatUI = () => {
                     mt: 0.4,
                   }}
                   onClick={() => {
-                    setActiveView("chat");
+                    setActiveView("WrdsAI Nxt");
                     setIsSmartAI(false);
                   }}
                 >
@@ -5898,11 +6627,7 @@ const ChatUI = () => {
           </MenuItem>
 
           <MenuItem
-            onClick={() => {
-              setMobileMenuAnchor(null);
-              localStorage.clear();
-              window.location.href = "/login";
-            }}
+            onClick={handleLogout}
           >
             <LogoutTwoToneIcon fontSize="small" sx={{ mr: 1, color: "red" }} />
             <Typography
@@ -5945,11 +6670,7 @@ const ChatUI = () => {
           </MenuItem>
 
           <MenuItem
-            onClick={() => {
-              handleCloseMenu();
-              localStorage.clear();
-              window.location.href = "/login";
-            }}
+            onClick={handleLogout}
           >
             <LogoutTwoToneIcon fontSize="small" sx={{ mr: 1, color: "red" }} />
             Logout
@@ -6440,6 +7161,7 @@ const ChatUI = () => {
                                   }}
                                 />
                               )}
+                              {renderBasicsButton(group)}
                             </Box>
                             <Divider sx={{ my: 1 }} />
                             <Box
@@ -6722,66 +7444,6 @@ const ChatUI = () => {
                       <Box
                         sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
                       >
-                        <IconButton
-                          component="label"
-                          disabled={
-                            User?.subscription?.subscriptionPlan ===
-                            "Free Trial"
-                          }
-                          sx={{
-                            // color: "#1268fb",
-                            color:
-                              User?.subscription?.subscriptionPlan ===
-                              "Free Trial"
-                                ? "#9e9e9e"
-                                : "#1268fb",
-                            // position: "absolute",
-                            // left: "10px",
-
-                            // bottom: selectedFiles.length > 0 ? "36px" : "16px",
-                            borderRadius: "50%",
-                            width: isXS ? "25px" : "32px",
-                            height: isXS ? "25px" : "32px",
-                            // backgroundColor: "rgba(47, 103, 246, 0.1)",
-                            // "&:hover": {
-                            //   backgroundColor: "rgba(47,103,246,0.2)",
-                            // },
-                            backgroundColor:
-                              User?.subscription?.subscriptionPlan ===
-                              "Free Trial"
-                                ? "rgba(0,0,0,0.05)"
-                                : "rgba(47, 103, 246, 0.1)",
-                            "&:hover": {
-                              backgroundColor:
-                                User?.subscription?.subscriptionPlan ===
-                                "Free Trial"
-                                  ? "rgba(0,0,0,0.05)"
-                                  : "rgba(47,103,246,0.2)",
-                            },
-                          }}
-                        >
-                          <input
-                            type="file"
-                            hidden
-                            multiple
-                            disabled={
-                              User?.subscription?.subscriptionPlan ===
-                              "Free Trial"
-                            }
-                            accept=".txt,.pdf,.doc,.docx,.jpg,.jpeg,.png,.pptx,.xlsx,.csv"
-                            onChange={(e) => {
-                              const files = Array.from(e.target.files);
-                              if (files.length > 0) {
-                                setSelectedFiles((prev) =>
-                                  [...prev, ...files].slice(0, 5),
-                                );
-                              }
-                              e.target.value = "";
-                            }}
-                          />
-                          <AttachFileIcon fontSize="small" />
-                        </IconButton>
-
                         {/* <IconButton
                           onClick={isListening ? stopListening : startListening}
                           disabled={true}
@@ -6848,7 +7510,7 @@ const ChatUI = () => {
                           // bgcolor: "#1268fb",
                           bgcolor: User?.subscription?.isPlanExpired
                             ? "#bdbdbd"
-                            : "#1268fb",
+                            : "#2f236f",
                           color: "white",
                           width: isXS ? "30px" : "40px",
                           height: isXS ? "30px" : "40px",
@@ -6857,7 +7519,7 @@ const ChatUI = () => {
                           "&:hover": {
                             bgcolor: User?.subscription?.isPlanExpired
                               ? "#bdbdbd"
-                              : "#204BC4",
+                              : "#24115f",
                           },
                           borderRadius: "50%",
                           opacity: User?.subscription?.isPlanExpired ? 0.6 : 1,
@@ -6867,6 +7529,7 @@ const ChatUI = () => {
                           sx={{
                             width: isXS ? "15px" : "25px",
                             height: isXS ? "15px" : "25px",
+                            color: "#ffffff",
                           }}
                         />
                       </IconButton>
@@ -7348,6 +8011,7 @@ const ChatUI = () => {
                                   }}
                                 />
                               )}
+                              {renderBasicsButton(group)}
                             </Box>
                             <Divider sx={{ my: 1 }} />
                             <Box
@@ -7624,41 +8288,6 @@ const ChatUI = () => {
                       <Box
                         sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
                       >
-                        <IconButton
-                          component="label"
-                          sx={{
-                            color: "#1268fb",
-                            // position: "absolute",
-                            // left: "10px",
-
-                            // bottom: selectedFiles.length > 0 ? "36px" : "16px",
-                            borderRadius: "50%",
-                            width: isXS ? "25px" : "32px",
-                            height: isXS ? "25px" : "32px",
-                            backgroundColor: "rgba(47, 103, 246, 0.1)",
-                            "&:hover": {
-                              backgroundColor: "rgba(47,103,246,0.2)",
-                            },
-                          }}
-                        >
-                          <input
-                            type="file"
-                            hidden
-                            multiple
-                            accept=".txt,.pdf,.doc,.docx,.jpg,.jpeg,.png,.pptx,.xlsx,.csv"
-                            onChange={(e) => {
-                              const files = Array.from(e.target.files);
-                              if (files.length > 0) {
-                                setSelectedFiles((prev) =>
-                                  [...prev, ...files].slice(0, 5),
-                                );
-                              }
-                              e.target.value = "";
-                            }}
-                          />
-                          <AttachFileIcon fontSize="small" />
-                        </IconButton>
-
                         {/* <IconButton
                           onClick={isListening ? stopListening : startListening}
                           disabled={true}
@@ -7719,14 +8348,14 @@ const ChatUI = () => {
                         // disabled={!input.trim() || isSending || isTypingResponse}
                         sx={{
                           background:
-                            "linear-gradient(135deg, #ffe66d, #ff9bd2)",
-                          color: "#221246",
+                            "linear-gradient(145deg, #352273, #2b2875)",
+                          color: "#ffffff",
                           width: isXS ? "30px" : "40px",
                           height: isXS ? "30px" : "40px",
                           ml: 1,
                           "&:hover": {
                             background:
-                              "linear-gradient(135deg, #fff08a, #ffaddb)",
+                              "linear-gradient(145deg, #403084, #24115f)",
                           },
                           borderRadius: "50%",
                         }}
@@ -7735,6 +8364,7 @@ const ChatUI = () => {
                           sx={{
                             width: isXS ? "15px" : "25px",
                             height: isXS ? "15px" : "25px",
+                            color: "#ffffff",
                           }}
                         />
                       </IconButton>
@@ -8164,6 +8794,7 @@ const ChatUI = () => {
                                   }}
                                 />
                               )}
+                              {renderBasicsButton(group)}
                             </Box>
                             <Divider sx={{ my: 1 }} />
                             <Box
@@ -8283,6 +8914,7 @@ const ChatUI = () => {
                   pt: { xs: 1.1, sm: 0.2, md: 0.35 },
                 }}
               >
+                {renderTeacherLessonPlanActionRow()}
                 <Box
                   sx={{
                     p: { xs: 0.45, sm: 0.85 },
@@ -8432,38 +9064,6 @@ const ChatUI = () => {
                           gap: { xs: 0.5, sm: 1.5 },
                         }}
                       >
-                        <IconButton
-                          component="label"
-                          sx={{
-                            color: "#1f1f1f",
-                            borderRadius: "50%",
-                            width: isXS ? "30px" : "38px",
-                            height: isXS ? "30px" : "38px",
-                            border: "1px solid rgba(15,23,42,0.1)",
-                            backgroundColor: "#ffffff",
-                            "&:hover": {
-                              backgroundColor: "#f7f8fa",
-                            },
-                          }}
-                        >
-                          <input
-                            type="file"
-                            hidden
-                            multiple
-                            accept=".txt,.pdf,.doc,.docx,.jpg,.jpeg,.png,.pptx,.xlsx,.csv"
-                            onChange={(e) => {
-                              const files = Array.from(e.target.files);
-                              if (files.length > 0) {
-                                setSelectedFiles((prev) =>
-                                  [...prev, ...files].slice(0, 5),
-                                );
-                              }
-                              e.target.value = "";
-                            }}
-                          />
-                          <AddIcon fontSize="small" />
-                        </IconButton>
-
                         {(isTypingResponse || isSending) && (
                           <Tooltip title="Stop generating">
                             <IconButton
@@ -8516,6 +9116,13 @@ const ChatUI = () => {
                         selectedChapter={selectedChapter}
                         onStudyTriggerClick={handleStudyTriggerClick}
                         onDeselectChapter={handleDeselectChapter}
+                        modeLabel={studyModeLabel}
+                        hideClassSelection={shouldHideStudyClassSelection}
+                        lockedStudyClass={
+                          shouldHideStudyClassSelection && lockedStudyClass
+                            ? { ...studyMenuClass, subjects: studyMenuSubjects }
+                            : null
+                        }
                       />
 
 
@@ -8531,11 +9138,11 @@ const ChatUI = () => {
                         sx={{
                           background:
                             input.trim() || selectedFiles.length > 0
-                              ? "linear-gradient(135deg, #ffe66d, #ff9bd2)"
+                              ? "linear-gradient(145deg, #352273, #2b2875)"
                               : "#f4f4f4",
                           color:
                             input.trim() || selectedFiles.length > 0
-                              ? "#221246"
+                              ? "#ffffff"
                               : "#1f1f1f",
                           width: isXS ? "32px" : "44px",
                           height: isXS ? "32px" : "44px",
@@ -8543,7 +9150,7 @@ const ChatUI = () => {
                           "&:hover": {
                             background:
                               input.trim() || selectedFiles.length > 0
-                                ? "linear-gradient(135deg, #fff08a, #ffaddb)"
+                                ? "linear-gradient(145deg, #403084, #24115f)"
                                 : "#eef1f5",
                           },
                           borderRadius: "50%",
@@ -8557,6 +9164,10 @@ const ChatUI = () => {
                           sx={{
                             width: isXS ? "16px" : "21px",
                             height: isXS ? "16px" : "21px",
+                            color:
+                              input.trim() || selectedFiles.length > 0
+                                ? "#ffffff"
+                                : "rgba(36,17,95,0.42)",
                           }}
                         />
                       </IconButton>
@@ -9032,6 +9643,7 @@ const ChatUI = () => {
                                   }}
                                 />
                               )}
+                              {renderBasicsButton(group)}
                             </Box>
                             <Divider sx={{ my: 1 }} />
                             <Box
@@ -9306,41 +9918,6 @@ const ChatUI = () => {
                       <Box
                         sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
                       >
-                        <IconButton
-                          component="label"
-                          sx={{
-                            color: "#1268fb",
-                            // position: "absolute",
-                            // left: "10px",
-
-                            // bottom: selectedFiles.length > 0 ? "36px" : "16px",
-                            borderRadius: "50%",
-                            width: isXS ? "25px" : "32px",
-                            height: isXS ? "25px" : "32px",
-                            backgroundColor: "rgba(47, 103, 246, 0.1)",
-                            "&:hover": {
-                              backgroundColor: "rgba(47,103,246,0.2)",
-                            },
-                          }}
-                        >
-                          <input
-                            type="file"
-                            hidden
-                            multiple
-                            accept=".txt,.pdf,.doc,.docx,.jpg,.jpeg,.png,.pptx,.xlsx,.csv"
-                            onChange={(e) => {
-                              const files = Array.from(e.target.files);
-                              if (files.length > 0) {
-                                setSelectedFiles((prev) =>
-                                  [...prev, ...files].slice(0, 5),
-                                );
-                              }
-                              e.target.value = "";
-                            }}
-                          />
-                          <AttachFileIcon fontSize="small" />
-                        </IconButton>
-
                         {/* <IconButton
                           onClick={isListening ? stopListening : startListening}
                           disabled={true}
@@ -9400,12 +9977,12 @@ const ChatUI = () => {
                         onClick={() => handleSend()}
                         // disabled={!input.trim() || isSending || isTypingResponse}
                         sx={{
-                          bgcolor: "#1268fb",
+                          bgcolor: "#2f236f",
                           color: "white",
                           width: isXS ? "30px" : "40px",
                           height: isXS ? "30px" : "40px",
                           ml: 1,
-                          "&:hover": { bgcolor: "#204BC4" },
+                          "&:hover": { bgcolor: "#24115f" },
                           borderRadius: "50%",
                         }}
                       >
@@ -9413,6 +9990,7 @@ const ChatUI = () => {
                           sx={{
                             width: isXS ? "15px" : "25px",
                             height: isXS ? "15px" : "25px",
+                            color: "#ffffff",
                           }}
                         />
                       </IconButton>
@@ -9903,6 +10481,7 @@ const ChatUI = () => {
                                   }}
                                 />
                               )}
+                              {renderBasicsButton(group)}
                             </Box>
                             <Divider sx={{ my: 1 }} />
                             <Box
@@ -10297,14 +10876,19 @@ const ChatUI = () => {
                       onClick={() => handleSend()}
                       disabled={!input.trim() || isSending || isTypingResponse}
                       sx={{
+                        bgcolor: "#2f236f",
+                        color: "#ffffff",
                         "&:disabled": {
                           opacity: 0.5,
                           cursor: "not-allowed",
                         },
+                        "&:hover": {
+                          bgcolor: "#24115f",
+                        },
                         ml: 1,
                       }}
                     >
-                      <SendIcon />
+                      <SendIcon sx={{ color: "#ffffff" }} />
                     </IconButton>
 
                     {/* 🔹 Stop icon appears when AI is typing a response */}
@@ -10383,6 +10967,7 @@ const ChatUI = () => {
         setSearchValue={setSearchValue}
         setSearchSessionResults={setSearchSessionResults}
         activeView={activeView}
+        teacherMode={teacherMode}
         user={User}
         createNewChat={createNewChat}
         isWrdsAIPro={isWrdsAIPro}
@@ -10436,3 +11021,6 @@ const ChatUI = () => {
   );
 };
 export default ChatUI;
+
+
+

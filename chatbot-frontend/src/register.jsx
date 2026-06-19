@@ -14,25 +14,18 @@ import {
   MenuItem,
   Modal,
   Grid,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
 } from "@mui/material";
 import Checkbox from "@mui/material/Checkbox";
 import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
-import CloseIcon from "@mui/icons-material/Close"; // 🔥 Added CloseIcon
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Words2 from "././assets/words2.png"; // path adjust karo
-import { useTheme, useMediaQuery } from "@mui/material";
-import PaymentModal from "./PaymentModal";
-import Wrds from "././assets/Wrds White.webp";
-import Wrds1 from "././assets/wrdsai1.png";
+import Wrds from "././assets/words1.png";
+import Wrds1 from "././assets/words1.png";
 import { useLocation } from "react-router-dom";
 import { allCountries } from "country-telephone-data";
 
@@ -41,6 +34,7 @@ const Register = () => {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
+    userRole: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -65,21 +59,9 @@ const Register = () => {
   });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [openPayment, setOpenPayment] = useState(false);
-  const [priceINR, setPriceINR] = useState(0);
   const [openTerms, setOpenTerms] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [childPlanDisabled, setChildPlanDisabled] = useState(false);
-  const [subscriptionTypeDisabled, setSubscriptionTypeDisabled] =
-    useState(false);
-  // const [coupon, setCoupon] = useState("");
-  // const [discount, setDiscount] = useState(0);
-  // const [finalAmount, setFinalAmount] = useState(0);
-  const [openCouponModal, setOpenCouponModal] = useState(false);
-  const [coupon, setCoupon] = useState("");
-  const [discount, setDiscount] = useState(0);
-  const [finalAmount, setFinalAmount] = useState(0);
-  const [isApplying, setIsApplying] = useState(false);
 
   const location = useLocation();
   // const isUpgrade = location.state?.isUpgrade;
@@ -88,20 +70,8 @@ const Register = () => {
 
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
-  // Country options
-  const countries = [
-    "United States",
-    "Canada",
-    "United Kingdom",
-    "Australia",
-    "India",
-    "Germany",
-    "France",
-    "Japan",
-    "Brazil",
-    "Other",
-  ];
   const ageGroups = ["<13", "13-14", "15-17", "18+"];
+  const userRoleOptions = ["Student", "Teacher"];
   const classOptions = ["9", "10", "11"];
   const DEFAULT_SUBSCRIPTION_PLAN = "WrdsAI Nxt";
   const DEFAULT_CHILD_PLAN = "Boost Up";
@@ -111,9 +81,7 @@ const Register = () => {
   const wrdsAiNxtOptions = ["Boost Up"];
   const FREE_TRIAL_TYPE = "Free Trial (1 week)";
   const subscriptionTypes = [FREE_TRIAL_TYPE, "1 Month", "3 Months", "1 Year"];
-
-  const theme = useTheme();
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down("md"));
+  const showLegacyRegistrationOptions = false;
 
   const BASE_PRICES_INR = {
     WrdsAI: {
@@ -130,28 +98,6 @@ const Register = () => {
       "Boost Up": { Monthly: 999, "1 Month": 999, "3 Months": 2997, Yearly: 10999, "1 Year": 10999 },
     },
   };
-
-  useEffect(() => {
-    const { subscriptionPlan, childPlan, subscriptionType } = formData;
-    if (subscriptionPlan && childPlan && subscriptionType) {
-      const basePrice =
-        BASE_PRICES_INR[subscriptionPlan]?.[childPlan]?.[subscriptionType];
-
-      if (basePrice) {
-        const gstAmount = Math.round(basePrice * 0.18 * 100) / 100;
-        const totalAmount = Math.round((basePrice + gstAmount) * 100) / 100;
-        setPriceINR(totalAmount);
-      } else {
-        setPriceINR(0);
-      }
-    } else {
-      setPriceINR(0);
-    }
-  }, [
-    formData.subscriptionPlan,
-    formData.childPlan,
-    formData.subscriptionType,
-  ]);
 
   const params = new URLSearchParams(location.search);
   const isUpgradeFromUrl = params.get("isUpgrade")?.trim() === "true";
@@ -374,160 +320,6 @@ const Register = () => {
     return "18+";
   };
 
-  const handlePayment = async (mode, upiId = "") => {
-    setAgreeTerms(false);
-
-    if (mode === "qr") {
-      window.location.href = `upi://pay?pa=mymerchant@upi&pn=CarbonAI&am=${priceINR}&cu=INR`;
-      return;
-    }
-
-    if (mode === "pay") {
-      const res = await axios.post(`${apiBaseUrl}/api/create-upi`, {
-        upiId,
-        amount: priceINR,
-        discount: discount, // 🔥 Pass discount
-      });
-
-      window.location.href = res.data.upiUrl; // open UPI app
-    }
-  };
-
-  const createOrderOnServer = async (amount) => {
-    const res = await fetch(`${apiBaseUrl}/api/payments/create-order`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amount }),
-    });
-    return res.json();
-  };
-
-  const verifyPaymentOnServer = async (payload) => {
-    const res = await fetch(`${apiBaseUrl}/api/payments/verify-payment`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
-    if (data.success) {
-      toast.success("Registration complete! You can now log in.");
-      setTimeout(() => {
-        window.location.href = "/login";
-      }, 1800);
-    } else {
-      toast.error(data.error || "Payment verification failed. Please contact support.");
-    }
-
-    return data;
-  };
-
-  const openRazorpayCheckout = async (order) => {
-    const fullName = `${formData.firstName} ${formData.lastName}`.trim();
-    const isUnder18 = parentAgeGroups.includes(formData.ageGroup);
-
-    const contactNumber = isUnder18
-      ? formData.parentMobileNumber
-        ? `${formData.parentMobileCode}${formData.parentMobileNumber}`
-        : undefined
-      : formData.mobileNumber
-        ? `${formData.mobileCode}${formData.mobileNumber}`
-        : undefined;
-
-    const options = {
-      key: import.meta.env.VITE_RAZORPAY_KEY_ID, // your key id from .env
-      amount: order.amount,
-      currency: order.currency,
-      name: "WrdsAI",
-      description: "Order Payment",
-      order_id: order.id,
-
-      // 🔥🔥 THIS IS THE MAIN CHANGE 🔥🔥
-      prefill: {
-        name: fullName, // 👈 USER NAME SHOW THASE
-        email: paymentEmail, // already correct
-        contact: contactNumber,
-      },
-
-      handler: async function (response) {
-        // Show loader during verification
-        setLoading(true);
-        try {
-          // Response contains razorpay_order_id, razorpay_payment_id, razorpay_signature
-          const verifyResult = await verifyPaymentOnServer({
-            // ...response,
-            // email: paymentEmail, // Pass email for password generation
-
-            razorpay_order_id: response.razorpay_order_id,
-            razorpay_payment_id: response.razorpay_payment_id,
-            razorpay_signature: response.razorpay_signature,
-
-            email: paymentEmail,
-
-            // 🔑 THIS IS THE KEY
-            isUpgrade: isUpgradeMode === true,
-
-            // 🔑 ONLY needed for upgrade
-            subscriptionPlan: formData.subscriptionPlan,
-            childPlan: formData.childPlan || null,
-            subscriptionType: formData.subscriptionType,
-            discount: discount, // 🔥 Pass discount value
-          });
-        } catch (error) {
-          console.error("Verification failed", error);
-        } finally {
-          // Stop loader after verification (or if logic decides otherwise)
-          setLoading(false);
-        }
-
-        // if (verifyResult && verifyResult.success) {
-        //   alert("Payment successful and verified!");
-        //   navigate("/login");
-        // } else {
-        //   alert("Payment verification failed. Please contact support.");
-        // }
-      },
-      modal: {
-        ondismiss: function () {
-          console.log("Checkout closed by user");
-        },
-      },
-    };
-
-    // eslint-disable-next-line no-undef
-    const rzp = new window.Razorpay(options);
-    rzp.open();
-  };
-
-  const handleRazorpay = async (amount) => {
-    try {
-      console.log("START PAYMENT");
-      console.log("API URL:", apiBaseUrl);
-      console.log("KEY:", import.meta.env.VITE_RAZORPAY_KEY_ID);
-
-      const createResp = await createOrderOnServer(amount);
-      console.log("ORDER RESPONSE:", createResp);
-
-      if (!createResp || !createResp.order) {
-        alert("Failed to create order");
-        return;
-      }
-
-      console.log("Opening Razorpay checkout...");
-
-      await openRazorpayCheckout(createResp.order);
-    } catch (err) {
-      console.error("razorpay flow err:", err);
-      alert("Payment failed to start");
-    }
-  };
-
-  const parentAgeGroups = ["<13", "13-14", "15-17"];
-
-  // final email (auto handles parent email if <13)
-  const paymentEmail = parentAgeGroups.includes(formData.ageGroup)
-    ? formData.parentEmail
-    : formData.email;
-
   const registerFieldSx = {
     "& .MuiOutlinedInput-root": {
       borderRadius: "10px",
@@ -565,37 +357,23 @@ const Register = () => {
     mb: 0.35,
   };
 
-  const applyCoupon = async (planPrice) => {
-    try {
-      const res = await axios.post(
-        `${apiBaseUrl}/api/payments/validate-coupon`,
-        {
-          couponCode: coupon,
-          amount: planPrice,
-        },
-      );
-
-      setDiscount(res.data.discount);
-      setFinalAmount(res.data.finalAmount);
-      return res.data.finalAmount;
-    } catch (err) {
-      toast.error("Invalid coupon code");
-      return planPrice;
-    }
-  };
-
   const validateForm = () => {
     if (
       !formData.firstName ||
       !formData.lastName ||
+      !formData.userRole ||
       !formData.dateOfBirth ||
-      !formData.className ||
       !formData.password ||
       !formData.confirmPassword ||
       !formData.subscriptionPlan ||
       !formData.subscriptionType
     ) {
       toast.error("Please fill all required fields!");
+      return false;
+    }
+
+    if (formData.userRole === "Student" && !formData.className) {
+      toast.error("Please select your class.");
       return false;
     }
 
@@ -637,7 +415,7 @@ const Register = () => {
   };
 
   // const handleSubmit = async (e) => {
-  const handleSubmit = async (payableAmount = null) => {
+  const handleSubmit = async () => {
     // e.preventDefault();
     setLoading(true);
 
@@ -651,24 +429,7 @@ const Register = () => {
           return;
         }
 
-        // 🔹 Call upgrade API (NO re-registration)
-        const res = await axios.post(
-          `${apiBaseUrl}/api/payments/upgrade-plan`,
-          {
-            email: formData.email, // existing user email
-            subscriptionPlan: formData.subscriptionPlan,
-            childPlan: formData.childPlan || null,
-            subscriptionType: formData.subscriptionType,
-            couponCode: coupon, // 🔥 pass coupon code
-          },
-        );
-
-        // 🔹 Start Razorpay payment
-        const amountToPay = payableAmount ?? res.data.totalAmount;
-        setPriceINR(amountToPay);
-        await handleRazorpay(amountToPay);
-
-        toast.success("Plan upgrade initiated successfully!");
+        toast.info("Plan upgrades are currently managed by the WrdsAI team.");
       } catch (err) {
         toast.error(
           err.response?.data?.error || "Plan upgrade failed. Please try again.",
@@ -705,11 +466,11 @@ const Register = () => {
       subscriptionPlan: formData.subscriptionPlan, // 🔥 ENSURE it's included
       childPlan: formData.childPlan || null, // 🔥 ENSURE it's included
       subscriptionType: formData.subscriptionType, // 🔥 ENSURE it's included
-      couponCode: coupon, // 🔥 pass coupon code
+      userRole: formData.userRole,
     };
 
     try {
-      // If Free Trial -> direct register, skip payment
+      // Free Trial and assigned plans register directly.
       if (submitData.subscriptionPlan === "Free Trial" || submitData.subscriptionType === FREE_TRIAL_TYPE) {
         const res = await axios.post(
           `${apiBaseUrl}/api/ai/register`,
@@ -782,22 +543,6 @@ const Register = () => {
         navigate("/login");
       }, 1800);
       return;
-
-      // setPriceINR(res.data.user.subscription.priceINR);
-      setPriceINR(res.data.paymentAmount); // આ total INR with GST છે
-      // setOpenPayment(true);
-
-      // await handleRazorpay(res.data.paymentAmount);
-      const amountToPay = payableAmount ?? res.data.paymentAmount;
-
-      await handleRazorpay(amountToPay);
-
-      toast.success(`Payment: ₹${res.data.priceBreakdown.total} (incl. GST)`);
-
-      // ✅ Success pachi login page par navigate
-      setTimeout(() => {
-        // navigate("/login");
-      }, 2000);
     } catch (err) {
       const errorMsg =
         err.response?.data?.error ||
@@ -832,13 +577,14 @@ const Register = () => {
             // alignItems:"center",
             px: { xs: 1, sm: 2, md: 2, lg: 2 },
             flexShrink: 0,
-            bgcolor: "#1268fb",
+            background:
+              "linear-gradient(118deg, #b552ff 0%, #705cff 48%, #2eb8ff 100%)",
             zIndex: 100,
             width: "100%",
             position: "relative",
             height: { xs: "48px", sm: "56px" },
             minHeight: { xs: "48px", sm: "56px" },
-            boxShadow: "0 12px 30px rgba(18, 104, 251, 0.18)",
+            boxShadow: "0 12px 30px rgba(73, 43, 170, 0.24)",
             py: 0,
           }}
         >
@@ -868,17 +614,13 @@ const Register = () => {
             sx={{
               // width: 186,
               width: {
-                xs: 150,
-                sm: 166,
-                md: 186,
-                lg: 196,
+                xs: 165,
+                sm: 220,
+                md: 220,
+                lg: 220,
               },
-              height: {
-                xs: 42,
-                sm: 48,
-                md: 52,
-                lg: 54,
-              },
+              height: "auto",
+              objectFit: "contain",
               ml: "-15px",
             }}
           />
@@ -895,7 +637,7 @@ const Register = () => {
               whiteSpace: "nowrap",
             }}
           >
-            Registration Page
+            Registration
           </Typography>
         </Box>
         {/* height={48} width={135} */}
@@ -1030,14 +772,54 @@ const Register = () => {
                 </Grid>
               </Grid>
 
-              {/* Country & DOB */}
+              {/* Role, DOB & Class */}
               <Grid
                 container
                 spacing={2}
-                sx={{ width: "100%", mb: { xs: 1.5, sm: 2 } }}
+                sx={{
+                  gridColumn: "1 / -1",
+                  width: "100%",
+                  mb: { xs: 1.5, sm: 2 },
+                }}
               >
+                {/* User Role */}
+                <Grid size={{ xs: 12, sm: 2 }}>
+                  <InputLabel
+                    sx={{
+                      fontSize: { xs: "17px", sm: "19px", md: "19px" },
+                      fontFamily: "Calibri, sans-serif",
+                    }}
+                  >
+                    I am *
+                  </InputLabel>
+
+                  <TextField
+                    select
+                    fullWidth
+                    size="small"
+                    name="userRole"
+                    value={formData.userRole}
+                    onChange={handleChange}
+                    disabled={isUpgradeMode}
+                    required
+                    InputProps={{
+                      readOnly: isUpgradeMode,
+                      sx: {
+                        height: { xs: 30, sm: 42 },
+                        fontSize: { xs: "15px", sm: "17px" },
+                      },
+                    }}
+                  >
+                    {userRoleOptions.map((role) => (
+                      <MenuItem key={role} value={role}>
+                        {role}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
+
                 {/* Date of Birth */}
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Grid size={{ xs: 12, sm: 3 }}>
                   <InputLabel
                     sx={{
                       fontSize: { xs: "17px", sm: "19px", md: "19px" },
@@ -1070,7 +852,7 @@ const Register = () => {
                 </Grid>
 
                 {/* Class */}
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Grid size={{ xs: 12, sm: 2 }}>
                   <InputLabel
                     sx={{
                       fontSize: { xs: "17px", sm: "19px", md: "19px" },
@@ -1104,6 +886,46 @@ const Register = () => {
                     ))}
                   </TextField>
                 </Grid>
+
+                {!["<13", "13-14", "15-17"].includes(formData.ageGroup) && (
+                  <Grid size={{ xs: 12, sm: 5 }}>
+                    <InputLabel
+                      sx={{
+                        fontSize: { xs: "17px", sm: "19px", md: "19px" },
+                        fontFamily: "Calibri, sans-serif",
+                        width: "100%",
+                      }}
+                    >
+                      Email{" "}
+                      {["<13", "13-14", "15-17"].includes(formData.ageGroup)
+                        ? "(Optional)"
+                        : "*"}
+                    </InputLabel>
+
+                    <TextField
+                      fullWidth
+                      size="small"
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      disabled={["<13", "13-14", "15-17"].includes(
+                        formData.ageGroup
+                      )}
+                      onChange={handleChange}
+                      required={
+                        !["<13", "13-14", "15-17"].includes(
+                          formData.ageGroup
+                        )
+                      }
+                      InputProps={{
+                        sx: {
+                          height: { xs: 30, sm: 42 },
+                          fontSize: { xs: "15px", sm: "17px" },
+                        },
+                      }}
+                    />
+                  </Grid>
+                )}
 
                 <Grid item xs={12}>
                   <Typography
@@ -1405,59 +1227,6 @@ const Register = () => {
                   </TextField>
                 </Grid>
               </Grid> */}
-
-              {/* Email */}
-              {/* {formData.ageGroup !== "<13" && ( */}
-              {!["<13", "13-14", "15-17"].includes(formData.ageGroup) && (
-                <Grid
-                  container
-                  spacing={0}
-                  sx={{ mb: 2, display: "flex", flexDirection: "column" }}
-                >
-                  {/* LABEL */}
-                  <Grid item xs={12}>
-                    <InputLabel
-                      sx={{
-                        fontSize: { xs: "17px", sm: "19px", md: "19px" },
-                        fontFamily: "Calibri, sans-serif",
-                        width: "100%",
-                      }}
-                    >
-                      Email{" "}
-                      {["<13", "13-14", "15-17"].includes(formData.ageGroup)
-                        ? "(Optional)"
-                        : "*"}
-                    </InputLabel>
-                  </Grid>
-
-                  {/* TEXTFIELD */}
-                  <Grid item xs={12} sm={8} md={6}>
-                    <TextField
-                      size="small"
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      // disabled={formData.ageGroup === "<13"}
-                      disabled={
-                        // isUpgrade ||
-                        ["<13", "13-14", "15-17"].includes(formData.ageGroup)
-                      }
-                      onChange={handleChange}
-                      // required={formData.ageGroup !== "<13"}
-                      required={
-                        !["<13", "13-14", "15-17"].includes(formData.ageGroup)
-                      }
-                      InputProps={{
-                        sx: {
-                          height: { xs: 30, sm: 42 },
-                          fontSize: { xs: "15px", sm: "17px" },
-                        },
-                      }}
-                      fullWidth
-                    />
-                  </Grid>
-                </Grid>
-              )}
 
               <Grid
                 container
@@ -2175,7 +1944,7 @@ const Register = () => {
               </Grid>
 
               {/* Sub Options */}
-              {false && (
+              {showLegacyRegistrationOptions && (
                 <Grid
                   container
                   spacing={1}
@@ -2333,7 +2102,7 @@ const Register = () => {
               </Box>
 
               {/* New Activation Consent */}
-              {false && (
+              {showLegacyRegistrationOptions && (
               <Box
                 sx={{
                   display: "flex",
@@ -2362,7 +2131,7 @@ const Register = () => {
               </Box>
               )}
 
-              {false && ["<13", "13-14", "15-17"].includes(formData.ageGroup) && (
+              {showLegacyRegistrationOptions && ["<13", "13-14", "15-17"].includes(formData.ageGroup) && (
                 <Box
                   sx={{
                     display: "flex",
@@ -2431,12 +2200,12 @@ const Register = () => {
                     borderRadius: "12px",
                     textTransform: "uppercase",
                     background:
-                      "linear-gradient(135deg, #1268fb 0%, #0b76d8 55%, #075db4 100%)",
-                    boxShadow: "0 12px 24px rgba(18, 104, 251, 0.26)",
+                      "linear-gradient(118deg, #b552ff 0%, #705cff 48%, #2eb8ff 100%)",
+                    boxShadow: "0 12px 24px rgba(73, 43, 170, 0.28)",
                     "&:hover": {
                       background:
-                        "linear-gradient(135deg, #0f5fe8 0%, #086fcf 55%, #0757a6 100%)",
-                      boxShadow: "0 16px 30px rgba(18, 104, 251, 0.32)",
+                        "linear-gradient(118deg, #a84cff 0%, #6453f2 48%, #24aef5 100%)",
+                      boxShadow: "0 16px 30px rgba(73, 43, 170, 0.34)",
                     },
                   }}
                   disabled={loading}
@@ -2444,37 +2213,14 @@ const Register = () => {
                   onClick={(e) => {
                     e.preventDefault();
 
-                    // 🔥 First validate form
                     if (!validateForm()) return;
 
-                    // 🔹 Free Trial -> Direct Submit (Skip Coupon)
                     handleSubmit();
-                    return;
-
-                    // 🔥 Open coupon modal instead of direct Razorpay
                   }}
                 >
                   {loading ? <CircularProgress size={24} /> : "Register"}
                 </Button>
               </Box>
-
-              {/* <Button
-                variant="outlined"
-                fullWidth
-                sx={{ mt: 2, mb: 2 }}
-                onClick={() => setOpenPayment(true)}
-              >
-                Go To Payment
-              </Button> */}
-
-              <PaymentModal
-                open={openPayment}
-                onClose={() => setOpenPayment(false)}
-                priceINR={priceINR}
-                onUPIPay={handlePayment}
-                email={paymentEmail}
-                apiBaseUrl={apiBaseUrl}
-              />
 
               <Box
                 sx={{
@@ -2491,207 +2237,6 @@ const Register = () => {
             </form>
           </Box>
         </Box>
-
-        <Dialog
-          open={openCouponModal}
-          onClose={(event, reason) => {
-            if (reason !== "backdropClick" && reason !== "escapeKeyDown") {
-              setOpenCouponModal(false);
-            }
-          }}
-          fullWidth
-          // maxWidth="xs"
-          maxWidth="sm" // 🔥 important
-          PaperProps={{
-            sx: {
-              // width: 576,
-              width: {
-                xs: "95%", // mobile
-                sm: 520, // tablet
-                md: 576, // desktop
-              },
-              maxWidth: "100%",
-              // height: 239,
-              borderRadius: 2,
-              // p: 1,
-              p: { xs: 1.5, sm: 2 },
-            },
-          }}
-        >
-          <DialogTitle sx={{ m: 0, p: 2 }}>
-            Apply Coupon
-            <IconButton
-              aria-label="close"
-              onClick={() => setOpenCouponModal(false)}
-              sx={{
-                position: "absolute",
-                right: 8,
-                top: 8,
-                color: (theme) => theme.palette.grey[900],
-              }}
-            >
-              <CloseIcon />
-            </IconButton>
-          </DialogTitle>
-
-          <DialogContent>
-            {/* <TextField
-              label="Enter Coupon Code"
-              fullWidth
-              size="small"
-              value={coupon}
-              onChange={(e) => setCoupon(e.target.value.toUpperCase())}
-              sx={{ mt: 1 }}
-            /> */}
-            {/* <Grid
-              container
-              spacing={0}
-              alignItems="center"
-              justifyContent="space-between"
-              sx={{ mt: 0.5 }}
-            >
-              <Grid item xs={12} sm={8}>
-                <TextField
-                  label="Enter Coupon Code"
-                  fullWidth
-                  size="small"
-                  value={coupon}
-                  onChange={(e) => setCoupon(e.target.value.toUpperCase())}
-                  InputProps={{
-                    sx: {
-                      height: 47, // 🔥 height set
-                      fontSize: "16px",
-                    },
-                  }}
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={4}>
-                <Button
-                  fullWidth
-                  variant="contained"
-                  disabled={isApplying || !coupon}
-                  sx={{ height: 47 }}
-                  onClick={async () => {
-                    setIsApplying(true);
-                    const discountedAmount = await applyCoupon(priceINR);
-                    setFinalAmount(discountedAmount);
-                    setIsApplying(false);
-                  }}
-                >
-                  Apply Coupon
-                </Button>
-              </Grid>
-            </Grid> */}
-
-            <Grid
-              container
-              spacing={1}
-              alignItems="center"
-              direction={{ xs: "column", sm: "row" }} // 🔥 xs = column, sm+ = row
-              justifyContent={{ xs: "flex-start", sm: "space-between" }}
-              sx={{ mt: 1 }}
-            >
-              {/* TextField */}
-              <Grid item xs={12} sm={8}>
-                <TextField
-                  label="Enter Coupon Code"
-                  fullWidth
-                  size="small"
-                  value={coupon}
-                  onChange={(e) => setCoupon(e.target.value.toUpperCase())}
-                  InputProps={{
-                    sx: {
-                      height: 47,
-                      fontSize: "16px",
-                    },
-                  }}
-                />
-              </Grid>
-
-              {/* Apply Button */}
-              <Grid
-                item
-                xs={12}
-                sm={4}
-                sx={{
-                  mt: { xs: 1, sm: 0 }, // 🔥 mobile spacing only
-                }}
-              >
-                <Button
-                  fullWidth
-                  variant="contained"
-                  disabled={isApplying || !coupon}
-                  sx={{ height: 47 }}
-                  onClick={async () => {
-                    setIsApplying(true);
-                    const discountedAmount = await applyCoupon(priceINR);
-                    setFinalAmount(discountedAmount);
-                    setIsApplying(false);
-                  }}
-                >
-                  Apply Coupon
-                </Button>
-              </Grid>
-            </Grid>
-
-            {discount > 0 && (
-              <Typography
-                sx={{ color: "green", mt: 1, fontSize: { xs: 13, sm: 14 } }}
-              >
-                🎉 ₹{discount} discount applied
-              </Typography>
-            )}
-
-            <Typography sx={{ mt: 2, fontSize: { xs: 14, sm: 15 } }}>
-              Final Amount: <b>₹{finalAmount}</b>
-            </Typography>
-          </DialogContent>
-
-          <DialogActions sx={{ px: { xs: 1.5, sm: 2 }, pb: 2 }}>
-            {/* Skip Coupon */}
-            {/* <Button
-              onClick={() => {
-                setOpenCouponModal(false);
-                // handleRazorpay(finalAmount || priceINR);
-                handleSubmit();
-              }}
-            >
-              Skip & Pay
-            </Button> */}
-
-            {/* <Button
-              variant="contained"
-              disabled={isApplying}
-              onClick={async () => {
-                setIsApplying(true);
-
-                const discountedAmount = await applyCoupon(priceINR);
-
-                setFinalAmount(discountedAmount);
-
-                setIsApplying(false);
-              }}
-            >
-              Apply Coupon
-            </Button> */}
-
-            {/* Continue to Pay */}
-            <Button
-              variant="contained"
-              color="success"
-              disabled={finalAmount <= 0}
-              sx={{ height: 44 }}
-              onClick={() => {
-                setOpenCouponModal(false);
-                // handleRazorpay(finalAmount);
-                handleSubmit(finalAmount);
-              }}
-            >
-              Continue to Pay
-            </Button>
-          </DialogActions>
-        </Dialog>
 
         <Modal open={openTerms} onClose={() => setOpenTerms(false)}>
           <Box
@@ -2737,19 +2282,14 @@ const Register = () => {
               WrdsAI may suspend or terminate accounts that violate these Terms,
               immediately. <br />
               <br />
-              <strong>4. Subscription, Payments & No Refunds</strong> <br />
-              WrdsAI is offered on a subscription basis. <br />
-              • Subscription prices are displayed clearly at the time of
-              purchase. <br />
-              • All payments are final. WrdsAI does not offer refunds once a
-              subscription is purchased. <br />• Unused time or tokens do not
-              carry over and are not refundable. <br />
+              <strong>4. Subscription & Account Access</strong> <br />
+              WrdsAI access is based on the plan assigned to your account.
+              Unused time or tokens do not carry over unless explicitly stated
+              by the WrdsAI team. <br />
               <br />
               <strong>5. Account Activation</strong> <br />
-              After successful payment, account access will be activated within
-              24 hours as part of WrdsAI’s safety and quality standards. <br />
-              By completing payment, you acknowledge and agree to this
-              activation timeline. <br />
+              Account access may be reviewed or activated by the WrdsAI team as
+              part of WrdsAI&apos;s safety and quality standards. <br />
               <br />
               <strong>6. Acceptable Use</strong> <br />
               Users agree to use WrdsAI responsibly and for lawful educational

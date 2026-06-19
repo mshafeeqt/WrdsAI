@@ -1,10 +1,9 @@
 import { Op } from "sequelize";
+import { PgSearchHistory, PgUser } from "../postgres/models.js";
 import {
-  PgChatMessage,
-  PgChatSession,
-  PgSearchHistory,
-  PgUser,
-} from "../postgres/models.js";
+  countChatSessionsForUser,
+  sumChatTokensForUserSince,
+} from "../services/chat/chatSessionStore.js";
 import { getTokenLimit } from "./planTokens.js";
 
 // ✅ Single source of truth: Calculate global token stats (same logic as getUserTokenStats)
@@ -22,17 +21,7 @@ export const getGlobalTokenStats = async (email) => {
   const planStartDate = user.planStartDate || new Date(0);
 
   // Chat tokens: sum of tokensUsed across all session messages (only since planStartDate)
-  const chatSessions = await PgChatSession.findAll({ where: { userId: user.id } });
-  const chatMessages = await PgChatMessage.findAll({
-    where: {
-      userId: user.id,
-      createTime: { [Op.gte]: planStartDate },
-    },
-  });
-  const chatTokensUsed = chatMessages.reduce(
-    (sum, msg) => sum + (msg.tokensUsed || 0),
-    0,
-  );
+  const chatTokensUsed = await sumChatTokensForUserSince(user, planStartDate);
 
   // Search tokens: sum of summaryTokenCount across user search history (only since planStartDate)
   const searches = await PgSearchHistory.findAll({
@@ -48,6 +37,7 @@ export const getGlobalTokenStats = async (email) => {
 
   const totalTokensUsed = chatTokensUsed + searchTokensUsed;
   const remainingTokens = Math.max(0, limit - totalTokensUsed);
+  const chatSessions = await countChatSessionsForUser(user);
 
   return {
     limit,
@@ -56,7 +46,7 @@ export const getGlobalTokenStats = async (email) => {
     totalTokensUsed,
     remainingTokens,
     totalSearches: searches.length,
-    chatSessions: chatSessions.length,
+    chatSessions,
   };
 };
 

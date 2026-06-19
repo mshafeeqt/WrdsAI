@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import '../styles/testStyles.css';
 import MathText from './MathText';
 
@@ -13,12 +13,18 @@ const TestInterface = ({ subject, chapter, difficulty, onFinish }) => {
   const [error, setError] = useState('');
   const [startedAt, setStartedAt] = useState(null);
   const [isFinished, setIsFinished] = useState(false);
+  const lastRequestKeyRef = useRef('');
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+  const requestKey = `${chapter.id}::${chapter.name}::${difficulty?.id || difficulty?.name || 'easy'}`;
 
   useEffect(() => {
     let isMounted = true;
 
     const fetchQuestions = async () => {
+      if (lastRequestKeyRef.current === requestKey) {
+        return;
+      }
+      lastRequestKeyRef.current = requestKey;
       setLoading(true);
       setError('');
       setQuestions([]);
@@ -31,6 +37,7 @@ const TestInterface = ({ subject, chapter, difficulty, onFinish }) => {
       try {
         const response = await fetch(`${apiBaseUrl}/api/ai/test-prep/questions`, {
           method: 'POST',
+          credentials: 'include',
           headers: {
             'Content-Type': 'application/json'
           },
@@ -66,7 +73,7 @@ const TestInterface = ({ subject, chapter, difficulty, onFinish }) => {
     return () => {
       isMounted = false;
     };
-  }, [apiBaseUrl, chapter.id, chapter.name, difficulty]);
+  }, [apiBaseUrl, chapter.id, chapter.name, difficulty, requestKey]);
 
   useEffect(() => {
     if (loading || !questions.length) {
@@ -105,7 +112,14 @@ const TestInterface = ({ subject, chapter, difficulty, onFinish }) => {
 
     let correctCount = 0;
     questions.forEach((question, idx) => {
-      if (answers[idx] === question.correct) {
+      const selectedIndex =
+        answers[idx] === null || answers[idx] === undefined ? null : Number(answers[idx]);
+      const correctIndex = Number(question.correct ?? question.correctIndex);
+      if (
+        Number.isInteger(selectedIndex) &&
+        Number.isInteger(correctIndex) &&
+        selectedIndex === correctIndex
+      ) {
         correctCount++;
       }
     });

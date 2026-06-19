@@ -1,8 +1,10 @@
 import express from "express";
-import { getMyProgress } from "../controller/progressController.js";
+import { getMyProgress, getTeacherProgress } from "../controller/progressController.js";
+import { requireRole, USER_ROLES } from "../middleware/auth.js";
 
 const router = express.Router();
 
-router.post("/my-progress", getMyProgress);
+router.post("/my-progress", requireRole(USER_ROLES.STUDENT), getMyProgress);
+router.post("/teacher-progress", requireRole(USER_ROLES.TEACHER), getTeacherProgress);
 
 export default router;

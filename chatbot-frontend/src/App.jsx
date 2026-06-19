@@ -9,32 +9,71 @@ import ForgotPassword from "./ForgotPassword";
 import ResetPassword from "./ResetPassword";
 import TestMain from "./features/Test/TestMain";
 import MyProgress from "./features/Progress/MyProgress";
+import PracticeMain from "./features/Practice/PracticeMain";
+import TeacherHome from "./features/Teacher/pages/TeacherHome";
+import TeacherProgress from "./features/Teacher/pages/TeacherProgress";
+import RequireAuth from "./features/auth/RequireAuth";
+import { USER_ROLES } from "./features/auth/roleAccess";
 // -----------------------------------------------------------------------------
 
 function App() {
   return (
     <>
-      <ToastContainer
-      // position="top-right"
-      // autoClose={3000}
-      // hideProgressBar={false}
-      // newestOnTop={false}
-      // closeOnClick
-      // rtl={false}
-      // pauseOnFocusLoss
-      // draggable
-      // pauseOnHover
-      />
+      <ToastContainer />
       <Routes>
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/home" element={<ChatUI />} />
-        <Route path="/test-prep" element={<TestMain />} />
-        <Route path="/my-progress" element={<MyProgress />} />
+        <Route
+          path="/home"
+          element={
+            <RequireAuth allowedRoles={[USER_ROLES.STUDENT]}>
+              <ChatUI />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/teacher-home"
+          element={
+            <RequireAuth allowedRoles={[USER_ROLES.TEACHER]}>
+              <TeacherHome />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/test-prep"
+          element={
+            <RequireAuth allowedRoles={[USER_ROLES.STUDENT]}>
+              <TestMain />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/practice"
+          element={
+            <RequireAuth allowedRoles={[USER_ROLES.STUDENT]}>
+              <PracticeMain />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/my-progress"
+          element={
+            <RequireAuth allowedRoles={[USER_ROLES.STUDENT]}>
+              <MyProgress />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/teacher-progress"
+          element={
+            <RequireAuth allowedRoles={[USER_ROLES.TEACHER]}>
+              <TeacherProgress />
+            </RequireAuth>
+          }
+        />
       </Routes>
-      <ToastContainer />
     </>
   );
 }
