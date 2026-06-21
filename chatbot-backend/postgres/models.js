@@ -1,6 +1,38 @@
 import { DataTypes } from "sequelize";
 import { sequelize } from "./connect.js";
 
+function deriveAgeGroup(dateOfBirth) {
+  if (!dateOfBirth) return "";
+
+  const birth = new Date(dateOfBirth);
+  if (Number.isNaN(birth.getTime())) return "";
+
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age -= 1;
+  }
+
+  if (age < 13) return "<13";
+  if (age <= 14) return "13-14";
+  if (age <= 17) return "15-17";
+  return "18+";
+}
+
+function getDefaultChildPlan(subscriptionPlan) {
+  if (subscriptionPlan === "WrdsAI") return "Glow Up";
+  if (subscriptionPlan === "WrdsAIPro") return "Step Up";
+  if (subscriptionPlan === "WrdsAI Nxt" || subscriptionPlan === "WrdsAi Nxt") return "Boost Up";
+  return null;
+}
+
+function getDefaultSubscriptionType(subscriptionPlan) {
+  if (subscriptionPlan === "Free Trial") return "One Time";
+  return "1 Month";
+}
+
 export const PgUser = sequelize.define(
   "PgUser",
   {
@@ -8,10 +40,6 @@ export const PgUser = sequelize.define(
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
-    },
-    legacyMongoId: {
-      type: DataTypes.STRING,
-      unique: true,
     },
     firstName: {
       type: DataTypes.STRING,
@@ -36,8 +64,13 @@ export const PgUser = sequelize.define(
       allowNull: false,
     },
     ageGroup: {
-      type: DataTypes.STRING,
-      allowNull: false,
+      type: DataTypes.VIRTUAL,
+      get() {
+        return this.getDataValue("ageGroup") || deriveAgeGroup(this.getDataValue("dateOfBirth"));
+      },
+      set(value) {
+        this.setDataValue("ageGroup", value);
+      },
     },
     className: DataTypes.STRING,
     parentName: DataTypes.STRING,
@@ -47,10 +80,23 @@ export const PgUser = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    childPlan: DataTypes.STRING,
+    childPlan: {
+      type: DataTypes.VIRTUAL,
+      get() {
+        return this.getDataValue("childPlan") || getDefaultChildPlan(this.getDataValue("subscriptionPlan"));
+      },
+      set(value) {
+        this.setDataValue("childPlan", value);
+      },
+    },
     subscriptionType: {
-      type: DataTypes.STRING,
-      allowNull: false,
+      type: DataTypes.VIRTUAL,
+      get() {
+        return this.getDataValue("subscriptionType") || getDefaultSubscriptionType(this.getDataValue("subscriptionPlan"));
+      },
+      set(value) {
+        this.setDataValue("subscriptionType", value);
+      },
     },
     basePriceINR: DataTypes.FLOAT,
     discountINR: DataTypes.FLOAT,
@@ -626,3 +672,4 @@ PgTestQuestionResult.belongsTo(PgTestAttempt, { foreignKey: "testAttemptId" });
 
 PgUser.hasMany(PgUserQuestionEvent, { foreignKey: "userId" });
 PgUserQuestionEvent.belongsTo(PgUser, { foreignKey: "userId" });
+

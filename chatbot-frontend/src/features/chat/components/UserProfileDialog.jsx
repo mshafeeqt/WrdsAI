@@ -29,6 +29,9 @@ function ProfileRow({ label, value }) {
   );
 }
 
+function getFullName(user = {}) {
+  return [user.firstName, user.lastName].filter(Boolean).join(" ") || "No name";
+}
 function getPlanLabel(user = {}) {
   if (
     user.subscription?.subscriptionPlan === "WrdsAi Nxt" ||
@@ -45,8 +48,6 @@ export default function UserProfileDialog({
   onClose,
   email,
   user,
-  totalTokensUsed,
-  sessionRemainingTokens,
 }) {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
@@ -75,28 +76,14 @@ export default function UserProfileDialog({
       </DialogTitle>
 
       <DialogContent sx={{ textAlign: "center", p: 3, mt: 4 }}>
+        <ProfileRow label="Name :" value={getFullName(user)} />
         <ProfileRow label="Email :" value={email || "No email"} />
+        <ProfileRow label="Type :" value={user?.userRole || "Student"} />
+        <ProfileRow label="Class :" value={user?.className || "Not assigned"} />
         <ProfileRow label="Plan :" value={getPlanLabel(user)} />
-
-        {(user.subscription?.childPlan || user.childPlan) && (
-          <ProfileRow
-            label="Child Plan :"
-            value={user.subscription?.childPlan || user.childPlan}
-          />
-        )}
-
         <ProfileRow
           label="Subscription Type :"
-          value={
-            user.subscription?.subscriptionType ||
-            user.subscriptionType ||
-            "No Type"
-          }
-        />
-        <ProfileRow label="Tokens Consumed :" value={totalTokensUsed} />
-        <ProfileRow
-          label="Tokens Remaining :"
-          value={sessionRemainingTokens || 0}
+          value={user?.subscription?.subscriptionType || user?.subscriptionType || "No Type"}
         />
       </DialogContent>
     </Dialog>
