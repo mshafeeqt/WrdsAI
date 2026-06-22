@@ -219,12 +219,9 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
       .join(" ");
   };
   const getDisplayNameFromUser = (user = {}) => {
-    const fullName = [user.firstName, user.lastName]
-      .map((part) => String(part || "").trim())
-      .filter(Boolean)
-      .join(" ");
+    const firstName = String(user.firstName || "").trim();
     const candidates = [
-      fullName,
+      firstName,
       user.name,
       user.username,
       user.email ? String(user.email).split("@")[0] : "",
@@ -5077,6 +5074,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                   alignItems: "center",
                   gap: 0,
                   cursor: "pointer",
+                  mr: { xs: 2, sm: 3 },
                 }}
                 onClick={(event) => setMobileMenuAnchor(event.currentTarget)}
               >
@@ -5534,6 +5532,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                   alignItems: "center",
                   gap: 1,
                   cursor: "pointer",
+                  mr: { xs: 2, sm: 3 },
                 }}
                 onClick={(event) => setMobileMenuAnchor(event.currentTarget)}
               >
@@ -6270,6 +6269,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                   alignItems: "center",
                   gap: 1,
                   cursor: "pointer",
+                  mr: { xs: 2, sm: 3 },
                 }}
                 onClick={(event) => setMobileMenuAnchor(event.currentTarget)}
               >
@@ -8932,7 +8932,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                   <Box sx={{ width: "100%" }}>
                     <TextField
                       fullWidth
-                      placeholder="Ask anything"
+                      placeholder="Please type here..."
                       variant="outlined"
                       size="small"
                       value={input}
@@ -9187,7 +9187,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                 >
                   <Typography
                     sx={{
-                      color: "gray",
+                      color: "#c4c4c4",
                       fontSize: {
                         xs: "10px",
                         sm: "13px",

@@ -34,6 +34,15 @@ function getIndexPath() {
 function getMathDataDir() {
   return path.join(resolveBackendBasePath(), "Math_Data");
 }
+function getPdfJsOptions(data) {
+  return {
+    data,
+    standardFontDataUrl: path.join(
+      resolveBackendBasePath(),
+      "node_modules/pdfjs-dist/standard_fonts/",
+    ),
+  };
+}
 
 function normalizeText(value = "") {
   return String(value || "")
@@ -330,7 +339,7 @@ function normalizeWhitespace(value = "") {
 
 async function extractPdfPages(pdfPath) {
   const data = new Uint8Array(fs.readFileSync(pdfPath));
-  const pdf = await pdfjsLib.getDocument({ data }).promise;
+  const pdf = await pdfjsLib.getDocument(getPdfJsOptions(data)).promise;
   const pages = [];
 
   for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {

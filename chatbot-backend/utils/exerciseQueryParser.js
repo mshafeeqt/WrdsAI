@@ -1,5 +1,5 @@
 const EXERCISE_PATTERNS = [
-  /\b(?:exercise|ex|ex\.)\s*([A-Z]?\d+(?:\.\d+)+)\b/i,
+  /\b(?:exercise|ex|ex\.)\s*(?:set\s*)?([A-Z]?\d+(?:\.\d+)+)\b/i,
   /\b([A-Z]?\d+(?:\.\d+)+)\s*(?:exercise|ex|ex\.)\b/i,
   /\bfrom\s+([A-Z]?\d+(?:\.\d+)+)\b/i,
 ];

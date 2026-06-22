@@ -458,7 +458,7 @@ export default function PracticeMain() {
                   resetSubjectAndChapter();
                 }}
               >
-                <option value="">Class</option>
+                <option value="" disabled hidden>Class</option>
                 {structure.map((item) => (
                   <option key={item.id} value={item.id}>{item.name}</option>
                 ))}
@@ -472,7 +472,7 @@ export default function PracticeMain() {
                 resetChapter();
               }}
             >
-              <option value="">Subject</option>
+              <option value="" disabled hidden>Subject</option>
               {visibleSubjects.map((item) => (
                 <option key={item.id} value={item.id}>{item.name}</option>
               ))}
@@ -490,7 +490,7 @@ export default function PracticeMain() {
                 setGeneratedPracticeProblems([]);
               }}
             >
-              <option value="">Chapter</option>
+              <option value="" disabled hidden>Chapter</option>
               {(selectedSubject?.chapters || []).map((item) => (
                 <option key={item.id} value={item.id}>{item.name}</option>
               ))}

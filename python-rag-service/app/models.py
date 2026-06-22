@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List
+from typing import Any, List
 
 from pydantic import BaseModel, Field
 
@@ -30,6 +30,8 @@ class ChapterRetrieveResponse(BaseModel):
     chapter: str
     context_text: str
     matches: List[RetrievedChunk]
+    retrieval_type: str = "semantic"
+    exact_result: dict[str, Any] | None = None
 
 
 # Metadata we keep for each indexed chapter PDF.
@@ -56,3 +58,14 @@ class HealthResponse(BaseModel):
     math_data_dir: str
     vector_db_dir: str
     collection_name: str
+
+
+# Summary returned after rebuilding exact page/question JSON indexes.
+class ExactRebuildIndexResponse(BaseModel):
+    success: bool = True
+    pdfs_processed: int
+    pages_indexed: int
+    questions_indexed: int
+    parsed_dir: str
+    page_index_dir: str
+    question_index_dir: str

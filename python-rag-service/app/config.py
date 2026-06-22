@@ -27,6 +27,9 @@ class Settings:
     def __init__(self) -> None:
         # Central place for source data, vector index storage, and retrieval tuning.
         self.service_name = "carbon-chapter-rag-service"
+        self.app_root = APP_ROOT
+        self.service_root = SERVICE_ROOT
+        self.project_root = PROJECT_ROOT
         self.openai_api_key = os.getenv("OPENAI_API_KEY", "").strip()
         self.math_data_dir = _resolve_path(
             os.getenv("MATH_DATA_DIR"),

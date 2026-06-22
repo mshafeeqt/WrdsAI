@@ -49,6 +49,15 @@ pdfjs.GlobalWorkerOptions.standardFontDataUrl = path.join(
   __dirname,
   "node_modules/pdfjs-dist/standard_fonts/",
 );
+function getPdfJsOptions(data) {
+  return {
+    data,
+    standardFontDataUrl: path.join(
+      envBasePath,
+      "node_modules/pdfjs-dist/standard_fonts/",
+    ),
+  };
+}
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -841,7 +850,7 @@ export async function processFile(file, tokenizerModel = "gpt-5-nano") {
         fs.writeFileSync(tempPdfPath, pdfBuffer);
       }
 
-      const pdf = await pdfjs.getDocument({ data: pdfBuffer }).promise;
+      const pdf = await pdfjs.getDocument(getPdfJsOptions(pdfBuffer)).promise;
 
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
@@ -1122,7 +1131,7 @@ export async function processFile(file, tokenizerModel = "gpt-5-nano") {
 //           fs.writeFileSync(tempPdfPath, pdfBuffer);
 //         }
 
-//         const pdf = await pdfjs.getDocument({ data: pdfBuffer }).promise;
+//         const pdf = await pdfjs.getDocument(getPdfJsOptions(pdfBuffer)).promise;
 //         let pdfText = "";
 
 //         for (let i = 1; i <= pdf.numPages; i++) {
@@ -1913,6 +1922,11 @@ export const getAIResponse = async (req, res) => {
         selectedChapter,
         chapterRagOptions,
       );
+
+      if (chapterRagContext?.exactResult?.selected_pdf_matched === false) {
+        selectedChapter = chapterRagContext.resolvedChapter || selectedChapter;
+        selectedChapterName = chapterRagContext.resolvedChapterName || selectedChapterName;
+      }
 
       if (!chapterRagContext?.contextText) {
         return res.status(400).json({

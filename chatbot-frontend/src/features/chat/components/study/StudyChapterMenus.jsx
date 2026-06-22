@@ -94,7 +94,7 @@ export default function StudyChapterMenus({
           <Typography
             sx={{
               fontSize: "13px",
-              fontWeight: 600,
+              fontWeight: 700,
               color: "#221246",
               minWidth: 0,
               flex: 1,
@@ -172,8 +172,8 @@ export default function StudyChapterMenus({
           disabled
           sx={{
             opacity: 1,
-            color: "rgba(17, 24, 39, 0.52)",
-            fontWeight: 600,
+            color: "rgba(17, 24, 39, 0.78)",
+            fontWeight: 700,
           }}
         >
           {hideClassSelection ? "Select subject" : "Select class"}
@@ -257,7 +257,7 @@ export default function StudyChapterMenus({
             sx={{
               color: "rgba(17, 24, 39, 0.7)",
               gap: 1,
-              fontWeight: 600,
+              fontWeight: 700,
             }}
           >
             <ArrowBackRoundedIcon sx={{ fontSize: 18 }} />
@@ -323,7 +323,7 @@ export default function StudyChapterMenus({
           sx={{
             color: "rgba(17, 24, 39, 0.7)",
             gap: 1,
-            fontWeight: 600,
+            fontWeight: 700,
           }}
         >
           <ArrowBackRoundedIcon sx={{ fontSize: 18 }} />

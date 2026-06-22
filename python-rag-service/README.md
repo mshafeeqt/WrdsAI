@@ -101,3 +101,36 @@ These proxy to the Python RAG service from Node.
 - `GET /rag/health`
 - `POST /rag/index/rebuild`
 - `POST /rag/chapters/retrieve`
+## Exact retrieval layer
+
+This service also includes a separate exact retrieval pipeline beside the existing FAISS semantic RAG. It does not replace embeddings or semantic search.
+
+Exact retrieval supports:
+
+- PDF/page lookup, such as `Show page 45`
+- Exercise/question lookup, such as `Solve question 2 from exercise 8.1`
+- JSON indexes with preserved PDF page numbers
+
+Rebuild the exact indexes after adding or changing PDFs:
+
+```powershell
+python -m exact_retrieval.build_index
+```
+
+Or rebuild through the API while the service is running:
+
+```http
+POST /rag/exact/rebuild
+```
+
+Generated exact indexes are stored in:
+
+- `data/parsed/` for question JSON per PDF
+- `data/page_index/` for page text JSON
+- `data/question_index/` for combined question lookup
+
+Runtime flow:
+
+1. `/rag/chapters/retrieve` checks exact intent first.
+2. If an exact page/question is found, it returns exact context.
+3. If not, it falls back to the existing semantic FAISS retrieval unchanged.
