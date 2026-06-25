@@ -13,6 +13,7 @@ export const buildUserResponseByAgeGroup = (user) => {
     dateOfBirth: user.dateOfBirth,
     ageGroup: user.ageGroup,
     className: user.className,
+    schoolName: user.schoolName,
 
     // 🔑 Email & Mobile (age based)
     email: isMinor ? user.parentEmail : user.email,

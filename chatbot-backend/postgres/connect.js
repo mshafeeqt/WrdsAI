@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import { Sequelize } from "sequelize";
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const postgresUrl = (process.env.POSTGRES_URL || "").trim();
 
@@ -30,9 +30,10 @@ export const sequelize = new Sequelize(postgresUrl, {
 });
 
 const requiredColumns = {
-  users: ["className", "userRole"],
+  users: ["className", "schoolName", "userRole"],
   llm_data: ["user_role", "platform_context", "activity_type"],
   user_question_events: ["userRole", "platformContext", "activityType"],
+  practice_messages: ["userId", "userEmail", "chapterId", "clientMessageId", "messageText"],
 };
 
 async function getExistingTableColumns(tableName) {
@@ -80,7 +81,7 @@ export async function validatePostgresSchema() {
 
 export async function connectPG({ validateSchema = true } = {}) {
   await sequelize.authenticate();
-  console.log("PostgreSQL connected successfully✅");
+  console.log("PostgreSQL connected successfully");
 
   if (validateSchema) {
     await validatePostgresSchema();

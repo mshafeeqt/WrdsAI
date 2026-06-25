@@ -19,6 +19,7 @@ import { getSmartAINxtAllSessions } from "../controller/smartAiNxtController.js"
 import { saveSmartAINxtPartialResponse } from "../controller/smartAiNxtController.js";
 import { getMathChapters } from "../controller/chapterController.js";
 import { getRagHealth, rebuildRagIndex } from "../controller/ragController.js";
+import { getPracticeHistory, savePracticeMessage } from "../controller/practiceHistoryController.js";
 import testPrepRoutes from "./testPrepRoutes.js";
 import progressRoutes from "./progressRoutes.js";
 import { normalizeUserRole, requireAuth, requireRole, USER_ROLES } from "../middleware/auth.js";
@@ -52,6 +53,8 @@ router.post("/change-password", changePassword);
 
 router.post("/ask", useAuthenticatedEmail, getAIResponse);
 router.post("/practice/ask", requireRole(USER_ROLES.STUDENT), useAuthenticatedEmail, getAIResponse);
+router.post("/practice/history", requireRole(USER_ROLES.STUDENT), useAuthenticatedEmail, getPracticeHistory);
+router.post("/practice/history/message", requireRole(USER_ROLES.STUDENT), useAuthenticatedEmail, savePracticeMessage);
 router.post("/history", useAuthenticatedEmail, getChatHistory);
 router.post("/get_user_sessions", useAuthenticatedEmail, getAllSessions);
 router.post("/save_partial", useAuthenticatedEmail, savePartialResponse);

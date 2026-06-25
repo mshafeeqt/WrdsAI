@@ -9,7 +9,7 @@ if (!fs.existsSync(basePath)) {
   basePath = process.cwd();
 }
 
-dotenv.config({ path: path.join(basePath, ".env") });
+dotenv.config({ path: path.join(basePath, ".env"), quiet: true });
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,

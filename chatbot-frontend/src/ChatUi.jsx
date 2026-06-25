@@ -105,8 +105,8 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   const [sessionLoading, setSessionLoading] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [messageGroups, setMessageGroups] = useState([]);
-  const [smartAIMessageGroups, setSmartAIMessageGroups] = useState([[]]); // 🧠 separate Smart AI history
-  const [smartAIProMessageGroups, setSmartAIProMessageGroups] = useState([[]]); // 🧠 separate Smart AI history
+  const [smartAIMessageGroups, setSmartAIMessageGroups] = useState([[]]); // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  separate Smart AI history
+  const [smartAIProMessageGroups, setSmartAIProMessageGroups] = useState([[]]); // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  separate Smart AI history
   const [smartAINxtSessions, setSmartAINxtSessions] = useState([]);
   const [smartAINxtMessageGroups, setSmartAINxtMessageGroups] = useState([[]]);
 
@@ -175,6 +175,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   const [isSending, setIsSending] = useState(false);
   const [isTypingResponse, setIsTypingResponse] = useState(false);
   const messagesEndRef = useRef(null);
+  const wasHistoryLoadingRef = useRef(false);
   const [initialLoad, setInitialLoad] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const abortControllerRef = useRef(null);
@@ -236,7 +237,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   };
   const displayName = getDisplayNameFromUser(User);
   const navigate = useNavigate();
-  // 🔹 नवी state add करो
+  // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚Â¤Ãƒâ€šÃ‚Â¨ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚Â¤Ãƒâ€šÃ‚ÂµÃƒÆ’Ã‚Â Ãƒâ€šÃ‚Â¥ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ state add ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚Â¤ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚Â¤Ãƒâ€šÃ‚Â°ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚Â¥ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹
   // const [sessionRemainingTokens, setSessionRemainingTokens] = useState(0);
   const [chatRemainingTokens, setChatRemainingTokens] = useState(0);
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -266,7 +267,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   //     if (user?.subscriptionPlan === "WrdsAIPro") return "wrds AiPro";
   //     if (user?.subscriptionPlan === "WrdsAI") return "smartAi";
 
-  //     // 🔹 fallback: direct subscriptionPlan value
+  //     // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ fallback: direct subscriptionPlan value
   //     return user?.subscriptionPlan || "";
   //   } catch (e) {
   //     console.error("Error reading user plan:", e);
@@ -731,7 +732,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
       if (response.ok) {
         Swal.fire({
           icon: "success",
-          title: "Success! 🎉",
+          title: "Success! ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã‚Â½ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â°",
           text: `User created successfully! Password: ${data.password}`,
           confirmButtonColor: "#2F67F6",
         });
@@ -757,7 +758,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
       } else {
         Swal.fire({
           icon: "error",
-          title: "Failed 🚫",
+          title: "Failed ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã‚Â¡Ãƒâ€šÃ‚Â«",
           text: data.message || data.error || "Failed to create user",
           confirmButtonColor: "#d33",
         });
@@ -795,7 +796,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
       setSessionRemainingTokens(Number(saved));
     }
 
-    // ✅ Refresh User state from localStorage to get latest subscription data
+    // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Refresh User state from localStorage to get latest subscription data
     const userData = null;
     if (userData) {
       try {
@@ -924,7 +925,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   // Custom Popper for wider dropdown
   const StyledPopper = styled(Popper)({
     "& .MuiAutocomplete-paper": {
-      minWidth: "400px", // 🔥 Set your desired width here
+      minWidth: "400px", // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¥ Set your desired width here
     },
   });
 
@@ -968,10 +969,10 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   console.log("Chatui::::::::::");
   console.log("historyList111111::::::::::", historyList);
 
-  const scrollToBottom = useCallback(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
+  const scrollToBottom = useCallback((behavior = "auto") => {
+    requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior, block: "end" });
+    });
   }, []);
 
   // const startListening = () => {
@@ -1031,11 +1032,11 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
 
   //   const recognition = new SpeechRecognition();
   //   recognition.lang = "en-US"; // or "gu-IN"
-  //   recognition.continuous = true; // 👈 keep listening until stop
+  //   recognition.continuous = true; // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“Ãƒâ€¹Ã¢â‚¬Â  keep listening until stop
   //   recognition.interimResults = true;
 
   //   recognition.onstart = () => {
-  //     console.log("🎤 Voice input started...");
+  //     console.log("ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã‚Â½Ãƒâ€šÃ‚Â¤ Voice input started...");
   //     setIsListening(true);
   //   };
 
@@ -1045,7 +1046,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   //       transcript += event.results[i][0].transcript;
   //     }
 
-  //     // 👇 accumulate or live-update typed text
+  //     // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ accumulate or live-update typed text
   //     setInput((prev) => transcript);
   //   };
 
@@ -1056,7 +1057,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   //   };
 
   //   recognition.onend = () => {
-  //     console.log("🛑 Voice input stopped");
+  //     console.log("ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂºÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“ Voice input stopped");
   //     setIsListening(false);
   //     recognitionRef.current = null;
   //   };
@@ -1066,7 +1067,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   // };
 
   // const stopListening = () => {
-  //   console.log("⛔ Stop clicked");
+  //   console.log("ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂºÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Stop clicked");
   //   if (recognitionRef.current) {
   //     recognitionRef.current.stop();
   //     recognitionRef.current = null;
@@ -1087,14 +1088,14 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
 
     const recognition = new SpeechRecognition();
     // recognition.lang = "en-US"; // or "gu-IN"
-    recognition.lang = "auto"; // ✅ auto-detect spoken language
+    recognition.lang = "auto"; // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ auto-detect spoken language
     recognition.continuous = true;
     recognition.interimResults = true;
 
-    let finalTranscript = ""; // 🔹 store only final confirmed speech
+    let finalTranscript = ""; // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ store only final confirmed speech
 
     recognition.onstart = () => {
-      console.log("🎤 Listening started...");
+      console.log("ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã‚Â½Ãƒâ€šÃ‚Â¤ Listening started...");
       setIsListening(true);
     };
 
@@ -1112,32 +1113,32 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
         }
       }
 
-      // 🔹 Combine final confirmed + current speaking (no duplication)
+      // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Combine final confirmed + current speaking (no duplication)
       const combinedText = (finalTranscript + interimTranscript).trim();
 
-      // 🔹 Update input box only with latest clean text (no repeats)
+      // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Update input box only with latest clean text (no repeats)
       setInput(combinedText);
 
-      // ✅ Translate to English
+      // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Translate to English
       // if (combinedText) {
       //   try {
       //     const translated = translateToEnglish(combinedText);
       //     setInput(translated);
       //   } catch (error) {
-      //     console.error("🌐 Translation error:", error);
+      //     console.error("ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â Translation error:", error);
       //     setInput(combinedText); // fallback: show raw speech
       //   }
       // }
     };
 
     recognition.onerror = (event) => {
-      console.error("🎙️ Speech recognition error:", event.error);
+      console.error("ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã‚Â½ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Speech recognition error:", event.error);
       setIsListening(false);
       recognitionRef.current = null;
     };
 
     recognition.onend = () => {
-      console.log("🛑 Listening stopped");
+      console.log("ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂºÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“ Listening stopped");
       setIsListening(false);
       recognitionRef.current = null;
     };
@@ -1154,10 +1155,10 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
     setIsListening(false);
   };
 
-  // ✅ Translation function (LibreTranslate or Google API)
+  // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Translation function (LibreTranslate or Google API)
   // async function translateToEnglish(text) {
   //   try {
-  //     // 🔹 Option 1: Free LibreTranslate API (no key required, slower)
+  //     // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Option 1: Free LibreTranslate API (no key required, slower)
   //     // const res = await fetch("https://libretranslate.de/translate", {
   //     const res = await fetch(`${apiBaseUrl}/api/ai/translate`, {
   //       method: "POST",
@@ -1173,7 +1174,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   //     const data = await res.json();
   //     return data.translatedText;
   //   } catch (error) {
-  //     console.error("🔴 Translation error:", error);
+  //     console.error("ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â´ Translation error:", error);
   //     return text; // fallback: return original text if translation fails
   //   }
   // }
@@ -1189,7 +1190,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   };
 
   const handleChangePassword = async () => {
-    console.log("CHANGE PASSWORD CLICKED:::"); // 👈 add this
+    console.log("CHANGE PASSWORD CLICKED:::"); // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“Ãƒâ€¹Ã¢â‚¬Â  add this
 
     // e.preventDefault();
     console.log(
@@ -1271,7 +1272,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
 
     navigate("/register", {
       state: {
-        isUpgrade: true, // 🔑 important flag
+        isUpgrade: true, // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“ important flag
         userData: {
           firstName: user.firstName,
           lastName: user.lastName,
@@ -1323,7 +1324,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   };
 
   const handleSearch = async (searchQuery) => {
-    const finalQuery = searchQuery || selectedGrokQuery; // ✅ use passed query if available
+    const finalQuery = searchQuery || selectedGrokQuery; // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ use passed query if available
     console.log("finalQuery:::====", finalQuery);
     if (!finalQuery) return; // do nothing if query is empty
     setLoading(true);
@@ -1354,7 +1355,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
 
       if (data.limitReached) {
         Swal.fire({
-          title: "Search Limit Reached 🚫",
+          title: "Search Limit Reached ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã‚Â¡Ãƒâ€šÃ‚Â«",
           text: data.message,
           icon: "warning",
           confirmButtonText: "OK",
@@ -1370,7 +1371,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
           data?.safetyType === "self-harm";
 
         Swal.fire({
-          title: isSelfHarmSupport ? "Immediate Support" : "Restricted Search 🚫",
+          title: isSelfHarmSupport ? "Immediate Support" : "Restricted Search ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã‚Â¡Ãƒâ€šÃ‚Â«",
           text:
             data.message || "This search is not allowed for your age group.",
           icon: isSelfHarmSupport ? "info" : "warning",
@@ -1394,9 +1395,9 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
           showCancelButton: true,
           confirmButtonText: "Ok",
           cancelButtonText: "Purchase Tokens",
-          allowOutsideClick: true, // ✅ allow closing by clicking outside
-          allowEscapeKey: true, // ✅ allow Esc key
-          allowEnterKey: true, // ✅ allow Enter key
+          allowOutsideClick: true, // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ allow closing by clicking outside
+          allowEscapeKey: true, // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ allow Esc key
+          allowEnterKey: true, // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ allow Enter key
         }).then((results) => {
           if (results.isConfirmed) {
             Swal.close();
@@ -1419,20 +1420,20 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
       // const data = await response.json();
 
       if (data.remainingTokens !== undefined) {
-        setSessionRemainingTokens(data.remainingTokens); // ✅ update parent
+        setSessionRemainingTokens(data.remainingTokens); // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ update parent
       }
       setResults(data);
       // setTokenCount(data.tokenUsage?.totalTokens || 0); // <-- update token count
 
-      // ✅ Get token counts
+      // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Get token counts
       const usedTokens =
         data.summaryStats?.tokens || data.tokenUsage?.totalTokens || 0;
       setTokenCount(usedTokens);
 
-      // // ✅ Update total tokens used
+      // // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Update total tokens used
       // setTotalTokensUsed((prev) => (prev || 0) + usedTokens);
 
-      // // ✅ Deduct used tokens from remaining
+      // // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Deduct used tokens from remaining
       // setSessionRemainingTokens((prev) =>
       //   Math.max(0, (prev || 0) - usedTokens)
       // );
@@ -1466,20 +1467,20 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
 
       // const currentTokens = data.tokenUsage?.totalTokens || 0;
 
-      // // ✅ Update token count for this search
+      // // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Update token count for this search
       // setTokenCount(currentTokens);
 
-      // // ✅ Add to global total tokens used
+      // // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Add to global total tokens used
       // setTotalTokensUsed((prevTotal) => prevTotal + currentTokens);
 
-      // 🔹 Save to localStorage for persistence
+      // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Save to localStorage for persistence
       localStorage.setItem(
         "lastGrokSearch",
         JSON.stringify({ query: finalQuery, results: data }),
       );
       console.log("Search Response:", data);
 
-      // 🔹 2. After search success → Call Search History API
+      // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ 2. After search success ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Call Search History API
       await fetch(`${apiBaseUrl}/Searchhistory`, {
         // await fetch(`${apiBaseUrl}/grokSearchhistory`, {
         method: "POST",
@@ -1525,7 +1526,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
     partialResponseRef.current = "";
 
     try {
-      // 👇 Dynamic endpoint
+      // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ Dynamic endpoint
       const endpoint = `${apiBaseUrl}/api/ai/SmartAINxt_ask`;
 
       const response = await fetch(endpoint, {
@@ -1583,14 +1584,14 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
       //   );
       // }
 
-      // ❌ IMAGE / VIDEO GENERATION BLOCK
+      // ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒâ€¦Ã¢â‚¬â„¢ IMAGE / VIDEO GENERATION BLOCK
       if (
         response.status === 400 &&
         data?.error === "MEDIA_GENERATION_NOT_ALLOWED"
       ) {
         // await Swal.fire({
         //   icon: "error",
-        //   title: "Not Allowed 🚫",
+        //   title: "Not Allowed ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã‚Â¡Ãƒâ€šÃ‚Â«",
         //   text: data.message || "Generating images and videos is not allowed",
         //   confirmButtonColor: "#1268fb",
         //   confirmButtonText: "OK",
@@ -1612,12 +1613,12 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
         };
       }
 
-      // 🛑 INPUT TOKEN LIMIT (Prompt + Files exceeded)
+      // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂºÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“ INPUT TOKEN LIMIT (Prompt + Files exceeded)
       if (
         response.status === 400 &&
         data?.error === "INPUT_TOKEN_LIMIT_EXCEEDED"
       ) {
-        // ✅ Use backend's dynamic error message
+        // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Use backend's dynamic error message
         const errorMessage =
           data.message ||
           "Prompt + uploaded files exceed token limit. Please reduce prompt or upload smaller files.";
@@ -1644,7 +1645,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
         };
       }
 
-      // 🛑 Check for “Not enough tokens” here (works 100%)
+      // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂºÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“ Check for ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“Not enough tokensÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â here (works 100%)
       if (data?.message === "Not enough tokens") {
         await Swal.fire({
           title: "Not enough tokens!",
@@ -1682,10 +1683,10 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
         };
       }
 
-      // 🛑 AGE-BASED RESTRICTION HANDLER
+      // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂºÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“ AGE-BASED RESTRICTION HANDLER
       if (response.status === 403 || data.allowed === false) {
         // await Swal.fire({
-        //   title: "Restricted Search 🚫",
+        //   title: "Restricted Search ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã‚Â¡Ãƒâ€šÃ‚Â«",
         //   text:
         //     data.message || "This request is not allowed for your age group.",
         //   icon: "warning",
@@ -1693,7 +1694,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
         return {
           response:
             data.message ||
-            "Oops! The requested content isn’t available for your age group.",
+            "Oops! The requested content isnÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢t available for your age group.",
           sessionId: currentSessionId,
           // botName: selectedBot,
           botName:
@@ -1713,12 +1714,12 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
         );
       }
 
-      // 🟢 while processing response, store it in partial ref
+      // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â¢ while processing response, store it in partial ref
       if (data?.response) {
         partialResponseRef.current = data.response; // save the full (or partial) response
       }
 
-      // 🟢 (optional) you can also do this line if you render “typing” in UI:
+      // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â¢ (optional) you can also do this line if you render ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“typingÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â in UI:
       setIsTypingResponse(false);
 
       abortControllerRef.current = null;
@@ -1726,7 +1727,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
 
       console.log("API Response with files:", data);
 
-      // ✅ Immediately refresh user token stats after chat completion
+      // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Immediately refresh user token stats after chat completion
       // try {
       //   const user = JSON.parse(localStorage.getItem("user"));
       //   const email = user?.email;
@@ -1749,7 +1750,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
       //     }
       //   }
       // } catch (e) {
-      //   console.warn("⚠️ Failed to refresh userTokenStats after chat:", e.message);
+      //   console.warn("ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã‚Â¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Failed to refresh userTokenStats after chat:", e.message);
       // }
 
       return {
@@ -1786,7 +1787,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
       //   };
       // }
 
-      // 🟡 Catch any other "Not enough tokens" message (fallback)
+      // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â¡ Catch any other "Not enough tokens" message (fallback)
       if (err.message && err.message.includes("Not enough tokens")) {
         await Swal.fire({
           title: "Not enough tokens!",
@@ -1840,7 +1841,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
 
   // const handleStopResponse = async () => {
   //   if (abortControllerRef.current) {
-  //     console.log("⛔ User clicked Stop");
+  //     console.log("ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂºÃƒÂ¢Ã¢â€šÂ¬Ã‚Â User clicked Stop");
   //     abortControllerRef.current.abort();
   //     abortControllerRef.current = null;
   //   }
@@ -1871,17 +1872,17 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   //         prompt: currentPromptRef.current,
   //         partialResponse,
   //         botName: selectedBot,
-  //         type: messageType, // ✅ add type
+  //         type: messageType, // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ add type
   //       }),
   //     });
 
   //     const data = await res.json();
-  //     console.log("✅ Partial response saved:", data);
+  //     console.log("ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Partial response saved:", data);
 
   //     if (data.success) {
-  //       // ✅ Update tokens + UI instantly based on type
+  //       // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Update tokens + UI instantly based on type
   //       if (messageType === "smart Ai") {
-  //         // 🧠 Update Smart AI message group
+  //         // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  Update Smart AI message group
   //         setSmartAIMessageGroups((prev) => {
   //           const updated = [...prev];
   //           const messages = updated[0] || [];
@@ -1901,7 +1902,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   //           return updated;
   //         });
   //       } else if (messageType === "wrds AiPro") {
-  //         // 🧠 Update Smart AI message group
+  //         // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  Update Smart AI message group
   //         setSmartAIProMessageGroups((prev) => {
   //           const updated = [...prev];
   //           const messages = updated[0] || [];
@@ -1921,7 +1922,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   //           return updated;
   //         });
   //       } else {
-  //         // 💬 Update Chat message group
+  //         // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢Ãƒâ€šÃ‚Â¬ Update Chat message group
   //         setMessageGroups((prev) => {
   //           const updated = [...prev];
   //           const messages = updated[0] || [];
@@ -1942,7 +1943,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   //         });
   //       }
 
-  //       // ✅ userTokenStats (AFTER save_partial)
+  //       // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ userTokenStats (AFTER save_partial)
   //       try {
   //         const statsRes = await fetch(`${apiBaseUrl}/userTokenStats`, {
   //           method: "POST",
@@ -1964,14 +1965,14 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   //         }
   //       } catch (err) {
   //         console.warn(
-  //           "⚠️ Failed to refresh stats after partial save:",
+  //           "ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã‚Â¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Failed to refresh stats after partial save:",
   //           err.message
   //         );
   //       }
 
   //       // re-fetch chat session so DB stays synced
   //       // await fetchChatSessions();
-  //       // ✅ Re-fetch only relevant sessions
+  //       // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Re-fetch only relevant sessions
   //       if (messageType === "smart Ai") {
   //         await fetchSmartAISessions(); // refresh smart Ai tab
   //       } else if (messageType === "wrds AiPro") {
@@ -1981,7 +1982,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   //       }
   //     }
   //   } catch (err) {
-  //     console.error("❌ Failed to save partial response:", err);
+  //     console.error("ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒâ€¦Ã¢â‚¬â„¢ Failed to save partial response:", err);
   //   }
   // };
 
@@ -1989,7 +1990,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
 
   const handleStopResponse = async () => {
     if (abortControllerRef.current) {
-      console.log("⛔ User clicked Stop");
+      console.log("ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂºÃƒÂ¢Ã¢â€šÂ¬Ã‚Â User clicked Stop");
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
@@ -2019,10 +2020,10 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
       });
 
       const data = await res.json();
-      console.log("✅ Partial response saved:", data);
+      console.log("ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Partial response saved:", data);
 
       if (data.success) {
-        // ⬇️ Update token count box instantly
+        // ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Update token count box instantly
         setMessageGroups((prev) => {
           const updated = [...prev];
           const messages = updated[0] || [];
@@ -2033,7 +2034,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
               ...messages[lastMsgIndex],
               isTyping: false,
               isComplete: false,
-              tokensUsed: data.tokensUsed, // ✅ Show partial token count
+              tokensUsed: data.tokensUsed, // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Show partial token count
               type: "chat",
             };
             updated[0] = messages;
@@ -2041,7 +2042,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
           return updated;
         });
 
-        // ✅ userTokenStats (AFTER save_partial)
+        // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ userTokenStats (AFTER save_partial)
         try {
           const statsRes = await fetch(`${apiBaseUrl}/userTokenStats`, {
             method: "POST",
@@ -2059,7 +2060,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
           }
         } catch (err) {
           console.warn(
-            "⚠️ Failed to refresh stats after partial save:",
+            "ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã‚Â¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Failed to refresh stats after partial save:",
             err.message,
           );
         }
@@ -2068,13 +2069,13 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
         await fetchChatSessions();
       }
     } catch (err) {
-      console.error("❌ Failed to save partial response:", err);
+      console.error("ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒâ€¦Ã¢â‚¬â„¢ Failed to save partial response:", err);
     }
   };
 
   const handleStopSmartAIResponse = async () => {
     if (abortControllerRef.current) {
-      console.log("⛔ User clicked Stop");
+      console.log("ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂºÃƒÂ¢Ã¢â€šÂ¬Ã‚Â User clicked Stop");
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
@@ -2104,10 +2105,10 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
       });
 
       const data = await res.json();
-      console.log("✅ Partial response saved:", data);
+      console.log("ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Partial response saved:", data);
 
       if (data.success) {
-        // ⬇️ Update token count box instantly
+        // ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Update token count box instantly
         setSmartAIMessageGroups((prev) => {
           const updated = [...prev];
           const messages = updated[0] || [];
@@ -2118,7 +2119,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
               ...messages[lastMsgIndex],
               isTyping: false,
               isComplete: false,
-              tokensUsed: data.tokensUsed, // ✅ Show partial token count
+              tokensUsed: data.tokensUsed, // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Show partial token count
               type: "smart Ai",
             };
             updated[0] = messages;
@@ -2126,7 +2127,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
           return updated;
         });
 
-        // ✅ userTokenStats (AFTER save_partial)
+        // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ userTokenStats (AFTER save_partial)
         try {
           const statsRes = await fetch(`${apiBaseUrl}/userTokenStats`, {
             method: "POST",
@@ -2144,7 +2145,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
           }
         } catch (err) {
           console.warn(
-            "⚠️ Failed to refresh stats after partial save:",
+            "ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã‚Â¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Failed to refresh stats after partial save:",
             err.message,
           );
         }
@@ -2153,13 +2154,13 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
         await fetchSmartAISessions();
       }
     } catch (err) {
-      console.error("❌ Failed to save partial response:", err);
+      console.error("ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒâ€¦Ã¢â‚¬â„¢ Failed to save partial response:", err);
     }
   };
 
   const handleStopSmartAIProResponse = async () => {
     if (abortControllerRef.current) {
-      console.log("⛔ User clicked Stop");
+      console.log("ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂºÃƒÂ¢Ã¢â€šÂ¬Ã‚Â User clicked Stop");
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
@@ -2189,10 +2190,10 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
       });
 
       const data = await res.json();
-      console.log("✅ Partial response saved:", data);
+      console.log("ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Partial response saved:", data);
 
       if (data.success) {
-        // ⬇️ Update token count box instantly
+        // ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Update token count box instantly
         setSmartAIProMessageGroups((prev) => {
           const updated = [...prev];
           const messages = updated[0] || [];
@@ -2203,7 +2204,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
               ...messages[lastMsgIndex],
               isTyping: false,
               isComplete: false,
-              tokensUsed: data.tokensUsed, // ✅ Show partial token count
+              tokensUsed: data.tokensUsed, // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Show partial token count
               type: "wrds AiPro",
             };
             updated[0] = messages;
@@ -2211,7 +2212,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
           return updated;
         });
 
-        // ✅ userTokenStats (AFTER save_partial)
+        // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ userTokenStats (AFTER save_partial)
         try {
           const statsRes = await fetch(`${apiBaseUrl}/userTokenStats`, {
             method: "POST",
@@ -2229,7 +2230,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
           }
         } catch (err) {
           console.warn(
-            "⚠️ Failed to refresh stats after partial save:",
+            "ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã‚Â¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Failed to refresh stats after partial save:",
             err.message,
           );
         }
@@ -2238,13 +2239,13 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
         await fetchSmartAIProSessions();
       }
     } catch (err) {
-      console.error("❌ Failed to save partial response:", err);
+      console.error("ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒâ€¦Ã¢â‚¬â„¢ Failed to save partial response:", err);
     }
   };
 
   const handleStopSmartAINxtResponse = async () => {
     if (abortControllerRef.current) {
-      console.log("⛔ User clicked Stop");
+      console.log("ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂºÃƒÂ¢Ã¢â€šÂ¬Ã‚Â User clicked Stop");
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
@@ -2274,10 +2275,10 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
       });
 
       const data = await res.json();
-      console.log("✅ Partial response saved:", data);
+      console.log("ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Partial response saved:", data);
 
       if (data.success) {
-        // ⬇️ Update token count box instantly
+        // ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Update token count box instantly
         setSmartAINxtMessageGroups((prev) => {
           const updated = [...prev];
           const messages = updated[0] || [];
@@ -2288,7 +2289,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
               ...messages[lastMsgIndex],
               isTyping: false,
               isComplete: false,
-              tokensUsed: data.tokensUsed, // ✅ Show partial token count
+              tokensUsed: data.tokensUsed, // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Show partial token count
               type: "WrdsAI Nxt",
             };
             updated[0] = messages;
@@ -2296,7 +2297,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
           return updated;
         });
 
-        // ✅ userTokenStats (AFTER save_partial)
+        // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ userTokenStats (AFTER save_partial)
         try {
           const statsRes = await fetch(`${apiBaseUrl}/userTokenStats`, {
             method: "POST",
@@ -2314,7 +2315,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
           }
         } catch (err) {
           console.warn(
-            "⚠️ Failed to refresh stats after partial save:",
+            "ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã‚Â¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Failed to refresh stats after partial save:",
             err.message,
           );
         }
@@ -2323,12 +2324,12 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
         await fetchSmartAINxtSessions();
       }
     } catch (err) {
-      console.error("❌ Failed to save partial response:", err);
+      console.error("ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒâ€¦Ã¢â‚¬â„¢ Failed to save partial response:", err);
     }
   };
 
   const getCurrentPartialResponse = () => {
-    // 🧠 detect which view is active
+    // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  detect which view is active
     const messageType =
       activeView === "smartAi" || isSmartAI
         ? "smart Ai"
@@ -2338,7 +2339,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
             ? "WrdsAI Nxt"
             : "chat";
 
-    // 🧩 choose the correct message source
+    // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â© choose the correct message source
     const currentGroups =
       messageType === "smart Ai"
         ? smartAIMessageGroups
@@ -2376,7 +2377,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
       // Process the sessions based on API response
       let sessions = [];
 
-      // ✅ Filter only type:"chat"
+      // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Filter only type:"chat"
       const filteredSessions = data.sessions?.filter(
         (s) => s?.type?.toLowerCase() === "chat",
       );
@@ -2449,10 +2450,10 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
       //   }
       // }
 
-      // ✅ Process filtered chat sessions only
+      // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Process filtered chat sessions only
       if (Array.isArray(filteredSessions) && filteredSessions.length > 0) {
         sessions = filteredSessions.reverse().map((session) => {
-          // ✅ Save token count to localStorage if available
+          // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Save token count to localStorage if available
           if (session?.history?.[0]?.totalTokensUsed !== undefined) {
             localStorage.setItem(
               `tokens_${session.sessionId}`,
@@ -2470,7 +2471,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
               new Date().toISOString(),
             // totalTokensUsed: session?.history?.[0]?.totalTokensUsed || 0,
             totalTokensUsed: session.totalTokensUsed || 0,
-            type: "chat", // ✅ always tag as chat type
+            type: "chat", // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ always tag as chat type
           };
         });
       }
@@ -2526,7 +2527,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
             ? data
             : [];
 
-      // ✅ Add/force type:"chat" in each message
+      // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Add/force type:"chat" in each message
       // const filteredMessages = messagesArray
       //   .filter((msg) => !msg.type || msg.type.toLowerCase() === "chat")
       //   .map((msg) => ({
@@ -2538,7 +2539,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
 
       // return filteredMessages;
 
-      // ✅ Filter only type:"chat"
+      // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Filter only type:"chat"
     } catch (error) {
       console.error("API Error:", error);
       return [];
@@ -2547,7 +2548,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
     }
   };
 
-  // 🧠 Fetch Smart AI sessions
+  // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  Fetch Smart AI sessions
   const fetchSmartAISessions = async () => {
     setSessionLoading(true);
     try {
@@ -2571,16 +2572,16 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
 
       let sessions = [];
 
-      // ✅ Filter only type:"smart Ai"
+      // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Filter only type:"smart Ai"
       const filteredSessions = data.sessions?.filter(
         (s) => s?.type?.toLowerCase() === "smart ai",
       );
       // console.log("session--aya::::::", filteredSessions);
 
-      // ✅ Process filtered smart AI sessions only
+      // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Process filtered smart AI sessions only
       if (Array.isArray(filteredSessions) && filteredSessions.length > 0) {
         sessions = filteredSessions.reverse().map((session) => {
-          // ✅ Save token count to localStorage if available
+          // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Save token count to localStorage if available
           if (session?.history?.[0]?.totalTokensUsed !== undefined) {
             localStorage.setItem(
               `tokens_${session.sessionId}`,
@@ -2598,14 +2599,14 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
               session.createTime ||
               new Date().toISOString(),
             totalTokensUsed: session.totalTokensUsed || 0,
-            type: "smart Ai", // ✅ always tag as Smart AI type
+            type: "smart Ai", // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ always tag as Smart AI type
           };
         });
       }
 
       console.log("Smart AI sessions (filtered):", sessions);
 
-      // ✅ Store only Smart AI sessions
+      // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Store only Smart AI sessions
       setSmartAISessions(sessions || []);
       console.log("smartAISessions:::::::::", smartAISessions);
 
@@ -2617,7 +2618,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
         loadSmartAIHistory(sessions[0].sessionId);
       }
 
-      // ✅ Automatically open the LAST Smart AI session (latest)
+      // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Automatically open the LAST Smart AI session (latest)
       // if (sessions.length > 0) {
       //   const lastSession = sessions[0]; // since reversed()
       //   setSelectedChatId(lastSession.id);
@@ -2656,16 +2657,16 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
 
       let sessions = [];
 
-      // ✅ Filter only type:"smart Ai"
+      // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Filter only type:"smart Ai"
       const filteredSessions = data.sessions?.filter(
         (s) => s?.type?.toLowerCase() === "wrds aipro",
       );
       // console.log("session--aya::::::", filteredSessions);
 
-      // ✅ Process filtered smart AI sessions only
+      // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Process filtered smart AI sessions only
       if (Array.isArray(filteredSessions) && filteredSessions.length > 0) {
         sessions = filteredSessions.reverse().map((session) => {
-          // ✅ Save token count to localStorage if available
+          // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Save token count to localStorage if available
           if (session?.history?.[0]?.totalTokensUsed !== undefined) {
             localStorage.setItem(
               `tokens_${session.sessionId}`,
@@ -2683,14 +2684,14 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
               session.createTime ||
               new Date().toISOString(),
             totalTokensUsed: session.totalTokensUsed || 0,
-            type: "wrds AiPro", // ✅ always tag as Smart AI type
+            type: "wrds AiPro", // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ always tag as Smart AI type
           };
         });
       }
 
       console.log("wrds AIpro sessions (filtered):", sessions);
 
-      // ✅ Store only Smart AI sessions
+      // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Store only Smart AI sessions
       setSmartAIProSessions(sessions || []);
       // console.log("smartAISessions:::::::::", smartAISessions);
 
@@ -2702,7 +2703,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
         loadSmartAIProHistory(sessions[0].sessionId);
       }
 
-      // ✅ Automatically open the LAST Smart AI session (latest)
+      // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Automatically open the LAST Smart AI session (latest)
       // if (sessions.length > 0) {
       //   const lastSession = sessions[0]; // since reversed()
       //   setSelectedChatId(lastSession.id);
@@ -2740,7 +2741,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
 
       let sessions = [];
 
-      // ✅ Filter only type:"WrdsAI Nxt" (backend stores as "WrdsAI Nxt" → toLowerCase = "wrdsai nxt")
+      // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Filter only type:"WrdsAI Nxt" (backend stores as "WrdsAI Nxt" ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ toLowerCase = "wrdsai nxt")
       const normalizeType = (value = "") =>
         value.toLowerCase().replace(/\s+/g, "");
 
@@ -2807,7 +2808,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   };
   console.log("smartAISessions:::::::::", smartAIProSessions);
 
-  // 🧠 Fetch Smart AI chat history
+  // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  Fetch Smart AI chat history
   const getSmartAIHistory = async (sessionId) => {
     try {
       const user = User || {};
@@ -2834,7 +2835,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
           ? data.messages
           : [];
 
-      // ✅ Filter only type:"smart Ai"
+      // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Filter only type:"smart Ai"
     } catch (err) {
       console.error("Smart AI history error:", err);
       return [];
@@ -2869,7 +2870,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
           ? data.messages
           : [];
 
-      // ✅ Filter only type:"smart Ai"
+      // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Filter only type:"smart Ai"
     } catch (err) {
       console.error("Smart AI history error:", err);
       return [];
@@ -2913,7 +2914,6 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   };
 
   useEffect(() => {
-    // 🧠 choose which message list to scroll based on active view
     const currentGroups =
       activeView === "smartAi" || isSmartAI
         ? smartAIMessageGroups
@@ -2923,21 +2923,28 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
             ? smartAINxtMessageGroups
             : messageGroups;
 
-    if (!historyLoading && currentGroups.length > 0) {
-      scrollToBottom();
+    const finishedHistoryLoad = wasHistoryLoadingRef.current && !historyLoading;
+    wasHistoryLoadingRef.current = historyLoading;
+
+    if (finishedHistoryLoad && currentGroups.length > 0) {
+      scrollToBottom("auto");
     }
   }, [
     historyLoading,
-    messageGroups,
-    smartAIProMessageGroups,
-    smartAIMessageGroups,
-    smartAINxtMessageGroups,
     activeView,
     isSmartAI,
     isSmartAIPro,
     isSmartAINxt,
+    messageGroups,
+    smartAIProMessageGroups,
+    smartAIMessageGroups,
+    smartAINxtMessageGroups,
     scrollToBottom,
   ]);
+
+  useEffect(() => {
+    scrollToBottom("auto");
+  }, [activeView, scrollToBottom]);
 
   // useEffect(() => {
   //   fetchChatSessions();
@@ -2991,18 +2998,18 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
     // Fetch chat sessions after confirming user exists
     // fetchChatSessions();
 
-    // ✅ Fetch data depending on selected view
+    // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Fetch data depending on selected view
     if (isSmartAI || activeView === "smartAi") {
-      console.log("🧠 Loading Smart AI sessions...");
+      console.log("ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  Loading Smart AI sessions...");
       fetchSmartAISessions();
     } else if (isSmartAIPro || activeView === "wrds AiPro") {
-      console.log("🧠 Loading Smart AI Pro sessions...");
+      console.log("ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  Loading Smart AI Pro sessions...");
       fetchSmartAIProSessions();
     } else if (isSmartAINxt || activeView === "WrdsAI Nxt") {
-      console.log("🚀 Loading WrdsAI Nxt sessions...");
+      console.log("ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã‚Â¡ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ Loading WrdsAI Nxt sessions...");
       fetchSmartAINxtSessions();
     } else {
-      console.log("💬 Loading normal chat sessions...");
+      console.log("ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢Ãƒâ€šÃ‚Â¬ Loading normal chat sessions...");
       fetchChatSessions();
     }
   }, [User?.email, activeView, isSmartAI, isSmartAIPro, isSmartAINxt]);
@@ -3011,7 +3018,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   //   if (!selectedChatId) return;
 
   //   // const selectedChat = chats.find((chat) => chat.id === selectedChatId);
-  //   // 🧠 Choose correct session list
+  //   // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  Choose correct session list
   //   const currentSessions =
   //     activeView === "smartAi" || isSmartAI
   //       ? smartAISessions
@@ -3033,10 +3040,10 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
 
   //   if (selectedChat.sessionId) {
   //     if (activeView === "smartAi") {
-  //       // 🧠 Smart AI tab
+  //       // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  Smart AI tab
   //       loadSmartAIHistory(selectedChat.sessionId);
 
-  //       // 🔹 Load latest token count for Smart AI
+  //       // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Load latest token count for Smart AI
   //       const savedTokens = localStorage.getItem(
   //         `tokens_${selectedChat.sessionId}_smartAi`
   //       );
@@ -3045,10 +3052,10 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   //         console.log("Smart AI tokens:", savedTokens);
   //       }
   //     } else if (activeView === "wrds AiPro") {
-  //       // 🧠 Smart AI tab
+  //       // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  Smart AI tab
   //       loadSmartAIProHistory(selectedChat.sessionId);
 
-  //       // 🔹 Load latest token count for Smart AI
+  //       // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Load latest token count for Smart AI
   //       const savedTokens = localStorage.getItem(
   //         `tokens_${selectedChat.sessionId}_wrdsAiPro`
   //       );
@@ -3057,10 +3064,10 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   //         console.log("Smart AIPro tokens:", savedTokens);
   //       }
   //     } else {
-  //       // 💬 Chat tab
+  //       // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢Ãƒâ€šÃ‚Â¬ Chat tab
   //       loadChatHistory(selectedChat.sessionId);
 
-  //       // 🔹 Load latest token count for Chat
+  //       // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Load latest token count for Chat
   //       const savedTokens = localStorage.getItem(
   //         `tokens_${selectedChat.sessionId}_chat`
   //       );
@@ -3070,7 +3077,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   //       }
   //     }
   //   } else {
-  //     // 🧹 Reset UI if no session
+  //     // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â¹ Reset UI if no session
   //     if (activeView === "smartAi") {
   //       setSmartAIMessageGroups([[]]);
   //     } else if (activeView === "wrds AiPro") {
@@ -3237,20 +3244,20 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   };
 
   const loadSmartAIHistory = async (sessionId) => {
-    console.log("🧠 Fetching Smart AI history for sessionId:", sessionId);
+    console.log("ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  Fetching Smart AI history for sessionId:", sessionId);
     if (!sessionId) {
-      setSmartAIMessageGroups([[]]); // ✅ clear Smart AI messages
+      setSmartAIMessageGroups([[]]); // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ clear Smart AI messages
       return;
     }
 
     setHistoryLoading(true);
 
     try {
-      // 1️⃣ Fetch Smart AI history data
+      // 1ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢Ãƒâ€ Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â£ Fetch Smart AI history data
       const rawHistory = await getSmartAIHistory(sessionId);
       console.log("Raw smartAi history fetched::::::", rawHistory);
 
-      // 2️⃣ Process Smart AI messages
+      // 2ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢Ãƒâ€ Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â£ Process Smart AI messages
       const processedGroups = [];
 
       for (let i = 0; i < rawHistory.length; i++) {
@@ -3319,7 +3326,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
         }
       }
 
-      // 3️⃣ Handle fallback case
+      // 3ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢Ãƒâ€ Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â£ Handle fallback case
       if (processedGroups.length === 0 && rawHistory.length > 0) {
         rawHistory.forEach((message, index) => {
           if (message.content) {
@@ -3349,10 +3356,10 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
         });
       }
 
-      // 4️⃣ Save Smart AI messages to a separate state
-      setSmartAIMessageGroups([processedGroups]); // ✅ separate from chat
+      // 4ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢Ãƒâ€ Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â£ Save Smart AI messages to a separate state
+      setSmartAIMessageGroups([processedGroups]); // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ separate from chat
     } catch (error) {
-      console.error("❌ Error loading WrdsAI history:", error);
+      console.error("ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒâ€¦Ã¢â‚¬â„¢ Error loading WrdsAI history:", error);
       setSmartAIMessageGroups([[]]);
     } finally {
       setHistoryLoading(false);
@@ -3360,19 +3367,19 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
     }
   };
   const loadSmartAIProHistory = async (sessionId) => {
-    console.log("🧠 Fetching WrdsAI Pro history for sessionId:", sessionId);
+    console.log("ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  Fetching WrdsAI Pro history for sessionId:", sessionId);
     if (!sessionId) {
-      setSmartAIProMessageGroups([[]]); // ✅ clear Smart AI messages
+      setSmartAIProMessageGroups([[]]); // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ clear Smart AI messages
       return;
     }
 
     setHistoryLoading(true);
 
     try {
-      // 1️⃣ Fetch Smart AI history data
+      // 1ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢Ãƒâ€ Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â£ Fetch Smart AI history data
       const rawHistory = await getSmartAIProHistory(sessionId);
 
-      // 2️⃣ Process Smart AI messages
+      // 2ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢Ãƒâ€ Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â£ Process Smart AI messages
       const processedGroups = [];
 
       for (let i = 0; i < rawHistory.length; i++) {
@@ -3441,7 +3448,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
         }
       }
 
-      // 3️⃣ Handle fallback case
+      // 3ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢Ãƒâ€ Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â£ Handle fallback case
       if (processedGroups.length === 0 && rawHistory.length > 0) {
         rawHistory.forEach((message, index) => {
           if (message.content) {
@@ -3471,10 +3478,10 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
         });
       }
 
-      // 4️⃣ Save Smart AI messages to a separate state
-      setSmartAIProMessageGroups([processedGroups]); // ✅ separate from chat
+      // 4ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢Ãƒâ€ Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â£ Save Smart AI messages to a separate state
+      setSmartAIProMessageGroups([processedGroups]); // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ separate from chat
     } catch (error) {
-      console.error("❌ Error loading WrdsAI Pro history:", error);
+      console.error("ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒâ€¦Ã¢â‚¬â„¢ Error loading WrdsAI Pro history:", error);
       setSmartAIProMessageGroups([[]]);
     } finally {
       setHistoryLoading(false);
@@ -3483,7 +3490,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   };
 
   const loadSmartAINxtHistory = async (sessionId) => {
-    console.log("🚀 Fetching WrdsAI Nxt history for sessionId:", sessionId);
+    console.log("ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã‚Â¡ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ Fetching WrdsAI Nxt history for sessionId:", sessionId);
     if (!sessionId) {
       setSmartAINxtMessageGroups([[]]);
       return;
@@ -3594,7 +3601,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
 
       setSmartAINxtMessageGroups([processedGroups]);
     } catch (error) {
-      console.error("❌ Error loading WrdsAI Nxt history:", error);
+      console.error("ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒâ€¦Ã¢â‚¬â„¢ Error loading WrdsAI Nxt history:", error);
       setSmartAINxtMessageGroups([[]]);
     } finally {
       setHistoryLoading(false);
@@ -3647,7 +3654,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
       }
 
 
-      // 🔹 Check for "Not enough tokens" error specifically
+      // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Check for "Not enough tokens" error specifically
       if (!response.ok) {
         const errorData = data;
 
@@ -3676,7 +3683,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
             }
           });
 
-          // 🔹 Return the actual error message instead of generic error
+          // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Return the actual error message instead of generic error
           return {
             response: "Not enough tokens to process your request.",
             sessionId: currentSessionId,
@@ -3713,7 +3720,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
 
       console.error("fetchChatbotResponse error:", err);
 
-      // 🔹 Check if it's a "Not enough tokens" error from the error message
+      // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Check if it's a "Not enough tokens" error from the error message
       if (err.message && err.message.includes("Not enough tokens")) {
         return {
           response: "Not enough tokens to process your request.",
@@ -3977,7 +3984,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
     const messageId =
       Date.now() + "_" + Math.random().toString(36).substr(2, 5); // always new id
 
-    // 🧠 Choose correct session list
+    // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  Choose correct session list
     const currentSessions =
       activeView === "smartAi" || isSmartAI ? smartAISessions : chats;
 
@@ -3989,7 +3996,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
     let currentSessionId = "";
 
     if (activeView === "smartAi" || isSmartAI) {
-      // 🧠 Smart AI tab → reuse the same open Smart AI session
+      // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  Smart AI tab ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ reuse the same open Smart AI session
       const existing = smartAISessions.find(
         (s) => s.id === selectedChatId || s.sessionId === selectedChatId,
       );
@@ -4014,7 +4021,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
         localStorage.getItem("lastSmartAINxtSessionId") ||
         "";
     } else {
-      // 💬 Normal chat tab
+      // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢Ãƒâ€šÃ‚Â¬ Normal chat tab
       const existing = chats.find(
         (c) => c.id === selectedChatId || c.sessionId === selectedChatId,
       );
@@ -4031,7 +4038,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
             ? "WrdsAI Nxt"
             : "chat";
 
-    // 🧠 choose correct state setter
+    // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  choose correct state setter
     const setMessagesFn =
       messageType === "wrds AiPro"
         ? setSmartAIProMessageGroups
@@ -4202,7 +4209,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
           );
 
       if (!result) return;
-      // 🔴 HANDLE API ERROR / RESTRICTED RESPONSE
+      // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â´ HANDLE API ERROR / RESTRICTED RESPONSE
       if (result.isError) {
         setMessagesFn((prev) => {
           const updated = [...prev];
@@ -4212,7 +4219,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
           if (index !== -1) {
             messages[index] = {
               ...messages[index],
-              responses: [result.response], // 👈 backend message
+              responses: [result.response], // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“Ãƒâ€¹Ã¢â‚¬Â  backend message
               isTyping: false,
               isComplete: true,
               tokensUsed: 0,
@@ -4232,14 +4239,13 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
           return updated;
         });
 
-        // ⛔ VERY IMPORTANT → typing animation STOP
+        // ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂºÃƒÂ¢Ã¢â€šÂ¬Ã‚Â VERY IMPORTANT ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ typing animation STOP
         setIsSending(false);
         setIsTypingResponse(false);
-        scrollToBottom();
-        return; // 🔥 EXIT — niche no typing code run thase j nahi
+        return; // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¥ EXIT ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â niche no typing code run thase j nahi
       }
 
-      // ✅ Persist sessionId so subsequent prompts stay in the same session
+      // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Persist sessionId so subsequent prompts stay in the same session
       if (
         result.sessionId &&
         (!selectedChatId || selectedChatId !== result.sessionId)
@@ -4279,7 +4285,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                 : result.botName || selectedBot,
       });
 
-      // ✅ Typing animation effect starts here
+      // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Typing animation effect starts here
       if (!result.isError && !result.streamed) {
         const lines = responseText.split("\n");
         let allText = "";
@@ -4292,7 +4298,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
         for (let l = 0; l < lines.length; l += LINES_PER_BATCH) {
           // if (isStoppedRef.current) break;
           if (isStoppedRef.current) {
-            // ⛔ Stop pressed → save partial response
+            // ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂºÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Stop pressed ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ save partial response
             let saveEndpoint = "";
 
             if (activeView === "chat") {
@@ -4378,8 +4384,8 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
           await new Promise((resolve) => setTimeout(resolve, 0)); // small pause between batches
         }
 
-        // ✅ Mark complete after typing done
-        // ✅ After typing completes (not stopped)
+        // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Mark complete after typing done
+        // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ After typing completes (not stopped)
         if (!isStoppedRef.current) {
           setMessagesFn((prev) => {
             const updated = [...prev];
@@ -4408,9 +4414,9 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
           });
         }
       }
-      // ✅ Typing animation ends
+      // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Typing animation ends
 
-      // ✅ Always update latest state working code
+      // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Always update latest state working code
       // setMessageGroups((prev) => {
       //   const updated = [...prev];
       //   const messages = updated[0] || [];
@@ -4434,20 +4440,18 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
     } finally {
       setIsSending(false);
       setIsTypingResponse(false);
-      scrollToBottom();
-
-      // ✅ Only refresh sessions if user did NOT stop typing (full response)
+      // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Only refresh sessions if user did NOT stop typing (full response)
       // if (!isStoppedRef.current) {
       //   fetchChatSessions();
       // }
 
-      // ✅ Only call userTokenStats + get_user_session if NOT stopped
+      // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Only call userTokenStats + get_user_session if NOT stopped
       if (!isStoppedRef.current) {
         try {
           const user = User || {};
           const email = user?.email;
           if (email) {
-            // 👉 userTokenStats
+            // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â° userTokenStats
             const statsRes = await fetch(`${apiBaseUrl}/userTokenStats`, {
               method: "POST",
               credentials: "include",
@@ -4464,22 +4468,22 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
               }
             }
 
-            // 👉 get_user_session
+            // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â° get_user_session
             // await fetchChatSessions();
 
-            // ✅ Refresh sessions based on current type
+            // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Refresh sessions based on current type
             if (activeView === "smartAi" || isSmartAI) {
-              await fetchSmartAISessions(); // 🧠 Smart AI tab
+              await fetchSmartAISessions(); // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  Smart AI tab
             } else if (activeView === "wrds AiPro" || isSmartAIPro) {
               await fetchSmartAIProSessions();
             } else if (activeView === "WrdsAI Nxt" || isSmartAINxt) {
               await fetchSmartAINxtSessions();
             } else {
-              await fetchChatSessions(); // 💬 Chat tab
+              await fetchChatSessions(); // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢Ãƒâ€šÃ‚Â¬ Chat tab
             }
           }
         } catch (err) {
-          console.warn("⚠️ Failed to refresh stats after chat:", err.message);
+          console.warn("ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã‚Â¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Failed to refresh stats after chat:", err.message);
         }
       }
     }
@@ -4701,14 +4705,14 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
     };
 
     if (activeView === "smartAi" || isSmartAI) {
-      // 🧠 Smart AI Chat
+      // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  Smart AI Chat
       setSmartAISessions((prev) => [newChat, ...prev]); // Add to Smart AI session list
       setSkipHistoryLoad(true);
       setSelectedChatId(newChat.id);
       localStorage.setItem("lastSmartAISessionId", newChat.id);
       setSmartAIMessageGroups([[]]); // Reset Smart AI message history
     } else if (activeView === "wrds AiPro" || isSmartAIPro) {
-      // 🧠 Smart AI Chat
+      // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  Smart AI Chat
       setSmartAIProSessions((prev) => [newChat, ...prev]); // Add to Smart AI session list
       setSkipHistoryLoad(true);
       setSelectedChatId(newChat.id);
@@ -4721,7 +4725,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
       localStorage.setItem("lastSmartAINxtSessionId", newChat.id);
       setSmartAINxtMessageGroups([[]]);
     } else {
-      // 💬 Normal Chat
+      // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢Ãƒâ€šÃ‚Â¬ Normal Chat
       setChats((prev) => [newChat, ...prev]); // Add to chat list
       setSkipHistoryLoad(true);
       setSelectedChatId(newChat.id);
@@ -4834,10 +4838,10 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
     if (isMobile) {
-      // ✅ Mobile → Mail app / Gmail app
+      // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Mobile ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Mail app / Gmail app
       window.location.href = "mailto:support@wrdsai.com";
     } else {
-      // ✅ Desktop → Gmail web compose
+      // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Desktop ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Gmail web compose
       window.location.href =
         "https://mail.google.com/mail/?view=cm&fs=1&to=support@wrdsai.com";
     }
@@ -4868,12 +4872,12 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
 
   const finalBots = isWrdsAIPro
     ? [
-        { label: "WrdsAI Pro", value: "wrds-ai-pro" }, // ✅ ONLY PRO
+        { label: "WrdsAI Pro", value: "wrds-ai-pro" }, // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ ONLY PRO
         ...bots,
-        { label: "Gemini", value: "gemini" }, // ✅ ONLY PRO
+        { label: "Gemini", value: "gemini" }, // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ ONLY PRO
       ]
     : [
-        { label: "WrdsAI", value: "wrds-ai" }, // ✅ ONLY FREE / NON-PRO
+        { label: "WrdsAI", value: "wrds-ai" }, // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ ONLY FREE / NON-PRO
         ...bots,
       ];
 
@@ -4885,7 +4889,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
         // position: "relative",
         overflowY: "auto",
         overflowX: "hidden",
-        // width: "100vw", // 🔹 Add this line
+        // width: "100vw", // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Add this line
       }}
     >
       {/* Header */}
@@ -5808,7 +5812,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                     setActiveView("WrdsAI Nxt");
                     setIsSmartAI(false);
                     setIsSmartAIPro(false);
-                    // ✅ Sync APIs
+                    // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Sync APIs
                     fetchChatSessions();
                     
                     const lastSessionId = localStorage.getItem("lastChatSessionId");
@@ -6710,7 +6714,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                 pb: 0,
               }}
             >
-              {/* 👉 Main Content (Conditional) */}
+              {/* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â° Main Content (Conditional) */}
               <Box
                 sx={{
                   // height: isXS ? "60vh" : "64vh",
@@ -6722,14 +6726,14 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                   overflowY: "auto",
                   overflowX: "hidden",
                   vw: "100%",
-                  p: { xs: 1, sm: 1, md: 2 }, // 🔹 Reduced padding
-                  minHeight: 0, // 🔹 Important for flex scrolling
-                  /* 🔹 Scrollbar hide */
+                  p: { xs: 1, sm: 1, md: 2 }, // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Reduced padding
+                  minHeight: 0, // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Important for flex scrolling
+                  /* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Scrollbar hide */
                   "&::-webkit-scrollbar": {
                     display: "none",
                   },
-                  scrollbarWidth: "none", // 🔹 Firefox
-                  "-ms-overflow-style": "none", // 🔹 IE 10+
+                  scrollbarWidth: "none", // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Firefox
+                  "-ms-overflow-style": "none", // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ IE 10+
                 }}
               >
                 {historyLoading ? (
@@ -7044,7 +7048,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
 
                         {/* AI Response */}
                         <Box>
-                          {/* 🔹 Selected model name upar */}
+                          {/* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Selected model name upar */}
                           <Box
                             sx={{
                               display: "flex",
@@ -7075,7 +7079,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                               getBotDisplayName(group.botName),
                               "group",
                             )}
-                            {/* ✅ Bot name + AI Assistant */}
+                            {/* ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Bot name + AI Assistant */}
                             <Box ml={1}>
                               <Typography
                                 variant="caption"
@@ -7187,7 +7191,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                                   gap: 1,
                                 }}
                               >
-                                {/* 🛑 Stop button beside token dropdown */}
+                                {/* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂºÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“ Stop button beside token dropdown */}
                                 {/* {group.isBeingProcessed && ( */}
                                 {/* <IconButton
                                     size="small"
@@ -7277,13 +7281,13 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                 )}
               </Box>
 
-              {/* 👉 Footer (Always Common) */}
+              {/* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â° Footer (Always Common) */}
               <Box
                 sx={{
                   mb: 0,
                   pb: "16px",
                   display: "flex",
-                  p: { xs: 1, sm: 1, md: 2 }, // 🔹 Reduced padding
+                  p: { xs: 1, sm: 1, md: 2 }, // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Reduced padding
                   width: { xs: "92%", sm: "100%", md: "100%" },
                   // maxWidth: { xs: "100%", md: "940px" },
                   // maxWidth: { xs: "100%", sm: "95%", md: "1080px" },
@@ -7306,7 +7310,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                     boxShadow: "0px 1px 6px rgba(0,0,0,0.1)",
                   }}
                 >
-                  {/* 📝 Input Field */}
+                  {/* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒâ€šÃ‚Â Input Field */}
                   <Box sx={{ width: "100%" }}>
                     <TextField
                       fullWidth
@@ -7345,7 +7349,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                           alignItems: "center",
                         },
                         "& .MuiOutlinedInput-notchedOutline": {
-                          border: "none !important", // 🔥 outline remove
+                          border: "none !important", // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¥ outline remove
                         },
                         "& .MuiOutlinedInput-input": {
                           padding: "6px 8px",
@@ -7364,7 +7368,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                       InputProps={{
                         startAdornment: (
                           <>
-                            {/* 📁 ATTACH ICON (Always shown) */}
+                            {/* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒâ€šÃ‚Â ATTACH ICON (Always shown) */}
 
                             {/* FILE BADGE SECTION */}
                             {selectedFiles.length > 0 && (
@@ -7496,7 +7500,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                         gap: 2,
                       }}
                     >
-                      {/* ➤ Send Button */}
+                      {/* ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã‚Â¾Ãƒâ€šÃ‚Â¤ Send Button */}
                       {renderStudyChapterMenus()}
 
                       <IconButton
@@ -7572,7 +7576,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                 pb: 0,
               }}
             >
-              {/* 👉 Main Content (Conditional) */}
+              {/* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â° Main Content (Conditional) */}
               <Box
                 sx={{
                   // height: "70vh",
@@ -7582,14 +7586,14 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                   flexDirection: "column",
                   flexGrow: 1,
                   overflow: "auto",
-                  p: { xs: 1, sm: 1, md: 2 }, // 🔹 Reduced padding
-                  minHeight: 0, // 🔹 Important for flex scrolling
-                  /* 🔹 Scrollbar hide */
+                  p: { xs: 1, sm: 1, md: 2 }, // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Reduced padding
+                  minHeight: 0, // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Important for flex scrolling
+                  /* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Scrollbar hide */
                   "&::-webkit-scrollbar": {
                     display: "none",
                   },
-                  scrollbarWidth: "none", // 🔹 Firefox
-                  "-ms-overflow-style": "none", // 🔹 IE 10+
+                  scrollbarWidth: "none", // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Firefox
+                  "-ms-overflow-style": "none", // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ IE 10+
                 }}
               >
                 {historyLoading ? (
@@ -7900,7 +7904,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
 
                         {/* AI Response */}
                         <Box>
-                          {/* 🔹 Selected model name upar */}
+                          {/* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Selected model name upar */}
                           <Box
                             sx={{
                               display: "flex",
@@ -7931,7 +7935,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                               getBotDisplayName(group.botName),
                               "group",
                             )}
-                            {/* ✅ Bot name + AI Assistant */}
+                            {/* ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Bot name + AI Assistant */}
                             <Box ml={1}>
                               <Typography
                                 variant="caption"
@@ -8037,7 +8041,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                                   gap: 1,
                                 }}
                               >
-                                {/* 🛑 Stop button beside token dropdown */}
+                                {/* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂºÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“ Stop button beside token dropdown */}
                                 {/* {group.isBeingProcessed && ( */}
                                 {/* <IconButton
                                     size="small"
@@ -8127,13 +8131,13 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                 )}
               </Box>
 
-              {/* 👉 Footer (Always Common) */}
+              {/* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â° Footer (Always Common) */}
               <Box
                 sx={{
                   mb: 0,
                   pb: "16px",
                   display: "flex",
-                  p: { xs: 1, sm: 1, md: 2 }, // 🔹 Reduced padding
+                  p: { xs: 1, sm: 1, md: 2 }, // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Reduced padding
                   // width: { xs: "100%" },
                   width: "92%",
                   // maxWidth: { xs: "100%", md: "940px" },
@@ -8158,7 +8162,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                     boxShadow: "0px 1px 6px rgba(0,0,0,0.1)",
                   }}
                 >
-                  {/* 📝 Input Field */}
+                  {/* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒâ€šÃ‚Â Input Field */}
                   <Box sx={{ width: "100%" }}>
                     <TextField
                       fullWidth
@@ -8189,7 +8193,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                           alignItems: "center",
                         },
                         "& .MuiOutlinedInput-notchedOutline": {
-                          border: "none !important", // 🔥 outline remove
+                          border: "none !important", // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¥ outline remove
                         },
                         "& .MuiOutlinedInput-input": {
                           padding: "6px 8px",
@@ -8208,7 +8212,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                       InputProps={{
                         startAdornment: (
                           <>
-                            {/* 📁 ATTACH ICON (Always shown) */}
+                            {/* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒâ€šÃ‚Â ATTACH ICON (Always shown) */}
 
                             {/* FILE BADGE SECTION */}
                             {selectedFiles.length > 0 && (
@@ -8342,7 +8346,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                     >
                       {renderStudyChapterMenus()}
 
-                      {/* ➤ Send Button */}
+                      {/* ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã‚Â¾Ãƒâ€šÃ‚Â¤ Send Button */}
                       <IconButton
                         onClick={() => handleSend()}
                         // disabled={!input.trim() || isSending || isTypingResponse}
@@ -8388,7 +8392,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                   </Typography>
                 </Box>
 
-                {/* 👉 Tagline (Always Common) */}
+                {/* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â° Tagline (Always Common) */}
                 {/* <Box textAlign="center" mt={1}>
                   <Typography
                     variant="caption"
@@ -8423,7 +8427,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                 pb: 0,
               }}
             >
-              {/* 👉 Main Content (Conditional) */}
+              {/* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â° Main Content (Conditional) */}
               <Box
                 sx={{
                   display: "flex",
@@ -8884,7 +8888,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                 )}
               </Box>
 
-              {/* 👉 Footer */}
+              {/* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â° Footer */}
               <Box
                 sx={{
                   mb: 0,
@@ -9091,7 +9095,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                         gap: { xs: "4px", sm: "6px" },
                       }}
                     >
-                      {/* 🏫 Board Selection Button */}
+                      {/* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚ÂÃƒâ€šÃ‚Â« Board Selection Button */}
                       <StudyChapterMenus
                         isCBSEActive={isCBSEActive}
                         chapterError={chapterError}
@@ -9221,7 +9225,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                 pb: 0,
               }}
             >
-              {/* 👉 Main Content (Conditional) */}
+              {/* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â° Main Content (Conditional) */}
               <Box
                 sx={{
                   // height: "70vh",
@@ -9231,14 +9235,14 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                   flexDirection: "column",
                   flexGrow: 1,
                   overflow: "auto",
-                  p: { xs: 1, sm: 1, md: 2 }, // 🔹 Reduced padding
-                  minHeight: 0, // 🔹 Important for flex scrolling
-                  /* 🔹 Scrollbar hide */
+                  p: { xs: 1, sm: 1, md: 2 }, // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Reduced padding
+                  minHeight: 0, // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Important for flex scrolling
+                  /* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Scrollbar hide */
                   "&::-webkit-scrollbar": {
                     display: "none",
                   },
-                  scrollbarWidth: "none", // 🔹 Firefox
-                  "-ms-overflow-style": "none", // 🔹 IE 10+
+                  scrollbarWidth: "none", // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Firefox
+                  "-ms-overflow-style": "none", // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ IE 10+
                 }}
               >
                 {historyLoading ? (
@@ -9532,7 +9536,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
 
                         {/* AI Response */}
                         <Box>
-                          {/* 🔹 Selected model name upar */}
+                          {/* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Selected model name upar */}
                           <Box
                             sx={{
                               display: "flex",
@@ -9563,7 +9567,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                               getBotDisplayName(group.botName),
                               "group",
                             )}
-                            {/* ✅ Bot name + AI Assistant */}
+                            {/* ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Bot name + AI Assistant */}
                             <Box ml={1}>
                               <Typography
                                 variant="caption"
@@ -9669,7 +9673,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                                   gap: 1,
                                 }}
                               >
-                                {/* 🛑 Stop button beside token dropdown */}
+                                {/* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂºÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“ Stop button beside token dropdown */}
                                 {/* {group.isBeingProcessed && ( */}
                                 {/* <IconButton
                                     size="small"
@@ -9759,13 +9763,13 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                 )}
               </Box>
 
-              {/* 👉 Footer (Always Common) */}
+              {/* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â° Footer (Always Common) */}
               <Box
                 sx={{
                   mb: 0,
                   pb: "16px",
                   display: "flex",
-                  p: { xs: 1, sm: 1, md: 2 }, // 🔹 Reduced padding
+                  p: { xs: 1, sm: 1, md: 2 }, // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Reduced padding
                   width: { xs: "92%", sm: "100%", md: "100%" },
                   // maxWidth: { xs: "100%", md: "940px" },
                   // maxWidth: { xs: "100%", sm: "95%", md: "1080px" },
@@ -9788,7 +9792,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                     boxShadow: "0px 1px 6px rgba(0,0,0,0.1)",
                   }}
                 >
-                  {/* 📝 Input Field */}
+                  {/* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒâ€šÃ‚Â Input Field */}
                   <Box sx={{ width: "100%" }}>
                     <TextField
                       fullWidth
@@ -9819,7 +9823,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                           alignItems: "center",
                         },
                         "& .MuiOutlinedInput-notchedOutline": {
-                          border: "none !important", // 🔥 outline remove
+                          border: "none !important", // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¥ outline remove
                         },
                         "& .MuiOutlinedInput-input": {
                           padding: "6px 8px",
@@ -9838,7 +9842,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                       InputProps={{
                         startAdornment: (
                           <>
-                            {/* 📁 ATTACH ICON (Always shown) */}
+                            {/* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒâ€šÃ‚Â ATTACH ICON (Always shown) */}
 
                             {/* FILE BADGE SECTION */}
                             {selectedFiles.length > 0 && (
@@ -9972,7 +9976,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                     >
                       {renderStudyChapterMenus()}
 
-                      {/* ➤ Send Button */}
+                      {/* ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã‚Â¾Ãƒâ€šÃ‚Â¤ Send Button */}
                       <IconButton
                         onClick={() => handleSend()}
                         // disabled={!input.trim() || isSending || isTypingResponse}
@@ -10014,7 +10018,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                   </Typography>
                 </Box>
 
-                {/* 👉 Tagline (Always Common) */}
+                {/* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â° Tagline (Always Common) */}
                 {/* <Box textAlign="center" mt={1}>
                   <Typography
                     variant="caption"
@@ -10044,7 +10048,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                 pb: 0,
               }}
             >
-              {/* 👉 Main Content (Conditional) */}
+              {/* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â° Main Content (Conditional) */}
               <Box
                 sx={{
                   height: "70vh",
@@ -10053,14 +10057,14 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                   flexDirection: "column",
                   flexGrow: 1,
                   overflow: "auto",
-                  p: { xs: 1, sm: 1, md: 2 }, // 🔹 Reduced padding
-                  minHeight: 0, // 🔹 Important for flex scrolling
-                  /* 🔹 Scrollbar hide */
+                  p: { xs: 1, sm: 1, md: 2 }, // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Reduced padding
+                  minHeight: 0, // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Important for flex scrolling
+                  /* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Scrollbar hide */
                   "&::-webkit-scrollbar": {
                     display: "none",
                   },
-                  scrollbarWidth: "none", // 🔹 Firefox
-                  "-ms-overflow-style": "none", // 🔹 IE 10+
+                  scrollbarWidth: "none", // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Firefox
+                  "-ms-overflow-style": "none", // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ IE 10+
                 }}
               >
                 {historyLoading ? (
@@ -10370,7 +10374,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
 
                         {/* AI Response */}
                         <Box>
-                          {/* 🔹 Selected model name upar */}
+                          {/* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Selected model name upar */}
                           <Box
                             sx={{
                               display: "flex",
@@ -10401,7 +10405,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                               getBotDisplayName(group.botName),
                               "group",
                             )}
-                            {/* ✅ Bot name + AI Assistant */}
+                            {/* ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Bot name + AI Assistant */}
                             <Box ml={1}>
                               <Typography
                                 variant="caption"
@@ -10507,7 +10511,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                                   gap: 1,
                                 }}
                               >
-                                {/* 🛑 Stop button beside token dropdown */}
+                                {/* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂºÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“ Stop button beside token dropdown */}
                                 {/* {group.isBeingProcessed && ( */}
                                 {/* <IconButton
                                     size="small"
@@ -10597,13 +10601,13 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                 )}
               </Box>
 
-              {/* 👉 Footer (Always Common) */}
+              {/* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â° Footer (Always Common) */}
               <Box
                 sx={{
                   mb: 0,
                   pb: "16px",
                   display: "flex",
-                  p: { xs: 1, sm: 1, md: 2 }, // 🔹 Reduced padding
+                  p: { xs: 1, sm: 1, md: 2 }, // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Reduced padding
                   width: "100%",
                   // maxWidth: { xs: "100%", md: "940px" },
                   // maxWidth: { xs: "100%", sm: "95%", md: "1080px" },
@@ -10664,7 +10668,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                       color: "#2F67F6",
                       position: "absolute",
                       left: "15px",
-                      bottom: "34px", // 👈 bottom ma fix karva
+                      bottom: "34px", // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“Ãƒâ€¹Ã¢â‚¬Â  bottom ma fix karva
                       zIndex: 2,
                       // backgroundColor: "white",
                       borderRadius: "50%",
@@ -10680,7 +10684,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                       // onChange={(e) => {
                       //   const files = e.target.files;
                       //   if (files && files.length > 0) {
-                      //     setSelectedFile(files); // 🔹 array of files સેટ કરો
+                      //     setSelectedFile(files); // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ array of files ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚Â«ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€¦Ã‚Â¸ ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚Â°ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚Â«ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹
                       //     console.log("Files selected:", files);
                       //   }
                       // }}
@@ -10748,7 +10752,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                     multiline
                     maxRows={selectedFiles.length > 0 ? 4 : 3}
                     InputProps={{
-                      startAdornment: selectedFiles.length > 0 && ( // 🔹 selectedFiles.length તપાસો
+                      startAdornment: selectedFiles.length > 0 && ( // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ selectedFiles.length ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚Â¤ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚ÂªÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚Â¾ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚Â«ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹
                         <Box
                           sx={{
                             position: "absolute",
@@ -10756,9 +10760,9 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                             left: "11px",
                             display: "flex",
                             alignItems: "center",
-                            flexWrap: "wrap", // 🔹 Multiple files માટે wrap કરો
-                            gap: 0.5, // 🔹 Files વચ્ચે gap
-                            // maxWidth: "200px", // 🔹 Maximum width
+                            flexWrap: "wrap", // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Multiple files ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚Â®ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚Â¾ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€¦Ã‚Â¸ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚Â«ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ wrap ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚Â°ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚Â«ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹
+                            gap: 0.5, // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Files ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚ÂµÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€¦Ã‚Â¡ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚Â«Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€¦Ã‚Â¡ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚Â«ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ gap
+                            // maxWidth: "200px", // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Maximum width
                             maxWidth: "calc(100% - 50px)", // Prevent overflow
                           }}
                         >
@@ -10795,7 +10799,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                               <IconButton
                                 size="small"
                                 // onClick={() => setSelectedFiles(null)}
-                                onClick={() => removeFile(index)} // 🔹 index પાસ કરો
+                                onClick={() => removeFile(index)} // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ index ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚ÂªÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚Â¾ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚Â¸ ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚Â°ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚Â«ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹
                                 sx={{ color: "#ff4444", p: 0.5, ml: 0.5 }}
                               >
                                 <CloseIcon fontSize="small" />
@@ -10807,7 +10811,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
 
                       endAdornment: (
                         <Box sx={{ display: "flex", alignItems: "center" }}>
-                          {/* 🎤 Voice Input Button */}
+                          {/* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã‚Â½Ãƒâ€šÃ‚Â¤ Voice Input Button */}
                           <IconButton
                             onClick={
                               isListening ? stopListening : startListening
@@ -10829,7 +10833,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                             )}
                           </IconButton>
 
-                          {/* 🛑 Stop Generating Button (for chatbot response) */}
+                          {/* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂºÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“ Stop Generating Button (for chatbot response) */}
                           {(isTypingResponse || isSending) && (
                             <Tooltip title="Stop generating">
                               <IconButton
@@ -10891,7 +10895,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                       <SendIcon sx={{ color: "#ffffff" }} />
                     </IconButton>
 
-                    {/* 🔹 Stop icon appears when AI is typing a response */}
+                    {/* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Stop icon appears when AI is typing a response */}
                     {/* {isTypingResponse && (
                         <IconButton
                           onClick={() => handleStop()}
@@ -10909,7 +10913,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                   </Box>
                 </Box>
 
-                {/* 👉 Tagline (Always Common) */}
+                {/* ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â° Tagline (Always Common) */}
                 <Box textAlign="center">
                   <Typography
                     variant="caption"

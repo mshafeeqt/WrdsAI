@@ -73,6 +73,7 @@ export const PgUser = sequelize.define(
       },
     },
     className: DataTypes.STRING,
+    schoolName: DataTypes.STRING,
     parentName: DataTypes.STRING,
     parentEmail: DataTypes.STRING,
     parentMobile: DataTypes.STRING,
@@ -593,6 +594,67 @@ export const PgLlmData = sequelize.define(
   },
 );
 
+export const PgPracticeMessage = sequelize.define(
+  "PgPracticeMessage",
+  {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    userEmail: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+    },
+    className: DataTypes.TEXT,
+    subjectName: DataTypes.TEXT,
+    chapterId: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+    },
+    chapterName: DataTypes.TEXT,
+    role: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        isIn: [["user", "assistant"]],
+      },
+    },
+    messageKind: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+      defaultValue: "",
+    },
+    messageText: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+      defaultValue: "",
+    },
+    messageHtml: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+      defaultValue: "",
+    },
+    problemText: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+      defaultValue: "",
+    },
+    clientMessageId: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+    },
+  },
+  {
+    tableName: "practice_messages",
+    indexes: [
+      { unique: true, fields: ["userId", "chapterId", "clientMessageId"] },
+      { fields: ["userId", "chapterId", "createdAt"] },
+      { fields: ["userEmail"] },
+      { fields: ["chapterId"] },
+    ],
+  },
+);
 export const PgUserQuestionEvent = sequelize.define(
   "PgUserQuestionEvent",
   {
@@ -670,6 +732,8 @@ PgTestAttempt.belongsTo(PgUser, { foreignKey: "userId" });
 PgTestAttempt.hasMany(PgTestQuestionResult, { foreignKey: "testAttemptId" });
 PgTestQuestionResult.belongsTo(PgTestAttempt, { foreignKey: "testAttemptId" });
 
+PgUser.hasMany(PgPracticeMessage, { foreignKey: "userId" });
+PgPracticeMessage.belongsTo(PgUser, { foreignKey: "userId" });
 PgUser.hasMany(PgUserQuestionEvent, { foreignKey: "userId" });
 PgUserQuestionEvent.belongsTo(PgUser, { foreignKey: "userId" });
 

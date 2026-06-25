@@ -53,6 +53,7 @@ export const createUserManually = async (req, res) => {
       mobile,
       dateOfBirth,
       className,
+      schoolName,
       ageGroup,
       parentName,
       parentEmail,
@@ -63,6 +64,7 @@ export const createUserManually = async (req, res) => {
     } = req.body;
  
     const finalAgeGroup = getAgeGroup(dateOfBirth) || ageGroup || "";
+    const cleanedSchoolName = String(schoolName || "").trim();
     const parentAgeGroups = ["<13", "13-14", "15-17"];
     const isUnder18 = parentAgeGroups.includes(finalAgeGroup);
  
@@ -97,6 +99,10 @@ export const createUserManually = async (req, res) => {
         message:
           "Invalid mobile number format. Please use country code with number (e.g. +919876543210)",
       });
+    }
+ 
+    if (!cleanedSchoolName) {
+      return res.status(400).json({ message: "schoolName required" });
     }
  
     if (!subscriptionPlan || !subscriptionType) {
@@ -169,6 +175,8 @@ export const createUserManually = async (req, res) => {
       dateOfBirth: new Date(dateOfBirth),
       ageGroup: finalAgeGroup,
       className,
+
+      schoolName: cleanedSchoolName,
 
       parentName: isUnder18 ? parentName : "",
       parentEmail: isUnder18 ? parentEmail : "",

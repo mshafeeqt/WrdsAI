@@ -1,4 +1,4 @@
-﻿import fetch from "node-fetch";
+import fetch from "node-fetch";
 import { PgUser } from "../postgres/models.js";
 import ChatSession from "../services/chat/chatSessionStore.js";
 import { v4 as uuidv4 } from "uuid";
@@ -44,7 +44,7 @@ const envBasePath = fs.existsSync(path.join(process.cwd(), "chatbot-backend"))
   ? path.join(process.cwd(), "chatbot-backend")
   : process.cwd();
 
-dotenv.config({ path: path.join(envBasePath, ".env") });
+dotenv.config({ path: path.join(envBasePath, ".env"), quiet: true });
 
 pdfjs.GlobalWorkerOptions.standardFontDataUrl = path.join(
   __dirname,

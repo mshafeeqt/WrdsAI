@@ -9,7 +9,7 @@ import {
   shouldTriggerSelfHarmGuardrail,
 } from "../utils/selfHarmGuardrails.js";
 import dotenv from "dotenv";
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const GROK_MODEL = "gpt-5-nano";
 const GROK_API_URL = "https://api.openai.com/v1/chat/completions";

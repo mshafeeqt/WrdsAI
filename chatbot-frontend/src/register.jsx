@@ -45,6 +45,7 @@ const Register = () => {
     dateOfBirth: null,
     ageGroup: "",
     className: "",
+    schoolName: "",
     parentName: "",
     parentEmail: "",
     // parentMobile: "+91 ",
@@ -70,7 +71,6 @@ const Register = () => {
 
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
-  const ageGroups = ["<13", "13-14", "15-17", "18+"];
   const userRoleOptions = ["Student", "Teacher"];
   const classOptions = ["9", "10", "11"];
   const DEFAULT_SUBSCRIPTION_PLAN = "WrdsAI Nxt";
@@ -99,8 +99,7 @@ const Register = () => {
     },
   };
 
-  const params = new URLSearchParams(location.search);
-  const isUpgradeFromUrl = params.get("isUpgrade")?.trim() === "true";
+  const isUpgradeFromUrl = new URLSearchParams(location.search).get("isUpgrade")?.trim() === "true";
 
   // 🔥 SAME behaviour for Chat upgrade & Email upgrade
   const isUpgradeMode = isUpgrade || isUpgradeFromUrl;
@@ -182,7 +181,10 @@ const Register = () => {
       return { code: "+91", number: cleanPhone.replace(/^\+/, "") };
     };
 
-    if (isUpgradeFromUrl) {
+    const params = new URLSearchParams(location.search);
+    const isUpgradeFromSearch = params.get("isUpgrade")?.trim() === "true";
+
+    if (isUpgradeFromSearch) {
       const dobParam = params.get("dateOfBirth");
       const dobDate = dobParam ? new Date(dobParam) : null;
       const calculatedAgeGroup = dobDate ? calculateAgeGroup(dobDate) : "";
@@ -200,6 +202,7 @@ const Register = () => {
         dateOfBirth: dobDate,
         ageGroup: calculatedAgeGroup,
         className: params.get("className") || params.get("class") || "",
+        schoolName: params.get("schoolName") || "",
 
         parentName: ["<13", "13-14", "15-17"].includes(calculatedAgeGroup)
           ? params.get("parentName") || ""
@@ -230,6 +233,7 @@ const Register = () => {
         parentMobileCode: pm.code,
         parentMobileNumber: pm.number,
         className: userData.className || userData.class || "",
+        schoolName: userData.schoolName || "",
       }));
     }
   }, [isUpgrade, userData, location.search]);
@@ -366,7 +370,8 @@ const Register = () => {
       !formData.password ||
       !formData.confirmPassword ||
       !formData.subscriptionPlan ||
-      !formData.subscriptionType
+      !formData.subscriptionType ||
+      !formData.schoolName
     ) {
       toast.error("Please fill all required fields!");
       return false;
@@ -463,6 +468,7 @@ const Register = () => {
         ? formData.dateOfBirth.toISOString().split("T")[0]
         : null,
       className: formData.className,
+      schoolName: formData.schoolName.trim(),
       subscriptionPlan: formData.subscriptionPlan, // 🔥 ENSURE it's included
       childPlan: formData.childPlan || null, // 🔥 ENSURE it's included
       subscriptionType: formData.subscriptionType, // 🔥 ENSURE it's included
@@ -490,6 +496,7 @@ const Register = () => {
           dateOfBirth: null,
           ageGroup: "",
           className: "",
+          schoolName: "",
           parentName: "",
           parentEmail: "",
           parentMobile: "",
@@ -527,6 +534,7 @@ const Register = () => {
         dateOfBirth: null,
         ageGroup: "",
         className: "",
+        schoolName: "",
         parentName: "",
         parentEmail: "",
         parentMobile: "",
@@ -887,68 +895,35 @@ const Register = () => {
                   </TextField>
                 </Grid>
 
-                {!["<13", "13-14", "15-17"].includes(formData.ageGroup) && (
-                  <Grid size={{ xs: 12, sm: 5 }}>
-                    <InputLabel
-                      sx={{
-                        fontSize: { xs: "17px", sm: "19px", md: "19px" },
-                        fontFamily: "Calibri, sans-serif",
-                        width: "100%",
-                      }}
-                    >
-                      Email{" "}
-                      {["<13", "13-14", "15-17"].includes(formData.ageGroup)
-                        ? "(Optional)"
-                        : "*"}
-                    </InputLabel>
-
-                    <TextField
-                      fullWidth
-                      size="small"
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      disabled={["<13", "13-14", "15-17"].includes(
-                        formData.ageGroup
-                      )}
-                      onChange={handleChange}
-                      required={
-                        !["<13", "13-14", "15-17"].includes(
-                          formData.ageGroup
-                        )
-                      }
-                      InputProps={{
-                        sx: {
-                          height: { xs: 30, sm: 42 },
-                          fontSize: { xs: "15px", sm: "17px" },
-                        },
-                      }}
-                    />
-                  </Grid>
-                )}
-
-                <Grid item xs={12}>
-                  <Typography
+                {/* School Name */}
+                <Grid size={{ xs: 12, sm: 5 }}>
+                  <InputLabel
                     sx={{
-                      mt: "-4px",
-                      fontSize: "14px",
+                      fontSize: { xs: "17px", sm: "19px", md: "19px" },
                       fontFamily: "Calibri, sans-serif",
-                      whiteSpace: "nowrap",
                     }}
                   >
-                    <span style={{ color: "red", fontWeight: 600 }}>Note:</span>{" "}
-                    Visit{" "}
-                    <a
-                      href="https://wrdsai.com/pricing"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ color: "#1976d2", textDecoration: "underline" }}
-                    >
-                      https://wrdsai.com/pricing
-                    </a>{" "}
-                    before you choose your subscription type.
-                  </Typography>
+                    School Name *
+                  </InputLabel>
+
+                  <TextField
+                    disabled={isUpgradeMode}
+                    fullWidth
+                    size="small"
+                    name="schoolName"
+                    value={formData.schoolName}
+                    required
+                    onChange={handleChange}
+                    InputProps={{
+                      readOnly: isUpgradeMode,
+                      sx: {
+                        height: { xs: 30, sm: 42 },
+                        fontSize: { xs: "15px", sm: "17px" },
+                      },
+                    }}
+                  />
                 </Grid>
+
               </Grid>
 
               {/* First Name & Last Name - In one row */}
@@ -1227,6 +1202,127 @@ const Register = () => {
                   </TextField>
                 </Grid>
               </Grid> */}
+              {/* Contact */}
+              {!['<13', '13-14', '15-17'].includes(formData.ageGroup) && (
+                <Grid
+                  container
+                  spacing={2}
+                  sx={{
+                    mb: { xs: 1.5, sm: 2 },
+                    gridColumn: { md: "1 / -1" },
+                    width: { xs: "100%", md: "64%" },
+                    maxWidth: 640,
+                  }}
+                >
+                  <Grid size={{ xs: 12, sm: 5 }} sx={{ flexBasis: { sm: "45%" }, maxWidth: { sm: "45%" } }}>
+                    <InputLabel
+                      sx={{
+                        fontSize: { xs: "17px", sm: "19px", md: "19px" },
+                        fontFamily: "Calibri, sans-serif",
+                        width: "100%",
+                      }}
+                    >
+                      Mobile Number *
+                    </InputLabel>
+                    <Grid container spacing={1}>
+                      <Grid size={{ xs: 4 }}>
+                        <TextField
+                          select
+                          size="small"
+                          fullWidth
+                          value={formData.mobileCode}
+                          disabled={isUpgradeMode}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              mobileCode: e.target.value,
+                            })
+                          }
+                          InputProps={{
+                            sx: {
+                              height: { xs: 30, sm: 42 },
+                              fontSize: { xs: "15px", sm: "17px" },
+                            },
+                          }}
+                          SelectProps={{
+                            MenuProps: {
+                              PaperProps: {
+                                sx: {
+                                  maxHeight: 220,
+                                  width: 120,
+                                },
+                              },
+                            },
+                          }}
+                        >
+                          {allCountries.map((c) => (
+                            <MenuItem
+                              key={c.iso2}
+                              value={`+${c.dialCode}`}
+                              sx={{ fontSize: "14px", py: 0.5 }}
+                            >
+                              +{c.dialCode}
+                            </MenuItem>
+                          ))}
+                        </TextField>
+                      </Grid>
+
+                      <Grid size={{ xs: 8 }}>
+                        <TextField
+                          size="small"
+                          fullWidth
+                          required
+                          disabled={isUpgradeMode}
+                          value={formData.mobileNumber}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              mobileNumber: e.target.value.replace(/\D/g, ""),
+                            })
+                          }
+                          placeholder="Mobile number"
+                          inputProps={{ maxLength: 15 }}
+                          InputProps={{
+                            sx: {
+                              height: { xs: 30, sm: 42 },
+                              fontSize: { xs: "15px", sm: "17px" },
+                            },
+                          }}
+                        />
+                      </Grid>
+                    </Grid>
+                  </Grid>
+
+                  <Grid size={{ xs: 12, sm: 7 }} sx={{ flex: { sm: 1 }, maxWidth: { sm: "55%" } }}>
+                    <InputLabel
+                      sx={{
+                        fontSize: { xs: "17px", sm: "19px", md: "19px" },
+                        fontFamily: "Calibri, sans-serif",
+                        width: "100%",
+                      }}
+                    >
+                      Email *
+                    </InputLabel>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      disabled={isUpgradeMode}
+                      onChange={handleChange}
+                      required
+                      InputProps={{
+                        sx: {
+                          height: { xs: 30, sm: 42 },
+                          fontSize: { xs: "15px", sm: "17px" },
+                        },
+                      }}
+                    />
+                  </Grid>
+                </Grid>
+              )}
+
 
               <Grid
                 container
@@ -1235,9 +1331,12 @@ const Register = () => {
                   mb: 0,
                   display: "flex",
                   gridColumn: { md: "1 / -1" },
+                  width: { xs: "100%", md: "78%" },
+                  maxWidth: 760,
                 }}
               >
-                <Grid item xs={12} sm={6}>
+  
+                  <Grid size={{ xs: 12, sm: 4 }} sx={{ flexBasis: { sm: "34%" }, maxWidth: { sm: "34%" } }}>
                   <InputLabel
                     sx={{
                       fontSize: { xs: "17px", sm: "19px", md: "19px" },
@@ -1279,7 +1378,7 @@ const Register = () => {
                   />
                 </Grid>
 
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 4 }} sx={{ flexBasis: { sm: "34%" }, maxWidth: { sm: "34%" } }}>
                   <InputLabel
                     sx={{
                       fontSize: { xs: "17px", sm: "19px", md: "19px" },
@@ -1330,131 +1429,40 @@ const Register = () => {
                     fullWidth
                   />
                 </Grid>
-              </Grid>
 
-              {/* Mobile */}
-              {/* {formData.ageGroup !== "<13" && ( */}
-              {!["<13", "13-14", "15-17"].includes(formData.ageGroup) && (
-                <Grid
-                  container
-                  spacing={0}
-                  sx={{ mb: 2, display: "flex", flexDirection: "column" }}
-                >
-                  {/* LABEL */}
-                  <Grid item xs={12}>
-                    <InputLabel
-                      sx={{
-                        fontSize: { xs: "17px", sm: "19px", md: "19px" },
-                        fontFamily: "Calibri, sans-serif",
-                        width: "100%",
-                      }}
-                    >
-                      Mobile Number *
-                    </InputLabel>
-                  </Grid>
-
-                  {/* TEXTFIELD */}
-                  {/* <Grid item xs={12} sm={8} md={6}>
-                    <TextField
-                      size="small"
-                      name="mobile"
-                      value={formData.mobile}
-                      disabled={isUpgradeMode}
-                      onChange={(e) => {
-                        let v = e.target.value;
-
-                        // Always start with +91
-                        if (!v.startsWith("+91 ")) {
-                          v = "+91 " + v.replace("+91", "").replace(" ", "");
-                        }
-
-                        setFormData({ ...formData, mobile: v });
-                      }}
-                      placeholder="+1234567890"
-                      required
-                      InputProps={{
-                        sx: {
-                          height: { xs: 30, sm: 42 },
-                          fontSize: { xs: "15px", sm: "17px" },
-                        },
-                      }}
-                      fullWidth
-                    />
-                  </Grid> */}
-                  <Grid item xs={12} sm={8} md={6}>
-                    <Grid container spacing={1}>
-                      {/* ISD CODE */}
-                      <Grid item xs={4}>
-                        <TextField
-                          select
-                          size="small"
-                          fullWidth
-                          value={formData.mobileCode}
-                          disabled={isUpgradeMode}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              mobileCode: e.target.value,
-                            })
-                          }
-                          InputProps={{
-                            sx: {
-                              height: { xs: 30, sm: 42 },
-                              fontSize: { xs: "15px", sm: "17px" },
-                            },
-                          }}
-                          SelectProps={{
-                            MenuProps: {
-                              PaperProps: {
-                                sx: {
-                                  maxHeight: 220, // 🔥 dropdown height control
-                                  width: 120,
-                                },
-                              },
-                            },
-                          }}
-                        >
-                          {allCountries.map((c) => (
-                            <MenuItem
-                              key={c.iso2}
-                              value={`+${c.dialCode}`}
-                              sx={{ fontSize: "14px", py: 0.5 }}
-                            >
-                              +{c.dialCode}
-                            </MenuItem>
-                          ))}
-                        </TextField>
-                      </Grid>
-
-                      {/* MOBILE NUMBER */}
-                      <Grid item xs={8}>
-                        <TextField
-                          size="small"
-                          fullWidth
-                          required
-                          disabled={isUpgradeMode}
-                          value={formData.mobileNumber}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              mobileNumber: e.target.value.replace(/\D/g, ""),
-                            })
-                          }
-                          placeholder="Mobile number"
-                          inputProps={{ maxLength: 15 }}
-                          InputProps={{
-                            sx: {
-                              height: { xs: 30, sm: 42 },
-                              fontSize: { xs: "15px", sm: "17px" },
-                            },
-                          }}
-                        />
-                      </Grid>
-                    </Grid>
-                  </Grid>
+                <Grid size={{ xs: 12, sm: 4 }} sx={{ flexBasis: { sm: "26%" }, maxWidth: { sm: "26%" } }}>
+                  <InputLabel
+                    sx={{
+                      fontSize: { xs: "17px", sm: "19px", md: "19px" },
+                      fontFamily: "Calibri, sans-serif",
+                      width: "100%",
+                    }}
+                  >
+                    Subscription Type *
+                  </InputLabel>
+                  <TextField
+                    select
+                    size="small"
+                    name="subscriptionType"
+                    value={formData.subscriptionType}
+                    onChange={handleChange}
+                    required
+                    InputProps={{
+                      sx: {
+                        height: { xs: 30, sm: 42 },
+                        fontSize: { xs: "15px", sm: "17px" },
+                      },
+                    }}
+                    fullWidth
+                  >
+                    {subscriptionTypes.map((type) => (
+                      <MenuItem key={type} value={type} disabled={false}>
+                        {type}
+                      </MenuItem>
+                    ))}
+                  </TextField>
                 </Grid>
-              )}
-
+              </Grid>
               {/* Username */}
               {/* <Box sx={{ mb: 2 }}>
               <InputLabel>Username *</InputLabel>
@@ -1756,7 +1764,7 @@ const Register = () => {
                       <Grid item xs={12} sm={8} md={6}>
                         <Grid container spacing={1}>
                           {/* ISD CODE */}
-                          <Grid item xs={4}>
+                          <Grid size={{ xs: 4 }}>
                             <TextField
                               select
                               size="small"
@@ -1800,7 +1808,7 @@ const Register = () => {
                           </Grid>
 
                           {/* PARENT MOBILE NUMBER */}
-                          <Grid item xs={8}>
+                          <Grid size={{ xs: 8 }}>
                             <TextField
                               size="small"
                               fullWidth
@@ -1995,61 +2003,6 @@ const Register = () => {
                 </Grid>
               )}
 
-              {/* Subscription Type */}
-              <Grid
-                container
-                spacing={1}
-                sx={{ mb: 2, display: "flex", flexDirection: "column" }}
-              >
-                {/* LABEL */}
-                <Grid item xs={12}>
-                  <InputLabel
-                    sx={{
-                      fontSize: { xs: "17px", sm: "19px", md: "19px" },
-                      fontFamily: "Calibri, sans-serif",
-                      width: "100%",
-                    }}
-                  >
-                    Subscription Type *
-                  </InputLabel>
-                </Grid>
-
-                <Grid item xs={12} sm={8} md={6}>
-                  <TextField
-                    select
-                    // fullWidth
-                    size="small"
-                    name="subscriptionType"
-                    value={formData.subscriptionType}
-                    onChange={handleChange}
-                    // disabled={subscriptionTypeDisabled}
-                    required
-                    InputProps={{
-                      sx: {
-                        height: { xs: 30, sm: 42 },
-                        fontSize: { xs: "15px", sm: "17px" },
-                      },
-                    }}
-                    fullWidth
-                  >
-                    {subscriptionTypes.map((type) => (
-                      <MenuItem
-                        key={type}
-                        value={type}
-                        // disabled={
-                        //   ["WrdsAI", "WrdsAIPro"].includes(
-                        //     formData.subscriptionPlan
-                        //   ) && type === "One Time"
-                        // }
-                        disabled={false}
-                      >
-                        {type}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                </Grid>
-              </Grid>
-
               {/* Consent Checkbox */}
               <Box
                 sx={{
@@ -2101,6 +2054,27 @@ const Register = () => {
                 </Typography>
               </Box>
 
+              <Typography
+                sx={{
+                  mt: 1,
+                  mb: 0.5,
+                  fontSize: "14px",
+                  fontFamily: "Calibri, sans-serif",
+                  whiteSpace: { xs: "normal", sm: "nowrap" },
+                }}
+              >
+                <span style={{ color: "red", fontWeight: 600 }}>Note:</span>{" "}
+                Visit{" "}
+                <a
+                  href="https://wrdsai.com/pricing"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: "#1976d2", textDecoration: "underline" }}
+                >
+                  https://wrdsai.com/pricing
+                </a>{" "}
+                before you choose your subscription type.
+              </Typography>
               {/* New Activation Consent */}
               {showLegacyRegistrationOptions && (
               <Box

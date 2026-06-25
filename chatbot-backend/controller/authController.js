@@ -208,6 +208,7 @@ export const registerUser = async (req, res) => {
       lastName,
       userRole = "Student",
       className,
+      schoolName,
       email,
       password,
       mobile,
@@ -225,6 +226,7 @@ export const registerUser = async (req, res) => {
     const normalizedUserRole = String(userRole || "").trim().toLowerCase();
     const isStudentRegistration = normalizedUserRole === "student";
     const cleanedClassName = String(className || "").trim();
+    const cleanedSchoolName = String(schoolName || "").trim();
 
     // Required fields validation
     if (
@@ -243,6 +245,10 @@ export const registerUser = async (req, res) => {
 
     if (isStudentRegistration && !cleanedClassName) {
       return res.status(400).json({ error: "Class is required for students" });
+    }
+
+    if (!cleanedSchoolName) {
+      return res.status(400).json({ error: "School name is required" });
     }
 
     // Parent validation for minors
@@ -376,7 +382,8 @@ export const registerUser = async (req, res) => {
           lastName,
           userRole,
           className: isStudentRegistration ? cleanedClassName : null,
-          email: finalEmail,
+          schoolName: cleanedSchoolName,
+      email: finalEmail,
           mobile: finalMobile || null,
           dateOfBirth: new Date(dateOfBirth),
           ageGroup: finalAgeGroup,
@@ -480,6 +487,7 @@ export const registerUser = async (req, res) => {
       lastName,
       userRole,
       className: isStudentRegistration ? cleanedClassName : null,
+      schoolName: cleanedSchoolName,
       email: finalEmail,
       mobile: finalMobile || null,
       dateOfBirth: new Date(dateOfBirth),
@@ -951,6 +959,7 @@ export const getAllUsers = async (req, res) => {
             lastName: user.lastName,
             email: user.email,
             mobile: user.mobile,
+            schoolName: user.schoolName,
             subscriptionPlan: user.subscriptionPlan,
             childPlan: user.childPlan,
             planStartDate: user.planStartDate,
@@ -974,6 +983,7 @@ export const getAllUsers = async (req, res) => {
             lastName: user.lastName,
             email: user.email,
             mobile: user.mobile,
+            schoolName: user.schoolName,
             subscriptionPlan: user.subscriptionPlan,
             childPlan: user.childPlan,
             planStartDate: user.planStartDate,

@@ -65,8 +65,30 @@ const normalizeBalancedSqrtCalls = (value = "") => {
   return output;
 };
 
+const repairCommonMathMojibake = (value = "") =>
+  String(value)
+    .replace(/\u00C2(?=[\u00B0-\u00B3\u00B9\u00BC-\u00BE\u2070-\u209F])/g, "")
+    .replace(/\u00E2\u201A[\u20AC\u0080]/g, "\u2080")
+    .replace(/\u00E2\u201A[\u0081\uFFFD]/g, "\u2081")
+    .replace(/\u00E2\u201A\u201A/g, "\u2082")
+    .replace(/\u00E2\u201A\u0192/g, "\u2083")
+    .replace(/\u00E2\u201A\u201E/g, "\u2084")
+    .replace(/\u00E2\u201A\u2026/g, "\u2085")
+    .replace(/\u00E2\u201A\u2020/g, "\u2086")
+    .replace(/\u00E2\u201A\u2021/g, "\u2087")
+    .replace(/\u00E2\u201A\u02C6/g, "\u2088")
+    .replace(/\u00E2\u201A\u2030/g, "\u2089")
+    .replace(/\u00E2\u201A\u2122/g, "\u2099")
+    .replace(/\u00E2\u0081[\u00B0\uFFFD]/g, "\u2070")
+    .replace(/\u00E2\u0081\u00B4/g, "\u2074")
+    .replace(/\u00E2\u0081\u00B5/g, "\u2075")
+    .replace(/\u00E2\u0081\u00B6/g, "\u2076")
+    .replace(/\u00E2\u0081\u00B7/g, "\u2077")
+    .replace(/\u00E2\u0081\u00B8/g, "\u2078")
+    .replace(/\u00E2\u0081\u00B9/g, "\u2079")
+    .replace(/\u00E2\u0081\u00BF/g, "\u207F");
 const normalizeLooseLatexText = (value = "") =>
-  normalizeBalancedSqrtCalls(value)
+  normalizeBalancedSqrtCalls(repairCommonMathMojibake(value))
     .replace(/\\text\s*\{([^{}]*)\}/g, "$1")
     .replace(/\\(?:left|right|bigl|bigr|Bigl|Bigr|big|Big|bigg|Bigg)\s*([()[\]{}|.])/g, "$1")
     .replace(/\\[,;:!]\s*/g, " ")
@@ -129,33 +151,59 @@ const normalizeModelResponseText = (value = "") =>
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 
-const SUPER_DIGITS = {
-  "+": "\u207A",
-  "-": "\u207B",
-  "0": "\u2070",
-  "1": "\u00B9",
-  "2": "\u00B2",
-  "3": "\u00B3",
-  "4": "\u2074",
-  "5": "\u2075",
-  "6": "\u2076",
-  "7": "\u2077",
-  "8": "\u2078",
-  "9": "\u2079",
-};
-
-const toSuperscript = (value = "") =>
-  String(value)
-    .split("")
-    .map((char) => SUPER_DIGITS[char] || char)
-    .join("");
-
 const renderFraction = (numerator, denominator) =>
   `<span class="math-frac"><span class="math-num">${numerator.trim()}</span><span class="math-den">${denominator.trim()}</span></span>`;
 
+const SUPER_GLYPHS = {
+  "\u00B9": "1",
+  "\u00B2": "2",
+  "\u00B3": "3",
+  "\u2070": "0",
+  "\u2074": "4",
+  "\u2075": "5",
+  "\u2076": "6",
+  "\u2077": "7",
+  "\u2078": "8",
+  "\u2079": "9",
+  "\u207A": "+",
+  "\u207B": "-",
+};
+
+const fromSuperscriptGlyphs = (value = "") =>
+  String(value)
+    .split("")
+    .map((char) => SUPER_GLYPHS[char] || char)
+    .join("");
+const SUB_GLYPHS = {
+  "\u2080": "0",
+  "\u2081": "1",
+  "\u2082": "2",
+  "\u2083": "3",
+  "\u2084": "4",
+  "\u2085": "5",
+  "\u2086": "6",
+  "\u2087": "7",
+  "\u2088": "8",
+  "\u2089": "9",
+  "\u2099": "n",
+};
+
+const fromSubscriptGlyphs = (value = "") =>
+  String(value)
+    .split("")
+    .map((char) => SUB_GLYPHS[char] || char)
+    .join("");
+const renderMathScripts = (value = "") =>
+  String(value)
+    .replace(/([A-Za-z0-9)\]])([\u2080-\u2089\u2099]+)/g, (_, base, subscript) => `${base}<sub>${fromSubscriptGlyphs(subscript)}</sub>`)
+    .replace(/([A-Za-z0-9)\]])([\u00B9\u00B2\u00B3\u2070\u2074-\u2079\u207A\u207B]+)/g, (_, base, power) => `${base}<sup>${fromSuperscriptGlyphs(power)}</sup>`)
+    .replace(/([A-Za-z0-9)\]])_\{([^{}\n]{1,24})\}/g, "$1<sub>$2</sub>")
+    .replace(/([A-Za-z0-9)\]])_([A-Za-z0-9]{1,12})\b/g, "$1<sub>$2</sub>")
+    .replace(/([A-Za-z0-9)\]])\^\{([^{}\n]{1,24})\}/g, "$1<sup>$2</sup>")
+    .replace(/([A-Za-z0-9)\]])\^([+-]?[A-Za-z0-9]{1,12})\b/g, "$1<sup>$2</sup>");
 const renderReadableMath = (value = "") => {
   const fractions = [];
-  let text = String(value).replace(/\^([+-]?\d+)/g, (_, power) => toSuperscript(power));
+  let text = renderMathScripts(String(value));
 
   const stashFraction = (numerator, denominator) => {
     const token = `@@MATH_FRAC_${fractions.length}@@`;
@@ -205,7 +253,7 @@ const formatSectionHeading = (label = "", emoji = "", rest = "") =>
   )}</strong>${rest ? ` ${formatInlineText(rest)}` : ""}</div>`;
 
 export const formatChatResponseHtml = (value = "") => {
-  if (/<(?:p|div|strong|em|table|pre|code|math|mfrac|msup|msub|msubsup)\b/i.test(String(value))) {
+  if (/<(?:table|pre|code|math|mfrac|msup|msub|msubsup)\b/i.test(String(value))) {
     return enhanceHtmlLabels(normalizeLooseLatexText(value));
   }
 

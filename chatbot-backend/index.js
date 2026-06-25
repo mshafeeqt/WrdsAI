@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import aiRoutes from "./routes/aiRoutes.js";
 import { connectPG } from "./postgres/connect.js";
+import { runPendingMigrations } from "./postgres/runMigrations.js";
 import bodyParser from "body-parser";
 import { getAISearchResults } from "./controller/searchController.js"; // Import the search controller
 import {
@@ -12,11 +13,12 @@ import {
 import { grokSearchResults } from "./controller/groksearchController.js";
 import { grokUserSearchHistory } from "./controller/groksearchController.js";
 import nodemailer from "nodemailer";
+import net from "net";
 import { requireAuth } from "./middleware/auth.js";
 // import { runAuto } from "./scripts/auto.js";
 
 // Load environment variables first
-dotenv.config();
+dotenv.config({ quiet: true });
 // runAuto();
 
 console.log("API Key exists:", !!process.env.OPENAI_API_KEY); // Debug check
@@ -155,11 +157,37 @@ app.get("/test-mail", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 4040;
-app.listen(PORT, () => {
+await runPendingMigrations();
+await connectPG();
+
+const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-await connectPG(); // Connect to PostgreSQL (no sync)
+server.on("error", (error) => {
+  if (error?.code === "EADDRINUSE") {
+    console.error(`Port ${PORT} is already in use. Backend was not started again.`);
+    process.exit(isProduction ? 1 : 0);
+  }
+
+  console.error(`HTTP server error: ${error?.message || error}`);
+  process.exit(1);
+});
+
+server.on("close", () => {
+  console.log("HTTP server closed");
+});
+
+function shutdown(signal) {
+  console.log(`${signal} received. Closing HTTP server...`);
+  server.close(() => {
+    console.log("HTTP server closed cleanly");
+    process.exit(0);
+  });
+}
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
 
 // Error handling for uncaught exceptions
 process.on("unhandledRejection", (err) => {

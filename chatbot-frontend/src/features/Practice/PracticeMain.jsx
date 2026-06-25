@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import wrdsAiLogo from '../../assets/words1.png';
 import { formatChatResponseHtml } from '../chat/utils/responseFormatting';
@@ -8,6 +8,13 @@ import {
   getLockedStudentClass,
   getVisibleSubjectsForStudent,
 } from '../curriculum/studentCurriculum';
+import {
+  formatPracticeDateLabel,
+  formatPracticeTimeLabel,
+  getPracticeHistoryStats,
+  loadPracticeHistory,
+  savePracticeMessage,
+} from './practiceHistoryStorage';
 import './practice.css';
 
 const getLocalPracticeReply = (prompt, chapter) => {
@@ -42,6 +49,25 @@ const PRACTICE_PROBLEM_STYLES = [
 const normalizePracticeProblem = (value = '') =>
   value.toLowerCase().replace(/\s+/g, ' ').replace(/[^\w\s]/g, '').trim();
 
+const stripPracticeProblemLabel = (value = '', questionNo = '') => {
+  const escapedQuestionNo = String(questionNo).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const labelPattern = escapedQuestionNo
+    ? new RegExp(`^\\s*(?:Question|Problem)\\s*(?:no\\.?|number)?\\s*${escapedQuestionNo}\\s*[:.)-]?\\s*`, 'i')
+    : /^\s*(?:Question|Problem)\s*(?:no\.?|number)?\s*\d+\s*[:.)-]?\s*/i;
+
+  return String(value).replace(labelPattern, '').trim();
+};
+
+const normalizePracticeMessageText = (message) => {
+  const text = message?.text || message?.html || '';
+  if (message?.kind !== 'problem') return text;
+
+  return text.replace(
+    /^\s*Question\s+(\d+)\s*\n+\s*(?:Question|Problem)\s*(?:no\.?|number)?\s*\1\s*[:.)-]?\s*/i,
+    'Question $1\n\n',
+  );
+};
+
 export default function PracticeMain() {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
   const [structure, setStructure] = useState([]);
@@ -51,6 +77,8 @@ export default function PracticeMain() {
   const [selectedChapterId, setSelectedChapterId] = useState('');
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([]);
+  const messagesEndRef = useRef(null);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [activePracticeProblem, setActivePracticeProblem] = useState('');
   const [activePracticeMessageId, setActivePracticeMessageId] = useState('');
@@ -131,6 +159,92 @@ export default function PracticeMain() {
     );
   }, [lockedStudentClass]);
 
+  useEffect(() => {
+    if (!currentUserLoaded) return;
+
+    let cancelled = false;
+
+    if (!selectedChapter) {
+      setMessages([]);
+      setActivePracticeProblem('');
+      setActivePracticeMessageId('');
+      setHintUsed(false);
+      setPracticeQuestionCount(0);
+      setGeneratedPracticeProblems([]);
+      setIsLoadingHistory(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setIsLoadingHistory(true);
+    setMessages([]);
+    setActivePracticeProblem('');
+    setActivePracticeMessageId('');
+    setHintUsed(false);
+
+    loadPracticeHistory({
+      apiBaseUrl,
+      chapter: selectedChapter,
+    })
+      .then((historyMessages) => {
+        if (cancelled) return;
+        const historyStats = getPracticeHistoryStats(historyMessages);
+
+        setMessages(historyMessages);
+        setPracticeQuestionCount(historyStats.questionCount);
+        setGeneratedPracticeProblems(historyStats.generatedProblems);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        console.error('Practice history load failed:', error);
+        toast.error(error.message || 'Unable to load practice history');
+        setMessages([]);
+        setPracticeQuestionCount(0);
+        setGeneratedPracticeProblems([]);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingHistory(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [apiBaseUrl, currentUserLoaded, selectedChapter]);
+
+  useEffect(() => {
+    if (isLoadingHistory) return;
+
+    requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' });
+    });
+  }, [isLoadingHistory, messages.length, selectedChapterId]);
+
+  const displayMessages = useMemo(() => {
+    const entries = [];
+    let currentDateLabel = '';
+
+    messages.forEach((message) => {
+      const nextDateLabel = formatPracticeDateLabel(message.createdAt);
+      if (nextDateLabel && nextDateLabel !== currentDateLabel) {
+        entries.push({
+          type: 'date',
+          id: `date-${message.createdAt}-${nextDateLabel}`,
+          label: nextDateLabel,
+        });
+        currentDateLabel = nextDateLabel;
+      }
+
+      entries.push({
+        type: 'message',
+        id: message.id,
+        message,
+      });
+    });
+
+    return entries;
+  }, [messages]);
+
   const resetSubjectAndChapter = () => {
     setSelectedSubjectId('');
     setSelectedChapterId('');
@@ -183,17 +297,32 @@ export default function PracticeMain() {
     return data.response || '';
   };
 
-  const addAssistantMessage = (content, idPrefix = 'assistant') => {
-    const messageId = `${idPrefix}-${Date.now()}`;
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: messageId,
-        role: 'assistant',
-        html: formatChatResponseHtml(content),
-      },
-    ]);
-    return messageId;
+  const persistPracticeMessage = (message) => {
+    if (!selectedChapter) return;
+
+    savePracticeMessage({
+      apiBaseUrl,
+      chapter: selectedChapter,
+      message,
+    }).catch((error) => {
+      console.error('Practice history save failed:', error);
+      toast.error('Practice history could not be saved. Please check your connection.');
+    });
+  };
+
+  const addAssistantMessage = (content, idPrefix = 'assistant', metadata = {}) => {
+    const message = {
+      id: `${idPrefix}-${Date.now()}`,
+      role: 'assistant',
+      text: content,
+      html: formatChatResponseHtml(content),
+      createdAt: new Date().toISOString(),
+      ...metadata,
+    };
+
+    setMessages((prev) => [...prev, message]);
+    persistPracticeMessage(message);
+    return message.id;
   };
 
   const generatePracticeProblem = async () => {
@@ -229,11 +358,11 @@ export default function PracticeMain() {
         'Make it a complete question/problem that a student can answer in chat.',
         'Do not give the answer, hints, explanation, or solution.',
         'If the chapter supports it, rotate across definitions, calculations, applications, proof/reasoning, and word problems.',
-        'Return only the question text.',
+        'Return only the question text. Do not start with Question number, Question:, Problem number, Problem:, heading, answer, hint, or solution.',
       ].join(' ');
 
       let problem = await callPracticeApi(problemPrompt);
-      let cleanProblem = problem.trim();
+      let cleanProblem = stripPracticeProblemLabel(problem, nextQuestionNo);
       const generatedSet = new Set(generatedPracticeProblems.map(normalizePracticeProblem));
 
       if (generatedSet.has(normalizePracticeProblem(cleanProblem))) {
@@ -241,7 +370,7 @@ export default function PracticeMain() {
           problemPrompt,
           'The previous output repeated an old question. Generate a completely different question now.',
         ].join(' '));
-        cleanProblem = problem.trim();
+        cleanProblem = stripPracticeProblemLabel(problem, nextQuestionNo);
       }
 
       const problemWithInstruction = `Question ${nextQuestionNo}\n\n${cleanProblem}\n\nSubmit your answer.`;
@@ -249,7 +378,10 @@ export default function PracticeMain() {
       setActivePracticeProblem(cleanProblem);
       setHintUsed(false);
       setGeneratedPracticeProblems((prev) => [...prev, cleanProblem].slice(-10));
-      const problemMessageId = addAssistantMessage(problemWithInstruction, 'assistant-problem');
+      const problemMessageId = addAssistantMessage(problemWithInstruction, 'assistant-problem', {
+        kind: 'problem',
+        problemText: cleanProblem,
+      });
       setActivePracticeMessageId(problemMessageId);
     } catch (error) {
       console.error('Practice problem generation failed:', error);
@@ -264,12 +396,16 @@ export default function PracticeMain() {
       toast.error('Please select class, subject, and chapter first');
       return;
     }
-    const sourceProblem = activePracticeProblem || generatedPracticeProblems.at(-1) || '';
-    if (!sourceProblem) {
-      toast.info('Generate a practice problem first');
-      return;
-    }
     if (isSending) return;
+
+    const latestProblemFromHistory = [...messages]
+      .reverse()
+      .find((message) => message.kind === 'problem' && (message.problemText || message.text));
+    const sourceProblem = activePracticeProblem
+      || latestProblemFromHistory?.problemText
+      || latestProblemFromHistory?.text
+      || generatedPracticeProblems.at(-1)
+      || '';
 
     setIsSending(true);
     setActivePracticeProblem('');
@@ -284,20 +420,30 @@ export default function PracticeMain() {
             .map((item, index) => `${index + 1}. ${item}`)
             .join('\n')}`
         : 'No recent generated questions yet.';
-      const similarPrompt = [
-        `Create exactly one NEW practice problem similar to this problem from "${selectedChapter.name}".`,
-        `Question number in this practice session: ${nextQuestionNo}.`,
-        `Original problem to imitate:\n${sourceProblem}`,
-        'Keep the same chapter concept and similar difficulty.',
-        'Change the numbers, names, setting, wording, and final ask enough that it is not a repeat.',
-        'Use only this selected chapter context.',
-        recentProblemText,
-        'Do not give the answer, hints, explanation, or solution.',
-        'Return only the question text.',
-      ].join('\n');
+      const similarPrompt = sourceProblem
+        ? [
+            `Create exactly one NEW practice problem similar to the most recent practiced problem from "${selectedChapter.name}".`,
+            `Question number in this practice session: ${nextQuestionNo}.`,
+            `Most recent practiced problem:\n${sourceProblem}`,
+            'Keep the same concept, same problem structure, and similar difficulty.',
+            'Change the numerical values and required calculation values. Change names only if needed.',
+            'Do not change the topic, chapter, or core skill being practiced.',
+            'Use only this selected chapter context.',
+            recentProblemText,
+            'Do not give the answer, hints, explanation, or solution.',
+            'Return only the question text. Do not start with Question number, Question:, Problem number, Problem:, heading, answer, hint, or solution.',
+          ].join('\n')
+        : [
+            `Create exactly one NEW practice problem from the selected chapter "${selectedChapter.name}".`,
+            `Question number in this practice session: ${nextQuestionNo}.`,
+            'No previous problem exists in this chapter history yet, so create a direct chapter practice problem.',
+            'Use only this selected chapter context.',
+            'Do not give the answer, hints, explanation, or solution.',
+            'Return only the question text. Do not start with Question number, Question:, Problem number, Problem:, heading, answer, hint, or solution.',
+          ].join('\n');
 
       let problem = await callPracticeApi(similarPrompt);
-      let cleanProblem = problem.trim();
+      let cleanProblem = stripPracticeProblemLabel(problem, nextQuestionNo);
       const generatedSet = new Set(generatedPracticeProblems.map(normalizePracticeProblem));
 
       if (generatedSet.has(normalizePracticeProblem(cleanProblem))) {
@@ -305,7 +451,7 @@ export default function PracticeMain() {
           similarPrompt,
           'The previous output repeated an old question. Generate a different similar question now.',
         ].join('\n'));
-        cleanProblem = problem.trim();
+        cleanProblem = stripPracticeProblemLabel(problem, nextQuestionNo);
       }
 
       const problemWithInstruction = `Question ${nextQuestionNo}\n\n${cleanProblem}\n\nSubmit your answer.`;
@@ -313,7 +459,10 @@ export default function PracticeMain() {
       setActivePracticeProblem(cleanProblem);
       setHintUsed(false);
       setGeneratedPracticeProblems((prev) => [...prev, cleanProblem].slice(-10));
-      const problemMessageId = addAssistantMessage(problemWithInstruction, 'assistant-problem');
+      const problemMessageId = addAssistantMessage(problemWithInstruction, 'assistant-problem', {
+        kind: 'problem',
+        problemText: cleanProblem,
+      });
       setActivePracticeMessageId(problemMessageId);
     } catch (error) {
       console.error('Similar practice problem generation failed:', error);
@@ -349,7 +498,7 @@ export default function PracticeMain() {
       ].join('\n');
 
       const hint = await callPracticeApi(hintPrompt);
-      addAssistantMessage(`Hint\n\n${hint}`, 'assistant-hint');
+      addAssistantMessage(`Hint\n\n${hint}`, 'assistant-hint', { kind: 'hint' });
     } catch (error) {
       console.error('Practice hint failed:', error);
       addAssistantMessage(error.message || 'Sorry, something went wrong.', 'assistant-error');
@@ -366,14 +515,15 @@ export default function PracticeMain() {
     }
     if (!prompt || isSending) return;
 
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: `user-${Date.now()}`,
-        role: 'user',
-        text: prompt,
-      },
-    ]);
+    const userMessage = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      text: prompt,
+      createdAt: new Date().toISOString(),
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    persistPracticeMessage(userMessage);
     setInput('');
 
     const localReply = !activePracticeProblem ? getLocalPracticeReply(prompt, selectedChapter) : '';
@@ -503,42 +653,57 @@ export default function PracticeMain() {
             <span>{selectedChapter ? selectedChapter.name : 'Select a chapter to start practice'}</span>
           </div>
           <div className="practice-messages">
-            {messages.length === 0 ? (
+            {isLoadingHistory ? (
+              <div className="practice-empty">Loading chapter history...</div>
+            ) : messages.length === 0 ? (
               <div className="practice-empty">
                 {selectedChapter
-                  ? 'Ask a practice question from this chapter.'
+                  ? 'No practice history for this chapter yet. Ask a practice question to start.'
                   : `${lockedStudentClass ? 'Subject and chapter' : 'Class, subject, and chapter'} selection is required.`}
               </div>
             ) : (
-              messages.map((message) => (
-                <div key={message.id} className={`practice-message practice-message-${message.role}`}>
-                  {message.role === 'assistant' ? (
-                    <>
-                      <div dangerouslySetInnerHTML={{ __html: message.html }} />
-                      {message.id === activePracticeMessageId && activePracticeProblem && (
-                        <button
-                          type="button"
-                          className={`practice-hint-link practice-hint-inline ${hintUsed ? 'practice-hint-link-used' : ''}`}
-                          disabled={hintUsed || isSending}
-                          onClick={giveHintForCurrentProblem}
-                        >
-                          Hint 💡
-                        </button>
-                      )}
-                    </>
-                  ) : (
-                    message.text
-                  )}
-                </div>
-              ))
+              displayMessages.map((entry) => {
+                if (entry.type === 'date') {
+                  return (
+                    <div key={entry.id} className="practice-date-divider">
+                      <span>{entry.label}</span>
+                    </div>
+                  );
+                }
+
+                const { message } = entry;
+                return (
+                  <div key={message.id} className={`practice-message practice-message-${message.role}`}>
+                    {message.role === 'assistant' ? (
+                      <>
+                        <div dangerouslySetInnerHTML={{ __html: formatChatResponseHtml(normalizePracticeMessageText(message)) }} />
+                        {message.id === activePracticeMessageId && activePracticeProblem && (
+                          <button
+                            type="button"
+                            className={`practice-hint-link practice-hint-inline ${hintUsed ? 'practice-hint-link-used' : ''}`}
+                            disabled={hintUsed || isSending}
+                            onClick={giveHintForCurrentProblem}
+                          >
+                            Hint
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      message.text
+                    )}
+                    <div className="practice-message-time">{formatPracticeTimeLabel(message.createdAt)}</div>
+                  </div>
+                );
+              })
             )}
             {isSending && <div className="practice-message practice-message-assistant">Thinking...</div>}
+            <div ref={messagesEndRef} />
           </div>
           <div className="practice-problem-row">
             <button
               type="button"
               className="practice-similar-problem-link"
-              disabled={!selectedChapter || isSending || (!activePracticeProblem && generatedPracticeProblems.length === 0)}
+              disabled={!selectedChapter || isSending}
               onClick={generateSimilarPracticeProblem}
             >
               Practice similar problem
