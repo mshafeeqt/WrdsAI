@@ -5,6 +5,7 @@ import TestResults from './components/TestResults';
 import TestReview from './components/TestReview';
 import wrdsAiLogo from '../../assets/words1.png';
 import AppSidebarMenu from '../shared/AppSidebarMenu';
+import TopUserMenu from '../shared/TopUserMenu';
 import './styles/testStyles.css';
 import { toast } from 'react-toastify';
 import { fetchCurrentUser } from '../auth/authClient';
@@ -269,6 +270,7 @@ const TestMain = () => {
         </div>
 
         <div className="test-header-side test-header-right">
+          <TopUserMenu user={currentUser} />
           {selectedClass && (
             <span style={{ fontSize: '0.9rem', opacity: 0.8, backgroundColor: 'var(--test-glass-border)', padding: '0.2rem 0.6rem', borderRadius: '4px' }}>
               {selectedClass.name}

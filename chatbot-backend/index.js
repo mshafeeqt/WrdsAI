@@ -12,9 +12,9 @@ import {
 } from "./controller/searchController.js";
 import { grokSearchResults } from "./controller/groksearchController.js";
 import { grokUserSearchHistory } from "./controller/groksearchController.js";
-import nodemailer from "nodemailer";
 import net from "net";
 import { requireAuth } from "./middleware/auth.js";
+import { verifyMailTransport } from "./services/mailService.js";
 // import { runAuto } from "./scripts/auto.js";
 
 // Load environment variables first
@@ -41,10 +41,26 @@ const isProduction = process.env.NODE_ENV === "production";
 //   })
 // );
 
-const allowedOrigins = [
+const configuredFrontendOrigins = [
   process.env.FRONTEND_URL,
-  ...(isProduction ? [] : ["http://localhost:5173", "http://127.0.0.1:5173"]),
-].filter(Boolean);
+  process.env.FRONTEND_URLS,
+]
+  .filter(Boolean)
+  .flatMap((value) => value.split(","))
+  .map((value) => value.trim())
+  .filter(Boolean);
+
+const localFrontendOrigins = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://localhost:4173",
+  "http://127.0.0.1:4173",
+];
+
+const allowedOrigins = [
+  ...configuredFrontendOrigins,
+  ...(isProduction ? [] : localFrontendOrigins),
+];
 
 app.use(
   cors({
@@ -131,32 +147,9 @@ app.post("/grokSearchhistory", requireAuth, useAuthenticatedEmail, grokUserSearc
 // app.use(express.static("public"));
 app.use("/assets", express.static("assets"));
 
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.EMAIL_USER || "your-email@gmail.com", // Set in .env file
-    pass: process.env.EMAIL_PASS || "your-app-password", // Gmail App Password
-  },
-});
-
-app.get("/test-mail", async (req, res) => {
-  try {
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: "your-test-email@gmail.com",
-      subject: "SMTP Test",
-      text: "If you receive this, Gmail SMTP works!",
-    });
-    res.send("Mail sent!");
-  } catch (err) {
-    console.log("SMTP ERROR:", err);
-    res.send("SMTP error: " + err.message);
-  }
-});
 
 const PORT = process.env.PORT || 4040;
+void verifyMailTransport();
 await runPendingMigrations();
 await connectPG();
 
@@ -194,3 +187,5 @@ process.on("unhandledRejection", (err) => {
   console.error("Unhandled Rejection:", err);
   process.exit(1);
 });
+
+

@@ -25,6 +25,12 @@
   object-fit: contain;
 }
 
+.practice-top-user-menu {
+  margin-left: auto;
+  position: relative;
+  z-index: 2;
+}
+
 .practice-header h1 {
   position: absolute;
   left: 50%;

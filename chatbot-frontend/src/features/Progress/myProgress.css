@@ -35,6 +35,12 @@
   filter: drop-shadow(0 10px 18px rgba(34, 22, 70, 0.26));
 }
 
+.progress-top-user-menu {
+  margin-left: auto;
+  position: relative;
+  z-index: 2;
+}
+
 .progress-header h1 {
   position: absolute;
   left: 50%;
@@ -342,7 +348,8 @@
     padding-inline: 1rem;
   }
 
-  .progress-header h1 {
+
+.progress-header h1 {
     position: static;
     transform: none;
     font-size: 1.4rem;

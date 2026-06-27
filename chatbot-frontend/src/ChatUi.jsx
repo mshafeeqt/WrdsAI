@@ -946,6 +946,20 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
     }
   };
 
+  const openProfileWithLatestUser = async () => {
+    try {
+      const latestUser = await fetchCurrentUser();
+      if (latestUser) {
+        setUser(latestUser);
+        setSessionRemainingTokens(latestUser.subscription?.remainingTokens || 0);
+      }
+    } catch (error) {
+      console.error("Failed to refresh profile user:", error);
+    } finally {
+      setOpenProfile(true);
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await logoutCurrentUser();
@@ -6570,7 +6584,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
           <MenuItem
             onClick={() => {
               setMobileMenuAnchor(null);
-              setOpenProfile(true);
+              openProfileWithLatestUser();
               setSearchSessionResults([]);
               setShowSessionPanel(false);
             }}
@@ -6666,7 +6680,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
           <MenuItem
             onClick={() => {
               handleCloseMenu();
-              setOpenProfile(true);
+              openProfileWithLatestUser();
             }}
           >
             <PersonRoundedIcon fontSize="small" sx={{ mr: 1 }} />

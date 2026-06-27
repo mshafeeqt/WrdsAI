@@ -10,19 +10,46 @@ import CloseIcon from "@mui/icons-material/Close";
 
 function ProfileRow({ label, value }) {
   return (
-    <Box sx={{ mb: 2, display: "flex", alignItems: "center", gap: 1 }}>
-      <Typography
-        variant="caption"
-        color="text.secondary"
+    <Box
+      sx={{
+        mb: 2,
+        display: "flex",
+        alignItems: "center",
+        textAlign: "left",
+      }}
+    >
+      <Box
         sx={{
-          display: "block",
-          fontWeight: "medium",
-          fontSize: "17px",
+          flex: "0 0 150px",
+          display: "flex",
+          alignItems: "center",
+          whiteSpace: "nowrap",
+          minWidth: 150,
         }}
       >
-        {label}
-      </Typography>
-      <Typography variant="body1" sx={{ fontWeight: "medium" }}>
+        <Typography
+          component="span"
+          color="text.secondary"
+          sx={{
+            fontWeight: "medium",
+            fontSize: "17px",
+            lineHeight: 1.35,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {label} :
+        </Typography>
+      </Box>
+      <Typography
+        variant="body1"
+        sx={{
+          flex: "1 1 auto",
+          fontWeight: "medium",
+          overflowWrap: "anywhere",
+          lineHeight: 1.35,
+          minWidth: 0,
+        }}
+      >
         {value}
       </Typography>
     </Box>
@@ -31,16 +58,6 @@ function ProfileRow({ label, value }) {
 
 function getFullName(user = {}) {
   return [user.firstName, user.lastName].filter(Boolean).join(" ") || "No name";
-}
-function getPlanLabel(user = {}) {
-  if (
-    user.subscription?.subscriptionPlan === "WrdsAi Nxt" ||
-    user.subscriptionPlan === "WrdsAi Nxt"
-  ) {
-    return "WrdsAI Nxt";
-  }
-
-  return user.subscription?.subscriptionPlan || user.subscriptionPlan || "No Plan";
 }
 
 export default function UserProfileDialog({
@@ -76,13 +93,13 @@ export default function UserProfileDialog({
       </DialogTitle>
 
       <DialogContent sx={{ textAlign: "center", p: 3, mt: 4 }}>
-        <ProfileRow label="Name :" value={getFullName(user)} />
-        <ProfileRow label="Email :" value={email || "No email"} />
-        <ProfileRow label="Type :" value={user?.userRole || "Student"} />
-        <ProfileRow label="Class :" value={user?.className || "Not assigned"} />
-        <ProfileRow label="Plan :" value={getPlanLabel(user)} />
+        <ProfileRow label="Name" value={getFullName(user)} />
+        <ProfileRow label="Email" value={email || "No email"} />
+        <ProfileRow label="Type" value={user?.userRole || "Student"} />
+        <ProfileRow label="Class" value={user?.className || "Not assigned"} />
+        <ProfileRow label="School" value={user?.schoolName || "Not assigned"} />
         <ProfileRow
-          label="Subscription Type :"
+          label="Subscription Type"
           value={user?.subscription?.subscriptionType || user?.subscriptionType || "No Type"}
         />
       </DialogContent>

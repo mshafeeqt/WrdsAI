@@ -8,6 +8,7 @@ import { buildUserResponseByAgeGroup } from "../utils/userResponse.js";
 import { calculatePlanExpiry, checkPlanExpiry } from "../utils/dateUtils.js";
 import { getGlobalTokenStats } from "../utils/tokenLimit.js";
 import sendResetPasswordMail from "../middleware/sendResetPasswordMail.js";
+import { sendWelcomeEmail } from "../services/mailService.js";
 import {
   AUTH_COOKIE_NAME,
   getAuthCookieOptions,
@@ -201,6 +202,19 @@ const getAgeGroup = (dob) => {
   return "18+";
 };
 
+const sendWelcomeEmailAfterRegistration = async ({ email, name, userId }) => {
+  try {
+    await sendWelcomeEmail({ email, name });
+  } catch (error) {
+    console.error("[registration] Welcome email dispatch failed", {
+      userId,
+      email,
+      message: error?.message,
+      code: error?.code,
+    });
+  }
+};
+
 export const registerUser = async (req, res) => {
   try {
     const {
@@ -383,7 +397,7 @@ export const registerUser = async (req, res) => {
           userRole,
           className: isStudentRegistration ? cleanedClassName : null,
           schoolName: cleanedSchoolName,
-      email: finalEmail,
+          email: finalEmail,
           mobile: finalMobile || null,
           dateOfBirth: new Date(dateOfBirth),
           ageGroup: finalAgeGroup,
@@ -416,6 +430,11 @@ export const registerUser = async (req, res) => {
         });
 
         // Removed user.save() as create already saves the user
+        await sendWelcomeEmailAfterRegistration({
+          email: finalEmail,
+          name: isMinor ? parentName || firstName : firstName,
+          userId: user.id,
+        });
 
         // 5️⃣ Return response
         return res.status(201).json({
@@ -521,6 +540,12 @@ export const registerUser = async (req, res) => {
       password: hashedPassword,
       planStartDate: new Date(),
       planExpiryDate: calculatePlanExpiry(subscriptionType),
+    });
+
+    await sendWelcomeEmailAfterRegistration({
+      email: finalEmail,
+      name: isMinor ? parentName || firstName : firstName,
+      userId: user.id,
     });
 
     res.status(201).json({

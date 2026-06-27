@@ -3,6 +3,7 @@ import { toast } from 'react-toastify';
 import wrdsAiLogo from '../../assets/words1.png';
 import { formatChatResponseHtml } from '../chat/utils/responseFormatting';
 import AppSidebarMenu from '../shared/AppSidebarMenu';
+import TopUserMenu from '../shared/TopUserMenu';
 import { fetchCurrentUser } from '../auth/authClient';
 import {
   getLockedStudentClass,
@@ -567,6 +568,7 @@ export default function PracticeMain() {
           <AppSidebarMenu />
           <img src={wrdsAiLogo} alt="WrdsAI" className="practice-logo" />
           <h1>Practice</h1>
+          <TopUserMenu className="practice-top-user-menu" user={currentUser} />
         </header>
         <main className="practice-shell">
           <section className="practice-chat-panel">
@@ -583,6 +585,7 @@ export default function PracticeMain() {
         <AppSidebarMenu />
         <img src={wrdsAiLogo} alt="WrdsAI" className="practice-logo" />
         <h1>Practice</h1>
+        <TopUserMenu className="practice-top-user-menu" user={currentUser} />
       </header>
 
       <main className="practice-shell">

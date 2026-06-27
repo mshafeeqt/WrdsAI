@@ -3712,7 +3712,7 @@ export const getSmartAiNxtHistory = async (req, res) => {
         .json({ message: "sessionId and email are required" });
     }
 
-    console.log("ðŸ” Fetching Smart AI Nxt History for:", { sessionId, email });
+    console.log("Fetching Smart AI Nxt history for:", { sessionId, email });
 
     const session = await ChatSession.findOne({
       where: {
@@ -3723,16 +3723,16 @@ export const getSmartAiNxtHistory = async (req, res) => {
     });
 
     if (!session) {
-      console.warn("âš ï¸ Session not found in DB for:", { sessionId, email });
+      console.warn("Smart AI Nxt session not found in DB for:", { sessionId, email });
       return res.status(404).json({ message: "Session not found" });
     }
 
-    // ðŸŸ¢ Get ALL WrdsAi Nxt sessions to calculate global totals
+    // Get all WrdsAI Nxt sessions to calculate global totals
     const allSessions = await ChatSession.findAll({
       where: { email, type: "WrdsAi Nxt" },
     });
 
-    // ðŸŸ¢ Calculate total tokens across WrdsAi Nxt sessions
+    // Calculate total tokens across WrdsAI Nxt sessions
     const grandTotalTokens = allSessions.reduce((sum, s) => {
       return (
         sum +
@@ -3742,10 +3742,10 @@ export const getSmartAiNxtHistory = async (req, res) => {
 
     const remainingTokens = parseFloat((50000 - grandTotalTokens).toFixed(3));
 
-    // ðŸŸ¢ Filter messages from the current session
+    // Filter messages from the current session
     const smartAiHistory = session.history;
 
-    // âœ… Deduplicate responses
+    // Deduplicate responses
     const seenKeys = new Set();
     const dedupedHistory = smartAiHistory.filter((entry) => {
       const key = `${entry.prompt}_${entry.tokensUsed}`;
@@ -3754,7 +3754,7 @@ export const getSmartAiNxtHistory = async (req, res) => {
       return true;
     });
 
-    // âœ… Format for frontend
+    // Format for frontend
     const formattedHistory = dedupedHistory.map((entry) => {
       const displayResponse =
         entry.isComplete === false && entry.response
@@ -3771,7 +3771,7 @@ export const getSmartAiNxtHistory = async (req, res) => {
       };
     });
 
-    // âœ… Return WrdsAi Nxt chat history
+    // Return WrdsAI Nxt chat history
     res.json({
       type: "WrdsAi Nxt",
       response: formattedHistory,
@@ -3780,7 +3780,7 @@ export const getSmartAiNxtHistory = async (req, res) => {
       totalTokensUsed: grandTotalTokens,
     });
   } catch (err) {
-    console.error("âŒ getSmartAiHistory error:", err);
+    console.error("getSmartAiHistory error:", err);
     res.status(500).json({
       message: "Internal Server Error",
       error: err.message,

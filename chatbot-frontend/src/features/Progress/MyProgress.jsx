@@ -7,6 +7,7 @@ import SubjectProgressCard from './components/SubjectProgressCard';
 import { DashboardIcon } from './components/ProgressIcons';
 import { emptyProgress } from './progressDefaults';
 import AppSidebarMenu from '../shared/AppSidebarMenu';
+import TopUserMenu from '../shared/TopUserMenu';
 import { fetchCurrentUser } from '../auth/authClient';
 import './myProgress.css';
 
@@ -85,6 +86,7 @@ export default function MyProgress({ audience = 'student' }) {
         <AppSidebarMenu teacherMode={isTeacherProgress} />
         <img src={wrdsAiLogo} alt="WrdsAI" className="progress-logo" />
         <h1>{copy.title}</h1>
+        <TopUserMenu className="progress-top-user-menu" />
       </header>
 
       <main className="progress-content">
