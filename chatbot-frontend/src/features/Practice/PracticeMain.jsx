@@ -47,28 +47,33 @@ const PRACTICE_PROBLEM_STYLES = [
   'higher-order challenge problem',
 ];
 
+const PRACTICE_CHAPTER_CONCEPT_TARGETS = [
+  'definition or property recall',
+  'direct formula/theorem use',
+  'reverse calculation or missing value',
+  'word problem/application',
+  'reasoning/proof-style question',
+  'mixed concept problem from another section of the chapter',
+];
+
 const normalizePracticeProblem = (value = '') =>
   value.toLowerCase().replace(/\s+/g, ' ').replace(/[^\w\s]/g, '').trim();
 
-const stripPracticeProblemLabel = (value = '', questionNo = '') => {
-  const escapedQuestionNo = String(questionNo).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const labelPattern = escapedQuestionNo
-    ? new RegExp(`^\\s*(?:Question|Problem)\\s*(?:no\\.?|number)?\\s*${escapedQuestionNo}\\s*[:.)-]?\\s*`, 'i')
-    : /^\s*(?:Question|Problem)\s*(?:no\.?|number)?\s*\d+\s*[:.)-]?\s*/i;
-
-  return String(value).replace(labelPattern, '').trim();
-};
+const stripPracticeProblemLabel = (value = '') => String(value)
+  .replace(/^\s*(?:\*\*)?\s*(?:Question|Problem)\s*(?:\*\*)?\s*(?:no\.?|number)?\s*\d*\s*[:.)-]?\s*/i, '')
+  .trim();
 
 const normalizePracticeMessageText = (message) => {
   const text = message?.text || message?.html || '';
   if (message?.kind !== 'problem') return text;
 
-  return text.replace(
-    /^\s*Question\s+(\d+)\s*\n+\s*(?:Question|Problem)\s*(?:no\.?|number)?\s*\1\s*[:.)-]?\s*/i,
-    'Question $1\n\n',
+  const withoutOuterLabel = text.replace(
+    /^\s*(?:\*\*)?\s*Question\s*\d*\s*(?:\*\*)?\s*\n+/i,
+    '',
   );
+  const body = stripPracticeProblemLabel(withoutOuterLabel);
+  return `**Question**\n\n${body}`;
 };
-
 export default function PracticeMain() {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
   const [structure, setStructure] = useState([]);
@@ -343,9 +348,20 @@ export default function PracticeMain() {
       const problemStyle = PRACTICE_PROBLEM_STYLES[
         (nextQuestionNo - 1) % PRACTICE_PROBLEM_STYLES.length
       ];
+      const conceptTarget = PRACTICE_CHAPTER_CONCEPT_TARGETS[
+        (nextQuestionNo - 1) % PRACTICE_CHAPTER_CONCEPT_TARGETS.length
+      ];
+      const latestProblemFromHistory = [...messages]
+        .reverse()
+        .find((message) => message.kind === 'problem' && (message.problemText || message.text));
+      const mostRecentProblem = activePracticeProblem
+        || latestProblemFromHistory?.problemText
+        || latestProblemFromHistory?.text
+        || generatedPracticeProblems.at(-1)
+        || '';
       const recentProblemText = generatedPracticeProblems.length
         ? `Recent questions already asked:\n${generatedPracticeProblems
-            .slice(-5)
+            .slice(-6)
             .map((item, index) => `${index + 1}. ${item}`)
             .join('\n')}`
         : 'No recent generated questions yet.';
@@ -353,14 +369,17 @@ export default function PracticeMain() {
         `Create exactly one NEW practice problem from the selected chapter "${selectedChapter.name}".`,
         `Question number in this practice session: ${nextQuestionNo}.`,
         `Required variation style: ${problemStyle}.`,
-        'Use only this chapter context, but vary the numbers, wording, and skill being tested.',
-        'Do not repeat the same triangle, polynomial, example, values, or wording from recent questions.',
+        `Required concept target: ${conceptTarget}.`,
+        'This button is for broad chapter practice, not a similar-problem clone.',
+        'Choose a different subtopic, theorem, formula, representation, or skill from the chapter than the most recent practiced problem whenever the chapter context allows it.',
+        mostRecentProblem ? `Most recent practiced problem to avoid copying concept from:\n${mostRecentProblem}` : 'No most recent problem to avoid yet.',
         recentProblemText,
+        'Use only this chapter context, but vary the numbers, wording, concept, and skill being tested.',
+        'Do not repeat the same diagram setup, tangent/chord/angle/polynomial/sequence pattern, values, or wording from recent questions unless the chapter has no other usable concept.',
         'Make it a complete question/problem that a student can answer in chat.',
         'Do not give the answer, hints, explanation, or solution.',
-        'If the chapter supports it, rotate across definitions, calculations, applications, proof/reasoning, and word problems.',
         'Return only the question text. Do not start with Question number, Question:, Problem number, Problem:, heading, answer, hint, or solution.',
-      ].join(' ');
+      ].join('\n');
 
       let problem = await callPracticeApi(problemPrompt);
       let cleanProblem = stripPracticeProblemLabel(problem, nextQuestionNo);
@@ -374,7 +393,7 @@ export default function PracticeMain() {
         cleanProblem = stripPracticeProblemLabel(problem, nextQuestionNo);
       }
 
-      const problemWithInstruction = `Question ${nextQuestionNo}\n\n${cleanProblem}\n\nSubmit your answer.`;
+      const problemWithInstruction = `**Question**\n\n${cleanProblem}\n\nSubmit your answer.`;
       setPracticeQuestionCount(nextQuestionNo);
       setActivePracticeProblem(cleanProblem);
       setHintUsed(false);
@@ -425,9 +444,12 @@ export default function PracticeMain() {
         ? [
             `Create exactly one NEW practice problem similar to the most recent practiced problem from "${selectedChapter.name}".`,
             `Question number in this practice session: ${nextQuestionNo}.`,
-            `Most recent practiced problem:\n${sourceProblem}`,
-            'Keep the same concept, same problem structure, and similar difficulty.',
-            'Change the numerical values and required calculation values. Change names only if needed.',
+            `Source problem to transform:\n${sourceProblem}`,
+            'This button is for same-concept value variation only.',
+            'Keep the exact same core concept, theorem/formula, givens-to-find structure, and solution method as the source problem.',
+            'Change the numerical values and required calculation values so the final answer changes.',
+            'You may lightly change names, units, or surface wording, but do not introduce a new concept, new theorem, new diagram type, or new question goal.',
+            'If the source problem asks tangent length from OP and radius, ask the same type of tangent-length problem with different OP/radius values.',
             'Do not change the topic, chapter, or core skill being practiced.',
             'Use only this selected chapter context.',
             recentProblemText,
@@ -450,12 +472,12 @@ export default function PracticeMain() {
       if (generatedSet.has(normalizePracticeProblem(cleanProblem))) {
         problem = await callPracticeApi([
           similarPrompt,
-          'The previous output repeated an old question. Generate a different similar question now.',
+          'The previous output repeated an old question. Keep the same concept and structure as the source problem, but change the values enough to make a new problem.',
         ].join('\n'));
         cleanProblem = stripPracticeProblemLabel(problem, nextQuestionNo);
       }
 
-      const problemWithInstruction = `Question ${nextQuestionNo}\n\n${cleanProblem}\n\nSubmit your answer.`;
+      const problemWithInstruction = `**Question**\n\n${cleanProblem}\n\nSubmit your answer.`;
       setPracticeQuestionCount(nextQuestionNo);
       setActivePracticeProblem(cleanProblem);
       setHintUsed(false);
