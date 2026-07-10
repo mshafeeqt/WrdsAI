@@ -1,3 +1,7 @@
+import { renderDiagramsHtml } from "../../diagrams/diagramHtml";
+import { extractDiagramSpecs } from "../../diagrams/diagramSpecs";
+import { sanitizeDisplayText } from "../../text/sanitizeDisplayText";
+
 const escapeHtml = (value = "") =>
   String(value)
     .replace(/&/g, "&amp;")
@@ -88,7 +92,7 @@ const repairCommonMathMojibake = (value = "") =>
     .replace(/\u00E2\u0081\u00B9/g, "\u2079")
     .replace(/\u00E2\u0081\u00BF/g, "\u207F");
 const normalizeLooseLatexText = (value = "") =>
-  normalizeBalancedSqrtCalls(repairCommonMathMojibake(value))
+  normalizeBalancedSqrtCalls(repairCommonMathMojibake(sanitizeDisplayText(value)))
     .replace(/\\text\s*\{([^{}]*)\}/g, "$1")
     .replace(/\\(?:left|right|bigl|bigr|Bigl|Bigr|big|Big|bigg|Bigg)\s*([()[\]{}|.])/g, "$1")
     .replace(/\\[,;:!]\s*/g, " ")
@@ -252,12 +256,17 @@ const formatSectionHeading = (label = "", emoji = "", rest = "") =>
     `${label}${emoji || ""}${rest ? ":" : ""}`,
   )}</strong>${rest ? ` ${formatInlineText(rest)}` : ""}</div>`;
 
+const containsRenderableHtml = (value = "") =>
+  /<(?:table|pre|code|math|mfrac|msup|msub|msubsup)\b/i.test(String(value));
+
 export const formatChatResponseHtml = (value = "") => {
-  if (/<(?:table|pre|code|math|mfrac|msup|msub|msubsup)\b/i.test(String(value))) {
-    return enhanceHtmlLabels(normalizeLooseLatexText(value));
+  const { text: responseWithoutDiagrams, diagrams } = extractDiagramSpecs(sanitizeDisplayText(value));
+
+  if (containsRenderableHtml(value)) {
+    return `${enhanceHtmlLabels(normalizeLooseLatexText(responseWithoutDiagrams))}${renderDiagramsHtml(diagrams)}`;
   }
 
-  const normalized = normalizeModelResponseText(value);
+  const normalized = normalizeModelResponseText(responseWithoutDiagrams);
   const lines = normalized.split("\n");
   const htmlParts = [];
 
@@ -380,5 +389,5 @@ export const formatChatResponseHtml = (value = "") => {
     );
   }
 
-  return htmlParts.join("");
+  return `${htmlParts.join("")}${renderDiagramsHtml(diagrams)}`;
 };

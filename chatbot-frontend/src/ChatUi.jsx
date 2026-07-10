@@ -105,8 +105,8 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   const [sessionLoading, setSessionLoading] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [messageGroups, setMessageGroups] = useState([]);
-  const [smartAIMessageGroups, setSmartAIMessageGroups] = useState([[]]); // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  separate Smart AI history
-  const [smartAIProMessageGroups, setSmartAIProMessageGroups] = useState([[]]); // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  separate Smart AI history
+  const [smartAIMessageGroups, setSmartAIMessageGroups] = useState([[]]); // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â�  separate Smart AI history
+  const [smartAIProMessageGroups, setSmartAIProMessageGroups] = useState([[]]); // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â�  separate Smart AI history
   const [smartAINxtSessions, setSmartAINxtSessions] = useState([]);
   const [smartAINxtMessageGroups, setSmartAINxtMessageGroups] = useState([[]]);
 
@@ -237,7 +237,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   };
   const displayName = getDisplayNameFromUser(User);
   const navigate = useNavigate();
-  // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚Â¤Ãƒâ€šÃ‚Â¨ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚Â¤Ãƒâ€šÃ‚ÂµÃƒÆ’Ã‚Â Ãƒâ€šÃ‚Â¥ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ state add ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚Â¤ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚Â¤Ãƒâ€šÃ‚Â°ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚Â¥ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹
+  // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ ÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚Â¤Ãƒâ€šÃ‚Â¨ÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚Â¤Ãƒâ€šÃ‚ÂµÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚Â¥ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ state add ÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚Â¤ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚Â¤Ãƒâ€šÃ‚Â°ÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚Â¥ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹
   // const [sessionRemainingTokens, setSessionRemainingTokens] = useState(0);
   const [chatRemainingTokens, setChatRemainingTokens] = useState(0);
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -1046,7 +1046,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
 
   //   const recognition = new SpeechRecognition();
   //   recognition.lang = "en-US"; // or "gu-IN"
-  //   recognition.continuous = true; // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“Ãƒâ€¹Ã¢â‚¬Â  keep listening until stop
+  //   recognition.continuous = true; // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“Ãƒâ€¹Ã¢â‚¬Â�  keep listening until stop
   //   recognition.interimResults = true;
 
   //   recognition.onstart = () => {
@@ -1204,7 +1204,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   };
 
   const handleChangePassword = async () => {
-    console.log("CHANGE PASSWORD CLICKED:::"); // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“Ãƒâ€¹Ã¢â‚¬Â  add this
+    console.log("CHANGE PASSWORD CLICKED:::"); // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“Ãƒâ€¹Ã¢â‚¬Â�  add this
 
     // e.preventDefault();
     console.log(
@@ -1494,7 +1494,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
       );
       console.log("Search Response:", data);
 
-      // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ 2. After search success ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Call Search History API
+      // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ 2. After search success ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â� ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Call Search History API
       await fetch(`${apiBaseUrl}/Searchhistory`, {
         // await fetch(`${apiBaseUrl}/grokSearchhistory`, {
         method: "POST",
@@ -1764,7 +1764,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
       //     }
       //   }
       // } catch (e) {
-      //   console.warn("ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã‚Â¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Failed to refresh userTokenStats after chat:", e.message);
+      //   console.warn("ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã‚Â¡Ãƒâ€šÃ‚Â� ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Failed to refresh userTokenStats after chat:", e.message);
       // }
 
       return {
@@ -1896,7 +1896,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   //     if (data.success) {
   //       // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Update tokens + UI instantly based on type
   //       if (messageType === "smart Ai") {
-  //         // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  Update Smart AI message group
+  //         // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â�  Update Smart AI message group
   //         setSmartAIMessageGroups((prev) => {
   //           const updated = [...prev];
   //           const messages = updated[0] || [];
@@ -1916,7 +1916,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   //           return updated;
   //         });
   //       } else if (messageType === "wrds AiPro") {
-  //         // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  Update Smart AI message group
+  //         // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â�  Update Smart AI message group
   //         setSmartAIProMessageGroups((prev) => {
   //           const updated = [...prev];
   //           const messages = updated[0] || [];
@@ -1979,7 +1979,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   //         }
   //       } catch (err) {
   //         console.warn(
-  //           "ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã‚Â¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Failed to refresh stats after partial save:",
+  //           "ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã‚Â¡Ãƒâ€šÃ‚Â� ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Failed to refresh stats after partial save:",
   //           err.message
   //         );
   //       }
@@ -2074,7 +2074,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
           }
         } catch (err) {
           console.warn(
-            "ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã‚Â¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Failed to refresh stats after partial save:",
+            "ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã‚Â¡Ãƒâ€šÃ‚Â� ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Failed to refresh stats after partial save:",
             err.message,
           );
         }
@@ -2159,7 +2159,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
           }
         } catch (err) {
           console.warn(
-            "ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã‚Â¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Failed to refresh stats after partial save:",
+            "ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã‚Â¡Ãƒâ€šÃ‚Â� ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Failed to refresh stats after partial save:",
             err.message,
           );
         }
@@ -2244,7 +2244,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
           }
         } catch (err) {
           console.warn(
-            "ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã‚Â¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Failed to refresh stats after partial save:",
+            "ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã‚Â¡Ãƒâ€šÃ‚Â� ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Failed to refresh stats after partial save:",
             err.message,
           );
         }
@@ -2329,7 +2329,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
           }
         } catch (err) {
           console.warn(
-            "ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã‚Â¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Failed to refresh stats after partial save:",
+            "ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã‚Â¡Ãƒâ€šÃ‚Â� ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Failed to refresh stats after partial save:",
             err.message,
           );
         }
@@ -2343,7 +2343,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   };
 
   const getCurrentPartialResponse = () => {
-    // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  detect which view is active
+    // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â�  detect which view is active
     const messageType =
       activeView === "smartAi" || isSmartAI
         ? "smart Ai"
@@ -2562,7 +2562,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
     }
   };
 
-  // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  Fetch Smart AI sessions
+  // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â�  Fetch Smart AI sessions
   const fetchSmartAISessions = async () => {
     setSessionLoading(true);
     try {
@@ -2755,7 +2755,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
 
       let sessions = [];
 
-      // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Filter only type:"WrdsAI Nxt" (backend stores as "WrdsAI Nxt" ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ toLowerCase = "wrdsai nxt")
+      // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Filter only type:"WrdsAI Nxt" (backend stores as "WrdsAI Nxt" ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â� ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ toLowerCase = "wrdsai nxt")
       const normalizeType = (value = "") =>
         value.toLowerCase().replace(/\s+/g, "");
 
@@ -2822,7 +2822,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   };
   console.log("smartAISessions:::::::::", smartAIProSessions);
 
-  // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  Fetch Smart AI chat history
+  // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â�  Fetch Smart AI chat history
   const getSmartAIHistory = async (sessionId) => {
     try {
       const user = User || {};
@@ -3014,10 +3014,10 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
 
     // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Fetch data depending on selected view
     if (isSmartAI || activeView === "smartAi") {
-      console.log("ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  Loading Smart AI sessions...");
+      console.log("ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â�  Loading Smart AI sessions...");
       fetchSmartAISessions();
     } else if (isSmartAIPro || activeView === "wrds AiPro") {
-      console.log("ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  Loading Smart AI Pro sessions...");
+      console.log("ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â�  Loading Smart AI Pro sessions...");
       fetchSmartAIProSessions();
     } else if (isSmartAINxt || activeView === "WrdsAI Nxt") {
       console.log("ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã‚Â¡ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ Loading WrdsAI Nxt sessions...");
@@ -3032,7 +3032,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   //   if (!selectedChatId) return;
 
   //   // const selectedChat = chats.find((chat) => chat.id === selectedChatId);
-  //   // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  Choose correct session list
+  //   // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â�  Choose correct session list
   //   const currentSessions =
   //     activeView === "smartAi" || isSmartAI
   //       ? smartAISessions
@@ -3054,7 +3054,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
 
   //   if (selectedChat.sessionId) {
   //     if (activeView === "smartAi") {
-  //       // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  Smart AI tab
+  //       // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â�  Smart AI tab
   //       loadSmartAIHistory(selectedChat.sessionId);
 
   //       // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Load latest token count for Smart AI
@@ -3066,7 +3066,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   //         console.log("Smart AI tokens:", savedTokens);
   //       }
   //     } else if (activeView === "wrds AiPro") {
-  //       // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  Smart AI tab
+  //       // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â�  Smart AI tab
   //       loadSmartAIProHistory(selectedChat.sessionId);
 
   //       // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Load latest token count for Smart AI
@@ -3258,7 +3258,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   };
 
   const loadSmartAIHistory = async (sessionId) => {
-    console.log("ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  Fetching Smart AI history for sessionId:", sessionId);
+    console.log("ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â�  Fetching Smart AI history for sessionId:", sessionId);
     if (!sessionId) {
       setSmartAIMessageGroups([[]]); // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ clear Smart AI messages
       return;
@@ -3267,11 +3267,11 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
     setHistoryLoading(true);
 
     try {
-      // 1ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢Ãƒâ€ Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â£ Fetch Smart AI history data
+      // 1ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢Ãƒâ€� Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â£ Fetch Smart AI history data
       const rawHistory = await getSmartAIHistory(sessionId);
       console.log("Raw smartAi history fetched::::::", rawHistory);
 
-      // 2ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢Ãƒâ€ Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â£ Process Smart AI messages
+      // 2ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢Ãƒâ€� Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â£ Process Smart AI messages
       const processedGroups = [];
 
       for (let i = 0; i < rawHistory.length; i++) {
@@ -3340,7 +3340,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
         }
       }
 
-      // 3ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢Ãƒâ€ Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â£ Handle fallback case
+      // 3ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢Ãƒâ€� Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â£ Handle fallback case
       if (processedGroups.length === 0 && rawHistory.length > 0) {
         rawHistory.forEach((message, index) => {
           if (message.content) {
@@ -3370,7 +3370,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
         });
       }
 
-      // 4ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢Ãƒâ€ Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â£ Save Smart AI messages to a separate state
+      // 4ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢Ãƒâ€� Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â£ Save Smart AI messages to a separate state
       setSmartAIMessageGroups([processedGroups]); // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ separate from chat
     } catch (error) {
       console.error("ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒâ€¦Ã¢â‚¬â„¢ Error loading WrdsAI history:", error);
@@ -3381,7 +3381,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
     }
   };
   const loadSmartAIProHistory = async (sessionId) => {
-    console.log("ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  Fetching WrdsAI Pro history for sessionId:", sessionId);
+    console.log("ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â�  Fetching WrdsAI Pro history for sessionId:", sessionId);
     if (!sessionId) {
       setSmartAIProMessageGroups([[]]); // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ clear Smart AI messages
       return;
@@ -3390,10 +3390,10 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
     setHistoryLoading(true);
 
     try {
-      // 1ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢Ãƒâ€ Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â£ Fetch Smart AI history data
+      // 1ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢Ãƒâ€� Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â£ Fetch Smart AI history data
       const rawHistory = await getSmartAIProHistory(sessionId);
 
-      // 2ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢Ãƒâ€ Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â£ Process Smart AI messages
+      // 2ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢Ãƒâ€� Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â£ Process Smart AI messages
       const processedGroups = [];
 
       for (let i = 0; i < rawHistory.length; i++) {
@@ -3462,7 +3462,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
         }
       }
 
-      // 3ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢Ãƒâ€ Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â£ Handle fallback case
+      // 3ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢Ãƒâ€� Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â£ Handle fallback case
       if (processedGroups.length === 0 && rawHistory.length > 0) {
         rawHistory.forEach((message, index) => {
           if (message.content) {
@@ -3492,7 +3492,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
         });
       }
 
-      // 4ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢Ãƒâ€ Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â£ Save Smart AI messages to a separate state
+      // 4ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢Ãƒâ€� Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â£ Save Smart AI messages to a separate state
       setSmartAIProMessageGroups([processedGroups]); // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ separate from chat
     } catch (error) {
       console.error("ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒâ€¦Ã¢â‚¬â„¢ Error loading WrdsAI Pro history:", error);
@@ -3998,7 +3998,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
     const messageId =
       Date.now() + "_" + Math.random().toString(36).substr(2, 5); // always new id
 
-    // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  Choose correct session list
+    // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â�  Choose correct session list
     const currentSessions =
       activeView === "smartAi" || isSmartAI ? smartAISessions : chats;
 
@@ -4010,7 +4010,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
     let currentSessionId = "";
 
     if (activeView === "smartAi" || isSmartAI) {
-      // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  Smart AI tab ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ reuse the same open Smart AI session
+      // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â�  Smart AI tab ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â� ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ reuse the same open Smart AI session
       const existing = smartAISessions.find(
         (s) => s.id === selectedChatId || s.sessionId === selectedChatId,
       );
@@ -4052,7 +4052,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
             ? "WrdsAI Nxt"
             : "chat";
 
-    // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  choose correct state setter
+    // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â�  choose correct state setter
     const setMessagesFn =
       messageType === "wrds AiPro"
         ? setSmartAIProMessageGroups
@@ -4233,7 +4233,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
           if (index !== -1) {
             messages[index] = {
               ...messages[index],
-              responses: [result.response], // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“Ãƒâ€¹Ã¢â‚¬Â  backend message
+              responses: [result.response], // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“Ãƒâ€¹Ã¢â‚¬Â�  backend message
               isTyping: false,
               isComplete: true,
               tokensUsed: 0,
@@ -4253,7 +4253,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
           return updated;
         });
 
-        // ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂºÃƒÂ¢Ã¢â€šÂ¬Ã‚Â VERY IMPORTANT ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ typing animation STOP
+        // ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂºÃƒÂ¢Ã¢â€šÂ¬Ã‚Â VERY IMPORTANT ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â� ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ typing animation STOP
         setIsSending(false);
         setIsTypingResponse(false);
         return; // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¥ EXIT ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â niche no typing code run thase j nahi
@@ -4312,7 +4312,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
         for (let l = 0; l < lines.length; l += LINES_PER_BATCH) {
           // if (isStoppedRef.current) break;
           if (isStoppedRef.current) {
-            // ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂºÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Stop pressed ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ save partial response
+            // ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂºÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Stop pressed ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â� ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ save partial response
             let saveEndpoint = "";
 
             if (activeView === "chat") {
@@ -4487,7 +4487,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
 
             // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Refresh sessions based on current type
             if (activeView === "smartAi" || isSmartAI) {
-              await fetchSmartAISessions(); // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  Smart AI tab
+              await fetchSmartAISessions(); // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â�  Smart AI tab
             } else if (activeView === "wrds AiPro" || isSmartAIPro) {
               await fetchSmartAIProSessions();
             } else if (activeView === "WrdsAI Nxt" || isSmartAINxt) {
@@ -4497,7 +4497,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
             }
           }
         } catch (err) {
-          console.warn("ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã‚Â¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Failed to refresh stats after chat:", err.message);
+          console.warn("ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã‚Â¡Ãƒâ€šÃ‚Â� ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Failed to refresh stats after chat:", err.message);
         }
       }
     }
@@ -4719,14 +4719,14 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
     };
 
     if (activeView === "smartAi" || isSmartAI) {
-      // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  Smart AI Chat
+      // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â�  Smart AI Chat
       setSmartAISessions((prev) => [newChat, ...prev]); // Add to Smart AI session list
       setSkipHistoryLoad(true);
       setSelectedChatId(newChat.id);
       localStorage.setItem("lastSmartAISessionId", newChat.id);
       setSmartAIMessageGroups([[]]); // Reset Smart AI message history
     } else if (activeView === "wrds AiPro" || isSmartAIPro) {
-      // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â  Smart AI Chat
+      // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â�  Smart AI Chat
       setSmartAIProSessions((prev) => [newChat, ...prev]); // Add to Smart AI session list
       setSkipHistoryLoad(true);
       setSelectedChatId(newChat.id);
@@ -4852,10 +4852,10 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
     if (isMobile) {
-      // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Mobile ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Mail app / Gmail app
+      // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Mobile ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â� ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Mail app / Gmail app
       window.location.href = "mailto:support@wrdsai.com";
     } else {
-      // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Desktop ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Gmail web compose
+      // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Desktop ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â� ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Gmail web compose
       window.location.href =
         "https://mail.google.com/mail/?view=cm&fs=1&to=support@wrdsai.com";
     }
@@ -8453,7 +8453,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                   width: "92%",
                   // mx: "auto",
                   p: { xs: 1, sm: 1, md: 2 },
-                  pb: { xs: "152px", sm: "168px", md: "176px" },
+                  pb: { xs: 1, sm: 1, md: 2 },
                   minHeight: 0,
                   "&::-webkit-scrollbar": { display: "none" },
                   scrollbarWidth: "none",
@@ -8897,6 +8897,13 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                         </Box>
                       </Box>
                     ))}
+                    <Box
+                      aria-hidden="true"
+                      sx={{
+                        height: { xs: "92px", sm: "106px", md: "116px" },
+                        flexShrink: 0,
+                      }}
+                    />
                     <div ref={messagesEndRef} />
                   </Box>
                 )}
@@ -10682,7 +10689,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                       color: "#2F67F6",
                       position: "absolute",
                       left: "15px",
-                      bottom: "34px", // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“Ãƒâ€¹Ã¢â‚¬Â  bottom ma fix karva
+                      bottom: "34px", // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“Ãƒâ€¹Ã¢â‚¬Â�  bottom ma fix karva
                       zIndex: 2,
                       // backgroundColor: "white",
                       borderRadius: "50%",
@@ -10698,7 +10705,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                       // onChange={(e) => {
                       //   const files = e.target.files;
                       //   if (files && files.length > 0) {
-                      //     setSelectedFile(files); // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ array of files ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚Â«ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€¦Ã‚Â¸ ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚Â°ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚Â«ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹
+                      //     setSelectedFile(files); // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ array of files ÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚Â«ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚ÂªÃƒâ€¦Ã‚Â¸ ÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚ÂªÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚Â°ÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚Â«ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹
                       //     console.log("Files selected:", files);
                       //   }
                       // }}
@@ -10766,7 +10773,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                     multiline
                     maxRows={selectedFiles.length > 0 ? 4 : 3}
                     InputProps={{
-                      startAdornment: selectedFiles.length > 0 && ( // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ selectedFiles.length ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚Â¤ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚ÂªÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚Â¾ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚Â«ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹
+                      startAdornment: selectedFiles.length > 0 && ( // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ selectedFiles.length ÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚Â¤ÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚ÂªÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚Â¾ÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚Â«ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹
                         <Box
                           sx={{
                             position: "absolute",
@@ -10774,8 +10781,8 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                             left: "11px",
                             display: "flex",
                             alignItems: "center",
-                            flexWrap: "wrap", // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Multiple files ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚Â®ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚Â¾ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€¦Ã‚Â¸ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚Â«ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ wrap ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚Â°ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚Â«ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹
-                            gap: 0.5, // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Files ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚ÂµÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€¦Ã‚Â¡ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚Â«Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€¦Ã‚Â¡ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚Â«ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ gap
+                            flexWrap: "wrap", // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Multiple files ÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚Â®ÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚Â¾ÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚ÂªÃƒâ€¦Ã‚Â¸ÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚Â«ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ wrap ÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚ÂªÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚Â°ÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚Â«ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹
+                            gap: 0.5, // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Files ÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚ÂµÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚ÂªÃƒâ€¦Ã‚Â¡ÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚Â«Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚ÂªÃƒâ€¦Ã‚Â¡ÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚Â«ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ gap
                             // maxWidth: "200px", // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ Maximum width
                             maxWidth: "calc(100% - 50px)", // Prevent overflow
                           }}
@@ -10813,7 +10820,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                               <IconButton
                                 size="small"
                                 // onClick={() => setSelectedFiles(null)}
-                                onClick={() => removeFile(index)} // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ index ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚ÂªÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚Â¾ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚Â¸ ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚Â°ÃƒÆ’Ã‚Â Ãƒâ€šÃ‚Â«ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹
+                                onClick={() => removeFile(index)} // ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¹ index ÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚ÂªÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚Â¾ÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚Â¸ ÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚ÂªÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚ÂªÃƒâ€šÃ‚Â°ÃƒÆ’Ã‚Â� Ãƒâ€šÃ‚Â«ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹
                                 sx={{ color: "#ff4444", p: 0.5, ml: 0.5 }}
                               >
                                 <CloseIcon fontSize="small" />
@@ -11039,6 +11046,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
   );
 };
 export default ChatUI;
+
 
 
 

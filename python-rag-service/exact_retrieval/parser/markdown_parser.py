@@ -4,22 +4,23 @@ import logging
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
 
+from exact_retrieval.parser.question_text_normalizer import normalize_exact_question_text
 from exact_retrieval.parser.utils import (
-    dump_records,
     normalize_sub_question,
     slugify,
     split_markdown_pages,
     stable_pdf_key,
     strip_markdown,
 )
-from exact_retrieval.schemas.models import Figure, Page, Question
+from exact_retrieval.schemas.models import Page, Question
 
 logger = logging.getLogger(__name__)
 
 CHAPTER_RE = re.compile(r"\b(?:CHAPTER|Chapter)\s+(\d+[A-Za-z]?)\b")
 EXERCISE_RE = re.compile(r"\bExercise\s*(?:Set)?\s*(\d+(?:\.\d+)?)\b", re.IGNORECASE)
+EXERCISE_HEADING_ONLY_RE = re.compile(r"^\s*(?:#{1,6}\s*)?Exercise\s*(?:Set)?\s*$", re.IGNORECASE)
+EXERCISE_NUMBER_ONLY_RE = re.compile(r"^\s*(\d+(?:\.\d+)?)\s*$")
 QUESTION_RE = re.compile(r"^\s*(?:#{1,6}\s*)?(?:[-*+]\s*)?(\d{1,3})\s*[\).]\s*(.*)$")
 SUBQUESTION_RE = re.compile(r"^\s*(?:[-*+]\s*)?\(?([ivx]+)\)\s*(.*)$", re.IGNORECASE)
 STOP_SECTION_RE = re.compile(r"^\s*(?:\d+(?:\.\d+)*\s+)?(?:summary|answers?|hints?|solutions?)\b", re.IGNORECASE)
@@ -49,20 +50,13 @@ class MarkdownParser:
         markdown: str,
         pdf_path: Path,
         pdf_root: Path,
-        figures: list[Figure],
     ) -> tuple[list[Page], list[Question]]:
         pdf_key = stable_pdf_key(pdf_path, pdf_root)
-        figures_by_page = self._figures_by_page(figures)
-        pages = self._parse_pages(pdf_key, markdown, figures_by_page)
-        questions = self._parse_questions(pdf_key, markdown, figures_by_page)
+        pages = self._parse_pages(pdf_key, markdown)
+        questions = self._parse_questions(pdf_key, markdown)
         return pages, questions
 
-    def _parse_pages(
-        self,
-        pdf_key: str,
-        markdown: str,
-        figures_by_page: dict[int, list[dict]],
-    ) -> list[Page]:
+    def _parse_pages(self, pdf_key: str, markdown: str) -> list[Page]:
         pages: list[Page] = []
         for page_no, page_markdown in split_markdown_pages(markdown):
             pages.append(
@@ -71,17 +65,11 @@ class MarkdownParser:
                     page=page_no,
                     markdown=page_markdown,
                     text=strip_markdown(page_markdown),
-                    figures=figures_by_page.get(page_no, []),
                 )
             )
         return pages
 
-    def _parse_questions(
-        self,
-        pdf_key: str,
-        markdown: str,
-        figures_by_page: dict[int, list[dict]],
-    ) -> list[Question]:
+    def _parse_questions(self, pdf_key: str, markdown: str) -> list[Question]:
         blocks = self._collect_question_blocks(markdown)
         questions: list[Question] = []
         seen_ids: set[str] = set()
@@ -92,7 +80,6 @@ class MarkdownParser:
                 block=block,
                 sub_question=None,
                 lines=block.lines,
-                figures_by_page=figures_by_page,
             )
             if parent.id not in seen_ids:
                 questions.append(parent)
@@ -104,7 +91,6 @@ class MarkdownParser:
                     block=block,
                     sub_question=sub_question,
                     lines=sub_lines,
-                    figures_by_page=figures_by_page,
                 )
                 if sub_record.id not in seen_ids:
                     questions.append(sub_record)
@@ -118,6 +104,7 @@ class MarkdownParser:
         current_exercise: str | None = None
         active: QuestionBlock | None = None
         last_question_number = 0
+        pending_exercise_heading = False
 
         for page_no, page_markdown in split_markdown_pages(markdown):
             for raw_line in page_markdown.splitlines():
@@ -131,6 +118,22 @@ class MarkdownParser:
                 chapter_match = CHAPTER_RE.search(stripped)
                 if chapter_match:
                     current_chapter = chapter_match.group(1)
+
+                if pending_exercise_heading:
+                    exercise_number_match = EXERCISE_NUMBER_ONLY_RE.match(stripped)
+                    if exercise_number_match:
+                        if active:
+                            blocks.append(active)
+                            active = None
+                        current_exercise = exercise_number_match.group(1)
+                        last_question_number = 0
+                        pending_exercise_heading = False
+                        continue
+                    pending_exercise_heading = False
+
+                if EXERCISE_HEADING_ONLY_RE.match(stripped):
+                    pending_exercise_heading = True
+                    continue
 
                 exercise_match = EXERCISE_RE.search(stripped)
                 if exercise_match:
@@ -210,12 +213,10 @@ class MarkdownParser:
         block: QuestionBlock,
         sub_question: str | None,
         lines: list[MarkdownLine],
-        figures_by_page: dict[int, list[dict]],
     ) -> Question:
-        question_markdown = "\n".join(line.text for line in lines).strip()
-        question_text = strip_markdown(question_markdown)
+        question_markdown = normalize_exact_question_text("\n".join(line.text for line in lines).strip())
+        question_text = normalize_exact_question_text(strip_markdown(question_markdown))
         page = lines[0].page if lines else block.page
-        figures = self._figures_for_lines(lines, figures_by_page)
         question_id = self._question_id(
             pdf_key=pdf_key,
             exercise=block.exercise,
@@ -233,34 +234,7 @@ class MarkdownParser:
             sub_question=sub_question,
             question_markdown=question_markdown,
             question_text=question_text,
-            figures=figures,
         )
-
-    def _figures_by_page(self, figures: Iterable[Figure]) -> dict[int, list[dict]]:
-        grouped: dict[int, list[dict]] = {}
-        for figure in figures:
-            grouped.setdefault(figure.page, []).append(figure.to_dict())
-        return grouped
-
-    def _figures_for_lines(
-        self,
-        lines: list[MarkdownLine],
-        figures_by_page: dict[int, list[dict]],
-    ) -> list[dict]:
-        if not lines:
-            return []
-        text = "\n".join(line.text for line in lines)
-        if not re.search(r"\b(?:fig\.?|figure|diagram)\b", text, re.IGNORECASE):
-            return []
-        figures: list[dict] = []
-        seen: set[str] = set()
-        for line in lines:
-            for figure in figures_by_page.get(line.page, []):
-                path = str(figure.get("path") or "")
-                if path not in seen:
-                    figures.append(figure)
-                    seen.add(path)
-        return figures
 
     def _question_id(
         self,

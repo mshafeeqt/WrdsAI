@@ -172,7 +172,7 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding-bottom: 2rem;
+  padding-bottom: 4rem;
 }
 
 .option-btn {
@@ -293,6 +293,54 @@
   min-width: 0;
 }
 
+
+.results-title {
+  font-size: 1.7rem;
+  font-weight: 800;
+  margin: 0 0 0.25rem;
+}
+
+.results-summary {
+  margin-bottom: 1rem;
+}
+
+.results-score-line {
+  font-size: 1.05rem;
+  margin: 0 0 0.25rem;
+}
+
+.results-time-line {
+  color: var(--test-text-muted);
+  margin: 0 0 0.85rem;
+}
+
+.results-feedback {
+  padding: 0.85rem 1rem;
+  background-color: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  border: 1px solid var(--test-glass-border);
+}
+
+.results-feedback-title {
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 0.35rem;
+}
+
+.results-feedback-text {
+  color: var(--test-text-muted);
+  font-size: 0.9rem;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.results-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: auto;
+}
 .recent-scores-card {
   padding: 1.15rem;
   text-align: left;
@@ -554,13 +602,13 @@
   width: 150px;
   height: 150px;
   border-radius: 50%;
-  border: 8px solid #ffe66d;
+  border: 7px solid #ffe66d;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2.5rem;
+  font-size: 2rem;
   font-weight: 950;
-  margin: 2rem auto;
+  margin: 0.85rem auto 1rem;
   box-shadow: 0 0 0 10px rgba(255, 230, 109, 0.08), 0 18px 42px rgba(43, 24, 104, 0.28);
 }
 
@@ -574,7 +622,55 @@
     justify-content: stretch;
   }
 
-  .recent-scores-card {
+  
+.results-title {
+  font-size: 1.7rem;
+  font-weight: 800;
+  margin: 0 0 0.25rem;
+}
+
+.results-summary {
+  margin-bottom: 1rem;
+}
+
+.results-score-line {
+  font-size: 1.05rem;
+  margin: 0 0 0.25rem;
+}
+
+.results-time-line {
+  color: var(--test-text-muted);
+  margin: 0 0 0.85rem;
+}
+
+.results-feedback {
+  padding: 0.85rem 1rem;
+  background-color: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  border: 1px solid var(--test-glass-border);
+}
+
+.results-feedback-title {
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 0.35rem;
+}
+
+.results-feedback-text {
+  color: var(--test-text-muted);
+  font-size: 0.9rem;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.results-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: auto;
+}
+.recent-scores-card {
     max-width: none;
     width: auto;
     min-height: auto;
@@ -646,4 +742,123 @@
     width: 100%;
     margin-bottom: 0;
   }
+}
+.test-compact-diagram .wrds-diagram-card {
+  max-width: 320px !important;
+  margin: 0.6rem 0 0.8rem !important;
+  padding: 0.55rem !important;
+}
+
+.test-compact-diagram .wrds-diagram-card > div:first-child {
+  font-size: 0.9rem !important;
+  margin-bottom: 0.35rem !important;
+}
+
+.test-compact-diagram .wrds-diagram-card svg {
+  max-height: 135px !important;
+  width: 100% !important;
+}
+
+.test-compact-diagram .wrds-diagram-card div[style*="font-size:12px"] {
+  font-size: 0.72rem !important;
+  line-height: 1.25 !important;
+  padding: 0.35rem 0.5rem !important;
+  margin-top: 0.35rem !important;
+}
+.results-container {
+  padding: 0.9rem 3.5rem;
+}
+
+.results-main-card {
+  min-height: 520px;
+  padding: 2rem 2rem 1.75rem;
+}
+
+.score-circle {
+  width: 116px;
+  height: 116px;
+  border-width: 7px;
+  font-size: 2rem;
+  margin: 0.85rem auto 1rem;
+}
+.question-stage {
+  max-height: calc(100vh - 230px);
+  overflow: visible;
+}
+
+.question-card {
+  max-height: calc(100vh - 270px);
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  padding-bottom: 5rem;
+}
+
+.question-card::-webkit-scrollbar {
+  width: 8px;
+}
+
+.question-card::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+}
+
+.results-layout-full {
+  grid-template-columns: minmax(720px, 1fr);
+  justify-content: stretch;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.results-layout-full .results-main-card {
+  width: 100%;
+}
+
+
+
+/* Final results-card tuning: keep this after earlier Test overrides. */
+.results-main-card .score-circle {
+  width: 152px;
+  height: 152px;
+  border-width: 8px;
+  font-size: 2.45rem;
+  margin: 0.9rem auto 1.1rem;
+}
+
+.results-main-card .results-summary {
+  margin-bottom: 1.6rem;
+}
+
+.results-main-card .results-actions {
+  margin-top: 1.25rem;
+}
+
+.results-main-card .results-actions .primary-btn,
+.results-main-card .results-actions .secondary-btn {
+  min-width: 180px;
+  padding: 1rem 2.25rem;
+  font-size: 1rem;
+  border-radius: 14px;
+}
+
+/* Active question layout tuning. */
+.active-question-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.active-question-meta {
+  color: var(--test-cyan);
+  font-weight: 700;
+  margin-bottom: 1.45rem;
+}
+
+.active-question-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.active-options-container {
+  margin-top: clamp(2rem, 5.5vh, 3.4rem);
 }

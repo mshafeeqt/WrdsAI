@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+﻿import nodemailer from "nodemailer";
 
 const DEMO_VIDEO_URL = String(process.env.DEMO_VIDEO_URL || "").trim();
 
@@ -59,7 +59,6 @@ const createTransporter = () => {
 export const verifyMailTransport = async () => {
   const { transporter, config } = createTransporter();
   if (!transporter) {
-    console.warn("[mail] SMTP not configured", { missing: config.missing });
     return false;
   }
 
@@ -193,3 +192,4 @@ export const sendWelcomeEmail = async ({ email, name }) => {
     return false;
   }
 };
+

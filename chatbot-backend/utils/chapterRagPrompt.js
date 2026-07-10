@@ -11,6 +11,8 @@ export function getExactExercisePromptInstruction(chapterRagContext) {
   return [
     "The user asked for a specific exercise question, and exact textbook question context was retrieved.",
     "Use the exact question text below as the primary source.",
+    "In the **Problem Statement:** copy every MCQ option label and value exactly from the retrieved question; never drop option values such as (D).",
+    "If options appear on separate lines, keep them as a clean option list: (A), (B), (C), (D).",
     "Start the answer with a clear **Problem Statement:** section that restates the exact question in readable form before solving.",
     "Then use a loose, student-friendly structure. Include sections such as **Given / What We Know:**, **Method / Idea:**, **Step-by-Step Solution:**, and **Final Answer:** when they fit the problem.",
     "Do not force every section if it is unnatural, but always show **Problem Statement:** first and **Final Answer:** at the end for solvable questions.",
@@ -20,6 +22,5 @@ export function getExactExercisePromptInstruction(chapterRagContext) {
     "Use displayed equations with $$...$$ for fractions, roots, powers, identities, and multi-step algebra.",
     "Use \\frac{numerator}{denominator} for stacked fractions and clear equation work.",
     "Solve it step by step, with enough detail for a student to follow.",
-    "If the question refers to a figure and figure data is unavailable, clearly say that the figure is required before attempting any limited explanation.",
   ].join(" ");
 }

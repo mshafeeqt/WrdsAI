@@ -3,6 +3,7 @@ import path from "path";
 import dotenv from "dotenv";
 import OpenAI from "openai";
 import { getChapterRagContext } from "../utils/chapterRagBridge.js";
+import { DIAGRAM_SPEC_INSTRUCTIONS } from "../utils/diagramPrompt.js";
 
 let basePath = path.join(process.cwd(), "chatbot-backend");
 if (!fs.existsSync(basePath)) {
@@ -661,6 +662,7 @@ Validation rules:
 - If the current correctIndex is right but the explanation is wrong, fix the explanation.
 - If both are wrong, fix both.
 - Use JSON-safe maths notation. Never use raw LaTeX backslash commands.
+- Preserve any valid DIAGRAM_SPEC strings already present inside question or explanation fields.
 - Return only valid JSON with no markdown fences and no extra text.`,
     },
     {
@@ -721,6 +723,8 @@ Global rules:
 - Each question must have exactly 4 options.
 - correctIndex must be 0, 1, 2, or 3.
 - Keep explanations short and clear.
+- When a diagram is genuinely needed, append a JSON-safe DIAGRAM_SPEC string to the end of the question or explanation field. Do not add any new JSON fields.
+${DIAGRAM_SPEC_INSTRUCTIONS}
 - Return only valid JSON.
 - Do not use markdown fences.
 - Do not use raw LaTeX backslash commands in final JSON.`,

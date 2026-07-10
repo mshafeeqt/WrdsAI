@@ -156,7 +156,6 @@ def _question_result(
         "sub_question": record.get("sub_question"),
         "text": record.get("question_text") or "",
         "markdown": record.get("question_markdown") or "",
-        "figures": record.get("figures") or [],
     }
 
 
@@ -169,7 +168,6 @@ def _page_result(record: dict[str, Any]) -> dict[str, Any]:
         "page": record.get("page"),
         "text": record.get("text") or "",
         "markdown": record.get("markdown") or "",
-        "figures": record.get("figures") or [],
     }
 
 
@@ -241,6 +239,7 @@ def route_query(query: str, pdf: str | None = None) -> dict[str, Any] | str | No
     return "semantic"
 
 
+
 def exact_result_to_context(result: dict[str, Any]) -> str:
     """Format exact retrieval output for the existing Node prompt contract."""
     result_type = result.get("type")
@@ -248,8 +247,7 @@ def exact_result_to_context(result: dict[str, Any]) -> str:
         return (
             "Exact page match\n"
             f"PDF: {result.get('pdf')}\n"
-            f"Page: {result.get('page')}\n"
-            f"Figures: {len(result.get('figures') or [])}\n\n"
+            f"Page: {result.get('page')}\n\n"
             f"{result.get('markdown') or result.get('text') or ''}"
         ).strip()
 
@@ -272,8 +270,7 @@ def exact_result_to_context(result: dict[str, Any]) -> str:
             f"Exercise: {result.get('exercise') or ''}\n"
             f"Question: {result.get('question_no') or ''}\n"
             f"{sub_line}"
-            f"Figures: {len(result.get('figures') or [])}"
-            f"{mismatch_note}\n\n"
+            f"{mismatch_note}\n"
             f"{result.get('markdown') or result.get('text') or ''}"
         ).strip()
 

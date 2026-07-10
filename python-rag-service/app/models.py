@@ -66,6 +66,8 @@ class ExactRebuildIndexResponse(BaseModel):
     pdfs_processed: int
     pages_indexed: int
     questions_indexed: int
+    failed_pdfs: int = 0
     parsed_dir: str
     page_index_dir: str
     question_index_dir: str
+    markdown_dir: str | None = None

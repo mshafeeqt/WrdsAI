@@ -211,15 +211,15 @@ const TestInterface = ({ subject, chapter, difficulty, onFinish }) => {
       </div>
 
       <div className="question-stage">
-        <div className="test-glass-card question-card">
-          <div style={{ marginBottom: '1.5rem', color: 'var(--test-cyan)', fontWeight: 600 }}>
+        <div className="test-glass-card question-card active-question-card">
+          <div className="active-question-meta">
             Question {currentQuestionIndex + 1} of {questions.length}
           </div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 500, marginBottom: '2rem', lineHeight: 1.4 }}>
-            <MathText text={currentQuestion.question} className="math-text" />
+          <h2 className="active-question-title">
+            <MathText text={currentQuestion.question} className="math-text" diagramMode="compact" />
           </h2>
 
-        <div className="options-container">
+          <div className="options-container active-options-container">
             {currentQuestion.options.map((option, idx) => (
               <button
                 key={idx}
@@ -249,3 +249,4 @@ const TestInterface = ({ subject, chapter, difficulty, onFinish }) => {
 };
 
 export default TestInterface;
+

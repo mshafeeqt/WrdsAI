@@ -9,11 +9,9 @@ except ImportError:  # pragma: no cover - local fallback for minimal installs
     def tqdm(iterable, **_kwargs):  # type: ignore[no-redef]
         return iterable
 
-from exact_retrieval.parser.figure_extractor import FigureExtractor
 from exact_retrieval.parser.marker_parser import MarkerParser
 from exact_retrieval.parser.markdown_parser import MarkdownParser
 from exact_retrieval.parser.utils import (
-    FIGURES_DIR,
     MARKDOWN_DIR,
     PAGE_INDEX_DIR,
     PARSED_DIR,
@@ -34,18 +32,16 @@ logger = logging.getLogger(__name__)
 
 
 class ExactIndexBuilder:
-    """Build exact retrieval JSON from Marker Markdown and extracted figures."""
+    """Build exact retrieval JSON from Marker Markdown."""
 
     def __init__(
         self,
         *,
         marker_parser: MarkerParser | None = None,
         markdown_parser: MarkdownParser | None = None,
-        figure_extractor: FigureExtractor | None = None,
     ) -> None:
         self.marker_parser = marker_parser or MarkerParser()
         self.markdown_parser = markdown_parser or MarkdownParser()
-        self.figure_extractor = figure_extractor or FigureExtractor()
 
     def rebuild(self, pdf_root: Path | None = None) -> ExactIndexSummary:
         reset_exact_dirs()
@@ -53,7 +49,6 @@ class ExactIndexBuilder:
         pdf_files = list_pdf_files(root)
         all_pages: list[Page] = []
         all_questions: list[Question] = []
-        figures_extracted = 0
         failed_pdfs = 0
 
         logger.info("Starting exact index rebuild for %s PDFs", len(pdf_files))
@@ -62,17 +57,14 @@ class ExactIndexBuilder:
             try:
                 markdown_path = self.marker_parser.convert_pdf_to_markdown(pdf_path, root)
                 markdown = markdown_path.read_text(encoding="utf-8")
-                figures = self.figure_extractor.extract_figures(pdf_path, root)
                 pages, questions = self.markdown_parser.parse(
                     markdown=markdown,
                     pdf_path=pdf_path,
                     pdf_root=root,
-                    figures=figures,
                 )
                 self._write_pdf_outputs(pdf_key, pages, questions)
                 all_pages.extend(pages)
                 all_questions.extend(questions)
-                figures_extracted += len(figures)
             except Exception:
                 failed_pdfs += 1
                 logger.exception("Failed to build exact index for %s", pdf_path)
@@ -85,13 +77,11 @@ class ExactIndexBuilder:
             pdfs_processed=len(pdf_files),
             pages_indexed=len(all_pages),
             questions_indexed=len(all_questions),
-            figures_extracted=figures_extracted,
             failed_pdfs=failed_pdfs,
             parsed_dir=str(PARSED_DIR),
             page_index_dir=str(PAGE_INDEX_DIR),
             question_index_dir=str(QUESTION_INDEX_DIR),
             markdown_dir=str(MARKDOWN_DIR),
-            figures_dir=str(FIGURES_DIR),
         )
         logger.info("Exact index rebuild complete: %s", summary)
         return summary

@@ -16,8 +16,7 @@ MARKDOWN_DIR = EXACT_DATA_DIR / "markdown"
 PARSED_DIR = EXACT_DATA_DIR / "parsed"
 PAGE_INDEX_DIR = EXACT_DATA_DIR / "page_index"
 QUESTION_INDEX_DIR = EXACT_DATA_DIR / "question_index"
-FIGURES_DIR = EXACT_DATA_DIR / "figures"
-GENERATED_DIRS = (MARKDOWN_DIR, PARSED_DIR, PAGE_INDEX_DIR, QUESTION_INDEX_DIR, FIGURES_DIR)
+GENERATED_DIRS = (MARKDOWN_DIR, PARSED_DIR, PAGE_INDEX_DIR, QUESTION_INDEX_DIR)
 PAGE_MARKER_RE = re.compile(r"<!--\s*page\s*:\s*(\d+)\s*-->", re.IGNORECASE)
 CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\xad]")
 
@@ -83,8 +82,6 @@ def per_pdf_page_file_path(pdf_key: str) -> Path:
     return PAGE_INDEX_DIR / f"{slugify(Path(pdf_key).stem)}_pages.json"
 
 
-def figures_pdf_dir(pdf_key: str) -> Path:
-    return FIGURES_DIR / slugify(Path(pdf_key).stem)
 
 
 def write_json(path: Path, payload: Any) -> None:

@@ -4,30 +4,30 @@ import '../styles/testStyles.css';
 const getFeedback = (score) => {
   if (score >= 90) {
     return {
-      line1: "Outstanding! You've mastered this chapter. 🌟",
+      line1: "Outstanding! You've mastered this chapter.",
       line2: "Continue practising more, keep up the momentum, don't be overconfident!"
     };
   } else if (score >= 70) {
     return {
-      line1: "Great work! You're getting really strong at this. 💪",
-      line2: "Review the 1-2 questions you missed and try again – you're almost there!"
+      line1: "Great work! You're getting really strong at this.",
+      line2: "Review the 1-2 questions you missed and try again - you're almost there!"
     };
   } else if (score >= 40) {
     return {
-      line1: "Good effort! You got some solid answers today. 😊",
-      line2: "Pick any one question you found tricky and re-read that concept – small steps add up!"
+      line1: "Good effort! You got some solid answers today.",
+      line2: "Pick any one question you found tricky and re-read that concept - small steps add up!"
     };
   } else if (score >= 20) {
     return {
-      line1: "You showed up and that's what matters most. ✨",
-      line2: "Try just one concept from this chapter today – even one question practised counts!"
-    };
-  } else {
-    return {
-      line1: "Every student started exactly where you are right now. 🙌",
-      line2: "Start again, you've got this, one step at a time. Spend 30 minutes each day, practice more - I'm always here to help!"
+      line1: "You showed up and that's what matters most.",
+      line2: "Try just one concept from this chapter today - even one question practised counts!"
     };
   }
+
+  return {
+    line1: "Every student started exactly where you are right now.",
+    line2: "Start again, you've got this, one step at a time. Spend 30 minutes each day, practice more - I'm always here to help!"
+  };
 };
 
 const TestResults = ({
@@ -63,39 +63,39 @@ const TestResults = ({
     <div className="results-container">
       <div className="results-layout">
         <div className="test-glass-card results-main-card">
-        <h1 style={{ fontSize: '2rem', fontWeight: 700 }}>Test Completed!</h1>
+          <h1 className="results-title">Test Completed!</h1>
 
-        <div className="score-circle" style={{ margin: '1.5rem auto' }}>
-          {results.score}%
-        </div>
+          <div className="score-circle">
+            {results.score}%
+          </div>
 
-        <div style={{ marginBottom: '2rem' }}>
-          <p style={{ fontSize: '1.2rem', marginBottom: '0.4rem' }}>
-            You scored <strong>{results.correctCount}</strong> out of <strong>{results.totalCount}</strong>
-          </p>
-          <p style={{ color: 'var(--test-text-muted)', marginBottom: '1.5rem' }}>
-            Time taken: {formatTime(results.timeTaken)}
-          </p>
-
-          <div style={{ padding: '1.2rem', backgroundColor: 'rgba(255, 255, 255, 0.03)', borderRadius: '12px', border: '1px solid var(--test-glass-border)' }}>
-            <p style={{ fontWeight: 600, fontSize: '1.1rem', marginBottom: '0.6rem', color: '#fff' }}>
-              {feedback.line1}
+          <div className="results-summary">
+            <p className="results-score-line">
+              You scored <strong>{results.correctCount}</strong> out of <strong>{results.totalCount}</strong>
             </p>
-            <p style={{ color: 'var(--test-text-muted)', fontSize: '0.95rem', lineHeight: '1.5', margin: 0 }}>
-              {feedback.line2}
+            <p className="results-time-line">
+              Time taken: {formatTime(results.timeTaken)}
             </p>
+
+            <div className="results-feedback">
+              <p className="results-feedback-title">
+                {feedback.line1}
+              </p>
+              <p className="results-feedback-text">
+                {feedback.line2}
+              </p>
+            </div>
+          </div>
+
+          <div className="results-actions">
+            <button className="primary-btn" onClick={onRestart}>
+              Take Another Test
+            </button>
+            <button className="secondary-btn" onClick={onReview}>
+              Review Test
+            </button>
           </div>
         </div>
-
-        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: 'auto' }}>
-          <button className="primary-btn" onClick={onRestart}>
-            Take Another Test
-          </button>
-          <button className="secondary-btn" onClick={onReview}>
-            Review Test
-          </button>
-        </div>
-      </div>
 
         <aside className="test-glass-card recent-scores-card">
           <div className="recent-scores-heading">
