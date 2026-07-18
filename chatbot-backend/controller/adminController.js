@@ -17,10 +17,10 @@ const BASE_PRICES_INR = {
     "Scale Up": { Monthly: 1355.09, "1 Month": 1355.09, "3 Months": 4065.27, Yearly: 13558.5, "1 Year": 13558.5 },
   },
   "WrdsAI Nxt": {
-    "Boost Up": { Monthly: 999, "1 Month": 999, "3 Months": 2997, Yearly: 10999, "1 Year": 10999 },
+    "Boost Up": { Monthly: 499, "1 Month": 499, "3 Months": 1299, Yearly: 3999, "1 Year": 3999 },
   },
   "WrdsAi Nxt": {
-    "Boost Up": { Monthly: 999, "1 Month": 999, "3 Months": 2997, Yearly: 10999, "1 Year": 10999 },
+    "Boost Up": { Monthly: 499, "1 Month": 499, "3 Months": 1299, Yearly: 3999, "1 Year": 3999 },
   },
 };
  
@@ -158,14 +158,18 @@ export const createUserManually = async (req, res) => {
             effectiveSubscriptionType
           ] || 0;
     const discountINR = 0;
-    const gstAmount =
-      effectiveSubscriptionPlan === "Free Trial"
-        ? 0
-        : Math.round(basePriceINR * 0.18 * 100) / 100;
     const totalPriceINR =
       effectiveSubscriptionPlan === "Free Trial"
         ? 0
-        : Math.round((basePriceINR + gstAmount) * 100) / 100;
+        : Math.round(basePriceINR * 100) / 100;
+    const taxableAmountINR =
+      effectiveSubscriptionPlan === "Free Trial"
+        ? 0
+        : Math.round((totalPriceINR / 1.18) * 100) / 100;
+    const gstAmount =
+      effectiveSubscriptionPlan === "Free Trial"
+        ? 0
+        : Math.round((totalPriceINR - taxableAmountINR) * 100) / 100;
  
     const user = await PgUser.create({
       firstName,

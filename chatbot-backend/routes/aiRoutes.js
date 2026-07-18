@@ -22,6 +22,7 @@ import { getRagHealth, rebuildRagIndex } from "../controller/ragController.js";
 import { getPracticeHistory, savePracticeMessage } from "../controller/practiceHistoryController.js";
 import testPrepRoutes from "./testPrepRoutes.js";
 import progressRoutes from "./progressRoutes.js";
+import { createRegistrationPaymentOrder, previewRegistrationCoupon, verifyRegistrationPayment } from "../controller/paymentController.js";
 import { normalizeUserRole, requireAuth, requireRole, USER_ROLES } from "../middleware/auth.js";
 
 
@@ -29,6 +30,9 @@ const router = express.Router();
 
 // Register route
 router.post("/register", registerUser);
+router.post("/payments/registration/coupon-preview", previewRegistrationCoupon);
+router.post("/payments/registration/order", createRegistrationPaymentOrder);
+router.post("/payments/registration/verify", verifyRegistrationPayment);
 router.post("/login", loginUser);
 router.get("/me", requireAuth, getCurrentUser);
 router.post("/logout", logoutUser);

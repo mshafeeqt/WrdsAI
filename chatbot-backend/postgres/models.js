@@ -708,6 +708,199 @@ export const PgUserQuestionEvent = sequelize.define(
   },
 );
 
+
+export const PgPaymentOrder = sequelize.define(
+  "PgPaymentOrder",
+  {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    purpose: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: "registration",
+    },
+    email: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    razorpayOrderId: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+    },
+    amountPaise: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    currency: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: "INR",
+    },
+    status: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: "created",
+    },
+    couponCode: DataTypes.STRING,
+    discountINR: {
+      type: DataTypes.FLOAT,
+      defaultValue: 0,
+    },
+    priceBreakdown: DataTypes.JSONB,
+    registrationPayload: DataTypes.JSONB,
+    razorpayPayload: DataTypes.JSONB,
+  },
+  {
+    tableName: "payment_orders",
+    indexes: [
+      { fields: ["email"] },
+      { fields: ["razorpayOrderId"] },
+      { fields: ["status"] },
+    ],
+  },
+);
+
+export const PgPayment = sequelize.define(
+  "PgPayment",
+  {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    email: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    razorpayOrderId: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    razorpayPaymentId: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+    },
+    razorpaySignature: DataTypes.TEXT,
+    amountPaise: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    currency: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: "INR",
+    },
+    status: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: "captured",
+    },
+    couponCode: DataTypes.STRING,
+    discountINR: {
+      type: DataTypes.FLOAT,
+      defaultValue: 0,
+    },
+    priceBreakdown: DataTypes.JSONB,
+    rawPayload: DataTypes.JSONB,
+  },
+  {
+    tableName: "payments",
+    indexes: [
+      { fields: ["email"] },
+      { fields: ["userId"] },
+      { fields: ["razorpayOrderId"] },
+      { fields: ["razorpayPaymentId"] },
+    ],
+  },
+);
+
+export const PgCoupon = sequelize.define(
+  "PgCoupon",
+  {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    code: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+    },
+    discountType: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    discountValue: {
+      type: DataTypes.FLOAT,
+      allowNull: false,
+    },
+    maxDiscountINR: DataTypes.FLOAT,
+    isActive: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+    },
+    startsAt: DataTypes.DATE,
+    expiresAt: DataTypes.DATE,
+    maxRedemptions: DataTypes.INTEGER,
+  },
+  {
+    tableName: "coupons",
+    indexes: [{ fields: ["code"] }, { fields: ["isActive"] }],
+  },
+);
+
+export const PgCouponRedemption = sequelize.define(
+  "PgCouponRedemption",
+  {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    code: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    discountINR: {
+      type: DataTypes.FLOAT,
+      allowNull: false,
+      defaultValue: 0,
+    },
+  },
+  {
+    tableName: "coupon_redemptions",
+    indexes: [
+      { fields: ["couponId"] },
+      { fields: ["userId"] },
+      { fields: ["paymentId"] },
+      { fields: ["code"] },
+    ],
+  },
+);
+PgUser.hasMany(PgPaymentOrder, { foreignKey: "userId" });
+PgPaymentOrder.belongsTo(PgUser, { foreignKey: "userId" });
+
+PgUser.hasMany(PgPayment, { foreignKey: "userId" });
+PgPayment.belongsTo(PgUser, { foreignKey: "userId" });
+
+PgPaymentOrder.hasMany(PgPayment, { foreignKey: "paymentOrderId" });
+PgPayment.belongsTo(PgPaymentOrder, { foreignKey: "paymentOrderId" });
+
+PgCoupon.hasMany(PgCouponRedemption, { foreignKey: "couponId" });
+PgCouponRedemption.belongsTo(PgCoupon, { foreignKey: "couponId" });
+
+PgUser.hasMany(PgCouponRedemption, { foreignKey: "userId" });
+PgCouponRedemption.belongsTo(PgUser, { foreignKey: "userId" });
+
+PgPayment.hasMany(PgCouponRedemption, { foreignKey: "paymentId" });
+PgCouponRedemption.belongsTo(PgPayment, { foreignKey: "paymentId" });
 PgUser.hasMany(PgChatSession, { foreignKey: "userId" });
 PgChatSession.belongsTo(PgUser, { foreignKey: "userId" });
 
@@ -736,4 +929,5 @@ PgUser.hasMany(PgPracticeMessage, { foreignKey: "userId" });
 PgPracticeMessage.belongsTo(PgUser, { foreignKey: "userId" });
 PgUser.hasMany(PgUserQuestionEvent, { foreignKey: "userId" });
 PgUserQuestionEvent.belongsTo(PgUser, { foreignKey: "userId" });
+
 

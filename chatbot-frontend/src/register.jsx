@@ -63,6 +63,12 @@ const Register = () => {
   const [openTerms, setOpenTerms] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [childPlanDisabled, setChildPlanDisabled] = useState(false);
+  const [couponModalOpen, setCouponModalOpen] = useState(false);
+  const [pendingRegistration, setPendingRegistration] = useState(null);
+  const [couponCode, setCouponCode] = useState("");
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [couponPreview, setCouponPreview] = useState(null);
+  const [couponApplying, setCouponApplying] = useState(false);
 
   const location = useLocation();
   // const isUpgrade = location.state?.isUpgrade;
@@ -95,13 +101,13 @@ const Register = () => {
       "Scale Up": { Monthly: 1355.09, "1 Month": 1355.09, "3 Months": 4065.27, Yearly: 13558.5, "1 Year": 13558.5 },
     },
     "WrdsAI Nxt": {
-      "Boost Up": { Monthly: 999, "1 Month": 999, "3 Months": 2997, Yearly: 10999, "1 Year": 10999 },
+      "Boost Up": { Monthly: 499, "1 Month": 499, "3 Months": 1299, Yearly: 3999, "1 Year": 3999 },
     },
   };
 
   const isUpgradeFromUrl = new URLSearchParams(location.search).get("isUpgrade")?.trim() === "true";
 
-  // 🔥 SAME behaviour for Chat upgrade & Email upgrade
+  //  SAME behaviour for Chat upgrade & Email upgrade
   const isUpgradeMode = isUpgrade || isUpgradeFromUrl;
 
   // useEffect(() => {
@@ -120,7 +126,7 @@ const Register = () => {
   // }, [isUpgrade, userData]);
 
   useEffect(() => {
-    // 🔹 1. First priority: URL params (Email / direct link)
+    //  1. First priority: URL params (Email / direct link)
     // const params = new URLSearchParams(location.search);
     // const isUpgradeFromUrl = params.get("isUpgrade");
 
@@ -155,14 +161,14 @@ const Register = () => {
 
     //   console.log("ageGroup*********",calculatedAgeGroup);
 
-    //   return; // ✅ stop here, no need to check state
+    //   return; //  stop here, no need to check state
     // }
 
-    // 🔹 1. First priority: URL params (Email / direct link)
+    //  1. First priority: URL params (Email / direct link)
     // const params = new URLSearchParams(location.search); // Already defined above
     // const isUpgradeFromUrl = params.get("isUpgrade")?.trim() === "true"; // Already defined above
 
-    // 🔹 Improved helper: matches the longest dialCode from allCountries
+    //  Improved helper: matches the longest dialCode from allCountries
     const splitPhone = (phone) => {
       if (!phone) return { code: "+91", number: "" };
       const cleanPhone = phone.replace(/[^\d+]/g, "");
@@ -217,7 +223,7 @@ const Register = () => {
       return;
     }
 
-    // 🔹 2. Fallback: ChatUI → navigate(state)
+    //  2. Fallback: ChatUI  navigate(state)
     if (isUpgrade && userData) {
       const m = splitPhone(userData.mobile);
       const pm = splitPhone(userData.parentMobile);
@@ -419,15 +425,196 @@ const Register = () => {
     return true;
   };
 
+
+  const selectedBasePriceINR = (() => {
+    if (formData.subscriptionPlan === "Free Trial" || formData.subscriptionType === FREE_TRIAL_TYPE) {
+      return 0;
+    }
+
+    return BASE_PRICES_INR[formData.subscriptionPlan]?.[formData.childPlan]?.[formData.subscriptionType] || 0;
+  })();
+
+  const displayedPriceINR = couponPreview?.totalPriceINR ?? selectedBasePriceINR;
+  const hasAppliedCoupon = Boolean(couponPreview?.couponCode);
+  const appliedCouponDiscountLabel = (() => {
+    if (!hasAppliedCoupon || !couponPreview?.discountINR || !couponPreview?.basePriceINR) {
+      return "";
+    }
+
+    const discountPercent = (Number(couponPreview.discountINR) / Number(couponPreview.basePriceINR)) * 100;
+    const formattedPercent = Number.isInteger(discountPercent)
+      ? String(discountPercent)
+      : discountPercent.toFixed(2).replace(/\.?0+$/, "");
+
+    return `${formattedPercent}% Off`;
+  })();
+  const resetRegistrationForm = () => {
+    setFormData({
+      firstName: "",
+      lastName: "",
+      userRole: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      mobileCode: "+91",
+      mobileNumber: "",
+      dateOfBirth: null,
+      ageGroup: "",
+      className: "",
+      schoolName: "",
+      parentName: "",
+      parentEmail: "",
+      parentMobileCode: "+91",
+      parentMobileNumber: "",
+      subscriptionPlan: DEFAULT_SUBSCRIPTION_PLAN,
+      childPlan: DEFAULT_CHILD_PLAN,
+      subscriptionType: "",
+      agree: false,
+      agreeActivation: false,
+      agreepermission: false,
+    });
+    setAgreeTerms(false);
+  };
+
+
+  const applyCouponToRegistration = async () => {
+    if (!pendingRegistration) {
+      toast.error("Registration details are missing. Please submit the form again.");
+      return;
+    }
+
+    const trimmedCode = couponCode.trim();
+    if (!trimmedCode) {
+      setCouponPreview(null);
+      toast.info("No coupon code entered.");
+      return;
+    }
+
+    setCouponApplying(true);
+
+    try {
+      const response = await axios.post(
+        `${apiBaseUrl}/api/ai/payments/registration/coupon-preview`,
+        {
+          registration: pendingRegistration,
+          couponCode: trimmedCode,
+        },
+      );
+
+      setCouponPreview(response.data.priceBreakdown);
+      toast.success(response.data.message || "Coupon code applied.");
+    } catch (error) {
+      setCouponPreview(null);
+      toast.error(error.response?.data?.error || "Invalid coupon code.");
+    } finally {
+      setCouponApplying(false);
+    }
+  };
+  const loadRazorpayCheckout = () => {
+    if (window.Razorpay) return Promise.resolve(true);
+
+    return new Promise((resolve) => {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.async = true;
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  const completePaidRegistration = async () => {
+    if (!pendingRegistration) {
+      toast.error("Registration details are missing. Please submit the form again.");
+      setCouponModalOpen(false);
+      return;
+    }
+
+    setPaymentLoading(true);
+
+    try {
+      const checkoutLoaded = await loadRazorpayCheckout();
+      if (!checkoutLoaded) {
+        toast.error("Unable to load Razorpay checkout. Please check your connection.");
+        return;
+      }
+
+      const orderResponse = await axios.post(
+        `${apiBaseUrl}/api/ai/payments/registration/order`,
+        {
+          registration: pendingRegistration,
+          couponCode: couponPreview?.couponCode || couponCode.trim() || null,
+        },
+      );
+
+      const order = orderResponse.data;
+
+      if (order.registrationComplete) {
+        toast.success(order.message || "Registration complete! You can now log in.");
+        setCouponModalOpen(false);
+        setPendingRegistration(null);
+        setCouponCode("");
+        resetRegistrationForm();
+
+        setTimeout(() => {
+          navigate("/login");
+        }, 1800);
+        return;
+      }
+
+      const razorpay = new window.Razorpay({
+        key: order.keyId,
+        amount: order.amount,
+        currency: order.currency,
+        name: "WrdsAI Nxt",
+        description: `${pendingRegistration.subscriptionPlan} ${pendingRegistration.subscriptionType}`,
+        order_id: order.orderId,
+        prefill: order.prefill,
+        theme: { color: "#705cff" },
+        handler: async (paymentResult) => {
+          try {
+            const verifyResponse = await axios.post(
+              `${apiBaseUrl}/api/ai/payments/registration/verify`,
+              paymentResult,
+            );
+
+            toast.success(verifyResponse.data?.message || "Registration complete! You can now log in.");
+            setCouponModalOpen(false);
+            setPendingRegistration(null);
+            setCouponCode("");
+            resetRegistrationForm();
+
+            setTimeout(() => {
+              navigate("/login");
+            }, 1800);
+          } catch (error) {
+            toast.error(error.response?.data?.error || "Payment was made, but verification failed. Please contact support.");
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            toast.info("Payment was cancelled. Your account was not created yet.");
+          },
+        },
+      });
+
+      razorpay.open();
+    } catch (error) {
+      toast.error(error.response?.data?.error || "Unable to start payment. Please try again.");
+    } finally {
+      setPaymentLoading(false);
+      setLoading(false);
+    }
+  };
   // const handleSubmit = async (e) => {
-  const handleSubmit = async () => {
-    // e.preventDefault();
+  const handleSubmit = async (event) => {
+    event?.preventDefault?.();
     setLoading(true);
 
     // upgrade plan flow
     if (isUpgradeMode) {
       try {
-        // 🔹 Only plan related validation
+        //  Only plan related validation
         if (!formData.subscriptionPlan || !formData.subscriptionType) {
           toast.error("Please select subscription plan and type!");
           setLoading(false);
@@ -443,7 +630,7 @@ const Register = () => {
         setLoading(false);
       }
 
-      return; // ⛔ stop further execution
+      return; //  stop further execution
     }
 
     // Validation
@@ -469,9 +656,9 @@ const Register = () => {
         : null,
       className: formData.className,
       schoolName: formData.schoolName.trim(),
-      subscriptionPlan: formData.subscriptionPlan, // 🔥 ENSURE it's included
-      childPlan: formData.childPlan || null, // 🔥 ENSURE it's included
-      subscriptionType: formData.subscriptionType, // 🔥 ENSURE it's included
+      subscriptionPlan: formData.subscriptionPlan, //  ENSURE it's included
+      childPlan: formData.childPlan || null, //  ENSURE it's included
+      subscriptionType: formData.subscriptionType, //  ENSURE it's included
       userRole: formData.userRole,
     };
 
@@ -485,29 +672,7 @@ const Register = () => {
         console.log("free trial dataaa :::::", res);
         toast.success("Registration complete! You can now log in.");
 
-        // Form reset
-        setFormData({
-          firstName: "",
-          lastName: "",
-          email: "",
-          password: "",
-          confirmPassword: "",
-          mobile: "",
-          dateOfBirth: null,
-          ageGroup: "",
-          className: "",
-          schoolName: "",
-          parentName: "",
-          parentEmail: "",
-          parentMobile: "",
-          subscriptionPlan: DEFAULT_SUBSCRIPTION_PLAN,
-          childPlan: DEFAULT_CHILD_PLAN,
-          subscriptionType: "",
-          agree: false,
-          agreeActivation: false,
-          agreepermission: false,
-        });
-        setAgreeTerms(false);
+        resetRegistrationForm();
 
         // data returned should contain remainingTokens etc.
         // Reset form or redirect to login
@@ -518,45 +683,17 @@ const Register = () => {
         return;
       }
 
-      const res = await axios.post(`${apiBaseUrl}/api/ai/register`, submitData);
-      console.log(res);
-      // ✅ Success toaster
-      toast.success("Registration complete! You can now log in.");
-
-      // Form reset
-      setFormData({
-        firstName: "",
-        lastName: "",
-        email: "",
-        password: "",
-        confirmPassword: "",
-        mobile: "",
-        dateOfBirth: null,
-        ageGroup: "",
-        className: "",
-        schoolName: "",
-        parentName: "",
-        parentEmail: "",
-        parentMobile: "",
-        subscriptionPlan: DEFAULT_SUBSCRIPTION_PLAN,
-        childPlan: DEFAULT_CHILD_PLAN,
-        subscriptionType: "",
-        agree: false,
-        agreeActivation: false,
-        agreepermission: false,
-      });
-
-      setAgreeTerms(false);
-      setTimeout(() => {
-        navigate("/login");
-      }, 1800);
+      setPendingRegistration(submitData);
+      setCouponCode("");
+      setCouponModalOpen(true);
+      setLoading(false);
       return;
     } catch (err) {
       const errorMsg =
         err.response?.data?.error ||
         err.response?.data?.details ||
         "Registration failed";
-      // ✅ Error toaster
+      //  Error toaster
       toast.error(errorMsg);
     } finally {
       setLoading(false);
@@ -1788,7 +1925,7 @@ const Register = () => {
                                 MenuProps: {
                                   PaperProps: {
                                     sx: {
-                                      maxHeight: 220, // 🔥 dropdown height control
+                                      maxHeight: 220, //  dropdown height control
                                       width: 120,
                                     },
                                   },
@@ -2129,7 +2266,7 @@ const Register = () => {
                       fontFamily: "Calibri, sans-serif",
                     }}
                   >
-                    I am the parent/guardian of the User and I’m giving consent
+                    I am the parent/guardian of the User and Im giving consent
                     to their use of WrdsAI.
                   </Typography>
                 </Box>
@@ -2212,6 +2349,122 @@ const Register = () => {
           </Box>
         </Box>
 
+        <Modal
+          open={couponModalOpen}
+          onClose={() => {
+            if (!paymentLoading) {
+              setCouponModalOpen(false);
+            }
+          }}
+        >
+          <Box
+            sx={{
+              width: { xs: "88%", sm: 460 },
+              bgcolor: "#fff",
+              p: { xs: 2.4, sm: 3 },
+              borderRadius: "18px",
+              mx: "auto",
+              mt: { xs: "28%", sm: "14%", md: "9%" },
+              boxShadow: "0 24px 70px rgba(15, 23, 42, 0.22)",
+              border: "1px solid rgba(18, 104, 251, 0.14)",
+            }}
+          >
+            <Typography sx={{ fontSize: 22, fontWeight: 800, mb: 0.8 }}>
+              Apply Coupon
+            </Typography>
+            <Typography sx={{ color: "#667085", fontSize: 14, mb: 2 }}>
+              Coupon code is optional. You can continue without one.
+            </Typography>
+
+            <Box
+              sx={{
+                p: 1.6,
+                mb: 2,
+                borderRadius: "14px",
+                background: "linear-gradient(135deg, rgba(112, 92, 255, 0.10), rgba(46, 184, 255, 0.10))",
+              }}
+            >
+              <Typography sx={{ fontWeight: 800, color: "#24145f" }}>
+                {pendingRegistration?.subscriptionPlan || formData.subscriptionPlan}
+              </Typography>
+              <Typography sx={{ fontSize: 14, color: "#4b5563", mt: 0.4 }}>
+                {pendingRegistration?.childPlan || formData.childPlan} / {pendingRegistration?.subscriptionType || formData.subscriptionType}
+              </Typography>
+              <Box sx={{ display: "flex", alignItems: "baseline", gap: 1, mt: 1, flexWrap: "wrap" }}>
+                <Typography component="span" sx={{ fontSize: 18, fontWeight: 800 }}>
+                  Estimated payable:
+                </Typography>
+                {hasAppliedCoupon && (
+                  <Typography component="span" sx={{ color: "#ef4444", textDecoration: "line-through", fontSize: 17, fontWeight: 800 }}>
+                    Rs {selectedBasePriceINR}
+                  </Typography>
+                )}
+                <Typography component="span" sx={{ color: hasAppliedCoupon ? "#15803d" : "#111827", fontSize: 20, fontWeight: 900 }}>
+                  Rs {displayedPriceINR}
+                </Typography>
+              </Box>
+              {hasAppliedCoupon && (
+                <Typography sx={{ color: "#15803d", fontSize: 13, fontWeight: 800, mt: 0.5 }}>
+                  Coupon code applied : {appliedCouponDiscountLabel}
+                </Typography>
+              )}
+              <Typography sx={{ fontSize: 12, color: "#667085", mt: 0.4 }}>
+                Inclusive of GST. Final amount is verified by the server.
+              </Typography>
+            </Box>
+
+            <TextField
+              fullWidth
+              label="Coupon code"
+              placeholder="Optional"
+              value={couponCode}
+              onChange={(event) => {
+                setCouponCode(event.target.value.toUpperCase());
+                setCouponPreview(null);
+              }}
+              disabled={paymentLoading || couponApplying}
+              sx={{ mb: 2 }}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <Button
+                      onClick={applyCouponToRegistration}
+                      disabled={paymentLoading || couponApplying || !couponCode.trim()}
+                      sx={{ minWidth: 72, fontWeight: 800, textTransform: "none" }}
+                    >
+                      {couponApplying ? <CircularProgress size={18} /> : "Apply"}
+                    </Button>
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            <Box sx={{ display: "flex", gap: 1.2, justifyContent: "flex-end" }}>
+              <Button
+                variant="outlined"
+                onClick={() => setCouponModalOpen(false)}
+                disabled={paymentLoading}
+                sx={{ borderRadius: "12px", textTransform: "none", fontWeight: 700 }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                onClick={completePaidRegistration}
+                disabled={paymentLoading}
+                sx={{
+                  borderRadius: "12px",
+                  textTransform: "none",
+                  fontWeight: 800,
+                  px: 3,
+                  background: "linear-gradient(118deg, #b552ff 0%, #705cff 48%, #2eb8ff 100%)",
+                }}
+              >
+                {paymentLoading ? <CircularProgress size={22} /> : "Pay"}
+              </Button>
+            </Box>
+          </Box>
+        </Modal>
         <Modal open={openTerms} onClose={() => setOpenTerms(false)}>
           <Box
             sx={{
@@ -2227,11 +2480,11 @@ const Register = () => {
             }}
           >
             <Typography variant="h6" sx={{ mb: 2, fontWeight: "bold" }}>
-              WrdsAI – Terms & Conditions
+              WrdsAI  Terms & Conditions
             </Typography>
 
             <Typography sx={{ mb: 3, fontSize: "15px", lineHeight: "22px" }}>
-              {/* <strong>WrdsAI – Terms & Conditions</strong> <br />
+              {/* <strong>WrdsAI  Terms & Conditions</strong> <br />
               <br /> */}
               <strong>Last updated:</strong> 15th Dec 2025 <br />
               <br />
@@ -2240,7 +2493,7 @@ const Register = () => {
               <br />
               <strong>1. About WrdsAI</strong> <br />
               WrdsAI is an AI-powered learning platform primarily designed to
-              support K–12 education through responsible and age-appropriate
+              support K12 education through responsible and age-appropriate
               use. <br />
               <br />
               <strong>2. Eligibility & Use by Parents</strong> <br />
@@ -2248,7 +2501,7 @@ const Register = () => {
               18 are expected to use the service with the knowledge and consent
               of a parent or legal guardian. Parents and guardians are
               encouraged to remain involved and guide how WrdsAI is used as part
-              of a child’s learning. <br />
+              of a childs learning. <br />
               <br />
               <strong>3. Account Registration</strong> <br />
               You are responsible for maintaining the confidentiality of your
@@ -2272,7 +2525,7 @@ const Register = () => {
               engage in harmful or abusive behaviour. <br />
               <br />
               <strong>7. Service Availability</strong> <br />
-              WrdsAI is provided on an “as-is” and “as-available” basis. While
+              WrdsAI is provided on an as-is and as-available basis. While
               we aim to keep the service reliable, uninterrupted or error-free
               access cannot be guaranteed. <br />
               <br />
@@ -2296,22 +2549,22 @@ const Register = () => {
               We collect only your name, email address, and mobile number for
               account creation, authentication, and service delivery purposes.
               This personal data is stored securely and used solely to: <br />
-              • Verify your identity and manage your account <br />• Deliver
+               Verify your identity and manage your account <br /> Deliver
               login credentials and important service notifications <br />
-              • Provide customer support when requested <br />
+               Provide customer support when requested <br />
               <br />
               We do not and will not: <br />
-              • Profile, track, or monitor your behavior or your child’s
+               Profile, track, or monitor your behavior or your childs
               behavior <br />
-              • Use your data for targeted advertising or share it with
+               Use your data for targeted advertising or share it with
               advertisers <br />
-              • Sell, rent, or disclose your personal data to third parties for
+               Sell, rent, or disclose your personal data to third parties for
               marketing purposes <br />
-              • Process data in any manner that could harm your child’s
+               Process data in any manner that could harm your childs
               well-being <br />
               <br />
               For users under 18, we require verifiable parental consent. Login
-              credentials are sent exclusively to the parent’s email address to
+              credentials are sent exclusively to the parents email address to
               ensure parental oversight and control. Parents may withdraw
               consent and request account deletion at any time by contacting
               support@wrdsai.com <br />
@@ -2353,3 +2606,8 @@ const Register = () => {
 };
 
 export default Register;
+
+
+
+
+

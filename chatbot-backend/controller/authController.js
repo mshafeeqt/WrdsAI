@@ -25,7 +25,7 @@ export const loginUser = async (req, res) => {
       return res.status(400).json({ error: "Email & Password required" });
     }
 
-    email = email.trim().toLowerCase(); // 💡 Prevents case mismatch
+    email = email.trim().toLowerCase(); //  Prevents case mismatch
 
     const user = await PgUser.findOne({ where: { email } });
 
@@ -42,7 +42,7 @@ export const loginUser = async (req, res) => {
     if (!isPasswordValid)
       return res.status(400).json({ error: "Incorrect Password" });
 
-    // ✅ Check Plan Expiry
+    //  Check Plan Expiry
     const isPlanExpired = checkPlanExpiry(user);
     // if (isPlanExpired && !user.planExpiryEmailSent) {
     //   // Send email
@@ -81,7 +81,7 @@ export const loginUser = async (req, res) => {
       await user.save();
     }
 
-    // ✅ Sync remainingTokens from usage history (respecting planStartDate)
+    //  Sync remainingTokens from usage history (respecting planStartDate)
     const stats = await getGlobalTokenStats(user.email);
     user.remainingTokens = stats.remainingTokens;
     // We don't necessarily need to save to DB here, as it's purely for the response,
@@ -133,7 +133,7 @@ const wrdsAIProOptions = ["Step Up", "Speed Up", "Scale Up"];
 const wrdsAINxtOptions = ["Boost Up"];
 const subscriptionTypes = ["Monthly", "Yearly"];
 
-// FIXED PRICES IN USD (કદી બદલવાના નહીં)
+// FIXED PRICES IN USD (  )
 // const BASE_PRICES_USD = {
 //   WrdsAI: {
 //     "Glow Up": { Monthly: 0.99, Yearly: 10.99 },
@@ -159,14 +159,14 @@ const BASE_PRICES_INR = {
     "Scale Up": { Monthly: 1355.09, Yearly: 13558.5 },
   },
   "WrdsAI Nxt": {
-    "Boost Up": { Monthly: 999, Yearly: 10999 },
+    "Boost Up": { Monthly: 499, "1 Month": 499, "3 Months": 1299, Yearly: 3999, "1 Year": 3999 },
   },
   "WrdsAi Nxt": {
-    "Boost Up": { Monthly: 999, Yearly: 10999 },
+    "Boost Up": { Monthly: 499, "1 Month": 499, "3 Months": 1299, Yearly: 3999, "1 Year": 3999 },
   },
 };
 
-// BEST FREE + UNLIMITED + SUPER FAST USD → INR API
+// BEST FREE + UNLIMITED + SUPER FAST USD  INR API
 const getLiveUSDRate = async () => {
   try {
     const response = await fetch(
@@ -175,7 +175,7 @@ const getLiveUSDRate = async () => {
     if (!response.ok) throw new Error("API failed");
     const data = await response.json();
     const rate = Math.round(data.inr * 100) / 100; // 2 decimal places
-    console.log("Live USD → INR Rate:", rate);
+    console.log("Live USD  INR Rate:", rate);
     return rate;
   } catch (err) {
     console.error("Currency API failed:", err.message);
@@ -362,7 +362,7 @@ export const registerUser = async (req, res) => {
     //     );
 
     //     console.log(
-    //   `Free Trial password email sent to ${recipientEmail} → ${generatedPassword}`
+    //   `Free Trial password email sent to ${recipientEmail}  ${generatedPassword}`
     // );
 
     //     return res.status(201).json({
@@ -390,7 +390,7 @@ export const registerUser = async (req, res) => {
           subscriptionPlan: "Free Trial",
         });
 
-        // 3️⃣ Create user
+        // 3 Create user
         const user = await PgUser.create({
           firstName,
           lastName,
@@ -436,7 +436,7 @@ export const registerUser = async (req, res) => {
           userId: user.id,
         });
 
-        // 5️⃣ Return response
+        // 5 Return response
         return res.status(201).json({
           success: true,
           message: "Free Trial activated. You can now log in.",
@@ -457,6 +457,10 @@ export const registerUser = async (req, res) => {
       }
     }
 
+    return res.status(402).json({
+      error: "Paid registrations must be completed through Razorpay payment verification",
+      paymentRequired: true,
+    });
     // Get USD price
     // let priceUSD = 0;
     // if (subscriptionPlan === "WrdsAI") {
@@ -527,7 +531,7 @@ export const registerUser = async (req, res) => {
       childPlan,
       subscriptionType,
 
-      remainingTokens: tokenLimit, // ✅ AA J JAGYA
+      remainingTokens: tokenLimit, //  AA J JAGYA
       // priceUSD,
       // exchangeRateUsed: usdToInrRate,
       basePriceINR: priceINR,
@@ -555,11 +559,11 @@ export const registerUser = async (req, res) => {
       priceBreakdown: {
         plan: `${subscriptionPlan} - ${childPlan} (${subscriptionType})`,
         // usd: `$${priceUSD}`,
-        // rate: `1 USD = ₹${usdToInrRate}`,
-        base: `₹${priceINR}`,
-        discount: "₹0",
-        gst: `₹${gstAmount} (18%)`,
-        total: `₹${totalAmountINR / 100}`,
+        // rate: `1 USD = ${usdToInrRate}`,
+        base: `${priceINR}`,
+        discount: "0",
+        gst: `${gstAmount} (18%)`,
+        total: `${totalAmountINR / 100}`,
       },
 
       user: buildUserResponseByAgeGroup(user),
@@ -592,7 +596,7 @@ export const registerUser = async (req, res) => {
 //   "Scale Up": { Monthly: 9.99, Yearly: 99.99 },
 // };
 
-// // USD → INR conversion
+// // USD  INR conversion
 // const USD_TO_INR = 85;
 
 // export const registerUser = async (req, res) => {
@@ -634,7 +638,7 @@ export const registerUser = async (req, res) => {
 //       }
 //     }
 
-//     // If <13 → Parent email becomes login email
+//     // If <13  Parent email becomes login email
 //     const finalEmail = ageGroup === "<13" ? parentEmail : email;
 
 //     // Check if user already exists
@@ -775,7 +779,7 @@ export const forgotPassword = async (req, res) => {
 
     res.json({ message: "Reset password link sent to email" });
   } catch (err) {
-    console.error("FORGOT PASSWORD ERROR 👉", err);
+    console.error("FORGOT PASSWORD ERROR ", err);
     res.status(500).json({
       error: "Forgot password failed",
       details: err.message,
@@ -863,7 +867,7 @@ export const resetPassword = async (req, res) => {
         "Password reset successful! You can now login with your new password.",
     });
   } catch (err) {
-    console.error("RESET PASSWORD ERROR 👉", err);
+    console.error("RESET PASSWORD ERROR ", err);
     res
       .status(500)
       .json({ error: "Reset password failed", details: err.message });
@@ -891,7 +895,7 @@ export const changePassword = async (req, res) => {
   //     });
   //   }
 
-  //   // ✅ Verify current password
+  //   //  Verify current password
   //   const isMatch = await bcrypt.compare(currentPassword, user.password);
   //   if (!isMatch) {
   //     return res.status(400).json({
@@ -899,7 +903,7 @@ export const changePassword = async (req, res) => {
   //     });
   //   }
 
-  //   // ✅ Prevent same password reuse
+  //   //  Prevent same password reuse
   //   const isSamePassword = await bcrypt.compare(newPassword, user.password);
   //   if (isSamePassword) {
   //     return res.status(400).json({
@@ -907,7 +911,7 @@ export const changePassword = async (req, res) => {
   //     });
   //   }
 
-  //   // ✅ Hash & save new password
+  //   //  Hash & save new password
   //   user.password = await bcrypt.hash(newPassword, 10);
   //   await user.save();
 
@@ -916,7 +920,7 @@ export const changePassword = async (req, res) => {
   //     message: "Password changed successfully",
   //   });
   // } catch (err) {
-  //   console.error("CHANGE PASSWORD ERROR 👉", err);
+  //   console.error("CHANGE PASSWORD ERROR ", err);
   //   res.status(500).json({
   //     error: "Change password failed",
   //     details: err.message,
@@ -932,13 +936,13 @@ export const changePassword = async (req, res) => {
       });
     }
 
-    // 1️⃣ user find karo
+    // 1 user find karo
     const user = await PgUser.findByPk(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // 2️⃣ current password check karo
+    // 2 current password check karo
     const isMatch = await bcrypt.compare(currentPassword, user.password);
 
     if (!isMatch) {
@@ -947,11 +951,11 @@ export const changePassword = async (req, res) => {
       });
     }
 
-    // 3️⃣ new password hash karo
+    // 3 new password hash karo
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-    // 4️⃣ password update karo
+    // 4 password update karo
     user.password = hashedPassword;
     await user.save();
 
@@ -974,7 +978,7 @@ export const getAllUsers = async (req, res) => {
     const formattedUsers = await Promise.all(
       users.map(async (user) => {
         try {
-          // ✅ Get dynamic, real-time stats (single source of truth)
+          //  Get dynamic, real-time stats (single source of truth)
           const stats = await getGlobalTokenStats(user.email);
 
           return {
@@ -1027,3 +1031,4 @@ export const getAllUsers = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch users" });
   }
 };
+
