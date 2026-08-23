@@ -17,6 +17,7 @@ class Question:
     sub_question: str | None
     question_markdown: str
     question_text: str
+    figures: list[dict[str, Any]]
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -30,6 +31,7 @@ class Page:
     page: int
     markdown: str
     text: str
+    figures: list[dict[str, Any]]
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

@@ -7,7 +7,7 @@ import AppSidebarMenu from '../shared/AppSidebarMenu';
 import TopUserMenu from '../shared/TopUserMenu';
 import { fetchCurrentUser } from '../auth/authClient';
 import {
-  getLockedStudentClass,
+  getStudentClassChoices,
   getVisibleSubjectsForStudent,
 } from '../curriculum/studentCurriculum';
 import {
@@ -226,22 +226,33 @@ export default function PracticeMain() {
     () => selectedSubject?.chapters?.find((item) => item.id === selectedChapterId) || null,
     [selectedSubject, selectedChapterId],
   );
-  const lockedStudentClass = useMemo(
-    () => getLockedStudentClass(structure, currentUser),
+  const studentClassChoices = useMemo(
+    () => getStudentClassChoices(structure, currentUser),
     [structure, currentUser],
   );
+  const lockedStudentClass = studentClassChoices.length === 1 ? studentClassChoices[0] : null;
+  const classOptions = studentClassChoices.length ? studentClassChoices : structure;
   const visibleSubjects = useMemo(
-    () => (lockedStudentClass ? getVisibleSubjectsForStudent(lockedStudentClass) : selectedClass?.subjects || []),
-    [lockedStudentClass, selectedClass],
+    () => (selectedClass
+      ? (studentClassChoices.length ? getVisibleSubjectsForStudent(selectedClass) : selectedClass.subjects || [])
+      : []),
+    [selectedClass, studentClassChoices],
   );
 
   useEffect(() => {
-    if (!lockedStudentClass) return;
+    if (lockedStudentClass) {
+      setSelectedClassId((currentValue) =>
+        currentValue === lockedStudentClass.id ? currentValue : lockedStudentClass.id,
+      );
+      return;
+    }
+
+    if (!studentClassChoices.length) return;
 
     setSelectedClassId((currentValue) =>
-      currentValue === lockedStudentClass.id ? currentValue : lockedStudentClass.id,
+      studentClassChoices.some((classItem) => classItem.id === currentValue) ? currentValue : '',
     );
-  }, [lockedStudentClass]);
+  }, [lockedStudentClass, studentClassChoices]);
 
   useEffect(() => {
     if (!currentUserLoaded) return;
@@ -709,7 +720,7 @@ export default function PracticeMain() {
                 }}
               >
                 <option value="" disabled hidden>Class</option>
-                {structure.map((item) => (
+                {classOptions.map((item) => (
                   <option key={item.id} value={item.id}>{item.name}</option>
                 ))}
               </select>

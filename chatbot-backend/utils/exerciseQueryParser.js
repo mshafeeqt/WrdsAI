@@ -4,6 +4,11 @@ const EXERCISE_PATTERNS = [
   /\bfrom\s+([A-Z]?\d+(?:\.\d+)+)\b/i,
 ];
 
+const NCERT_NUMBERED_QUESTION_PATTERN =
+  /\b(?:q(?:uestion)?|que|ques|problem|prob)\s*(?:no\.?|number)?\s*([A-Z]?\d{1,2})\.(\d+[a-z]?)\b/i;
+const BARE_NCERT_NUMBERED_QUESTION_PATTERN =
+  /(?:\b(?:solve|answer|do|find|explain|show)\s+(?:the\s+)?)([A-Z]?\d{1,2})\.(\d+[a-z]?)\b|\b([A-Z]?\d{1,2})\.(\d+[a-z]?)\s+from\s+exercises?\b/i;
+
 const QUESTION_PATTERNS = [
   /\bq(?:uestion|ue)?\.?\s*(?:no\.?|number)?\s*(\d+[a-z]?)\b/i,
   /\b(?:question|que|ques)\s*(?:no\.?|number)?\s*(\d+[a-z]?)\b/i,
@@ -20,8 +25,12 @@ const FIGURE_PATTERNS = [
 
 export function parseExerciseQuery(prompt = "") {
   const text = String(prompt || "").replace(/\s+/g, " ").trim();
-  const exercise = findFirstMatch(text, EXERCISE_PATTERNS);
-  const questionNo = findFirstMatch(text, QUESTION_PATTERNS);
+  const explicitExercise = findFirstMatch(text, EXERCISE_PATTERNS);
+  const numberedQuestion = parseNcertNumberedQuestion(text);
+  const exercise = explicitExercise || numberedQuestion?.exercise || null;
+  const questionNo = explicitExercise
+    ? findFirstMatch(text, QUESTION_PATTERNS)
+    : numberedQuestion?.questionNo || findFirstMatch(text, QUESTION_PATTERNS);
   const figureRefs = findFigureRefs(text);
   const hasFigureReference =
     figureRefs.length > 0 || /\bdiagram\b|\bshown\s+(?:below|in)\b/i.test(text);
@@ -32,6 +41,27 @@ export function parseExerciseQuery(prompt = "") {
     questionNo,
     hasFigureReference,
     figureRefs,
+  };
+}
+
+function parseNcertNumberedQuestion(text) {
+  const value = String(text || "");
+  const match = value.match(NCERT_NUMBERED_QUESTION_PATTERN);
+  if (match?.[1] && match?.[2]) {
+    return {
+      exercise: normalizeValue(match[1]),
+      questionNo: normalizeValue(match[2]),
+    };
+  }
+
+  const bareMatch = value.match(BARE_NCERT_NUMBERED_QUESTION_PATTERN);
+  const exercise = bareMatch?.[1] || bareMatch?.[3];
+  const questionNo = bareMatch?.[2] || bareMatch?.[4];
+  if (!exercise || !questionNo) return null;
+
+  return {
+    exercise: normalizeValue(exercise),
+    questionNo: normalizeValue(questionNo),
   };
 }
 

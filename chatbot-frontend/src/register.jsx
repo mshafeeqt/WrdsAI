@@ -78,14 +78,14 @@ const Register = () => {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
   const userRoleOptions = ["Student", "Teacher"];
-  const classOptions = ["9", "10", "11"];
+  const classOptions = ["9", "10", "11 & 12"];
   const DEFAULT_SUBSCRIPTION_PLAN = "WrdsAI Nxt";
   const DEFAULT_CHILD_PLAN = "Boost Up";
   const subscriptionPlans = [DEFAULT_SUBSCRIPTION_PLAN];
   const wrdsAIOptions = ["Glow Up", "Level Up", "Rise Up"];
   const wrdsAIProOptions = ["Step Up", "Speed Up", "Scale Up"];
   const wrdsAiNxtOptions = ["Boost Up"];
-  const FREE_TRIAL_TYPE = "Free Trial (1 week)";
+  const FREE_TRIAL_TYPE = "Free Trial (7 days)                                                                                                                                  ";
   const subscriptionTypes = [FREE_TRIAL_TYPE, "1 Month", "3 Months", "1 Year"];
   const showLegacyRegistrationOptions = false;
 
@@ -1339,7 +1339,8 @@ const Register = () => {
                   </TextField>
                 </Grid>
               </Grid> */}
-              {/* Contact */}
+
+              {/* Contact */}
               {!['<13', '13-14', '15-17'].includes(formData.ageGroup) && (
                 <Grid
                   container

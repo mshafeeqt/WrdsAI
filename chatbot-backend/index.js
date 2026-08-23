@@ -15,6 +15,7 @@ import { grokUserSearchHistory } from "./controller/groksearchController.js";
 import net from "net";
 import { requireAuth } from "./middleware/auth.js";
 import { verifyMailTransport } from "./services/mailService.js";
+import { handleRazorpayWebhook } from "./controller/paymentController.js";
 // import { runAuto } from "./scripts/auto.js";
 
 // Load environment variables first
@@ -31,6 +32,12 @@ console.log(
 
 const app = express();
 const isProduction = process.env.NODE_ENV === "production";
+
+app.post(
+  "/api/ai/payments/razorpay-webhook",
+  express.raw({ type: "application/json" }),
+  handleRazorpayWebhook,
+);
 
 //  CORS middleware add karo
 // app.use(

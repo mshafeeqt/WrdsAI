@@ -9,6 +9,7 @@ except ImportError:  # pragma: no cover - local fallback for minimal installs
     def tqdm(iterable, **_kwargs):  # type: ignore[no-redef]
         return iterable
 
+from exact_retrieval.parser.figure_extractor import FigureExtractor
 from exact_retrieval.parser.marker_parser import MarkerParser
 from exact_retrieval.parser.markdown_parser import MarkdownParser
 from exact_retrieval.parser.utils import (
@@ -32,16 +33,18 @@ logger = logging.getLogger(__name__)
 
 
 class ExactIndexBuilder:
-    """Build exact retrieval JSON from Marker Markdown."""
+    """Build exact retrieval JSON from Marker Markdown and PDF figures."""
 
     def __init__(
         self,
         *,
         marker_parser: MarkerParser | None = None,
         markdown_parser: MarkdownParser | None = None,
+        figure_extractor: FigureExtractor | None = None,
     ) -> None:
         self.marker_parser = marker_parser or MarkerParser()
         self.markdown_parser = markdown_parser or MarkdownParser()
+        self.figure_extractor = figure_extractor or FigureExtractor()
 
     def rebuild(self, pdf_root: Path | None = None) -> ExactIndexSummary:
         reset_exact_dirs()
@@ -55,13 +58,7 @@ class ExactIndexBuilder:
         for pdf_path in tqdm(pdf_files, desc="Exact PDFs", unit="pdf"):
             pdf_key = stable_pdf_key(pdf_path, root)
             try:
-                markdown_path = self.marker_parser.convert_pdf_to_markdown(pdf_path, root)
-                markdown = markdown_path.read_text(encoding="utf-8")
-                pages, questions = self.markdown_parser.parse(
-                    markdown=markdown,
-                    pdf_path=pdf_path,
-                    pdf_root=root,
-                )
+                pages, questions = self.build_pdf(pdf_path=pdf_path, pdf_root=root)
                 self._write_pdf_outputs(pdf_key, pages, questions)
                 all_pages.extend(pages)
                 all_questions.extend(questions)
@@ -85,6 +82,17 @@ class ExactIndexBuilder:
         )
         logger.info("Exact index rebuild complete: %s", summary)
         return summary
+
+    def build_pdf(self, *, pdf_path: Path, pdf_root: Path) -> tuple[list[Page], list[Question]]:
+        figures_by_page = self.figure_extractor.extract_pdf_figures(pdf_path, pdf_root)
+        markdown_path = self.marker_parser.convert_pdf_to_markdown(pdf_path, pdf_root)
+        markdown = markdown_path.read_text(encoding="utf-8")
+        return self.markdown_parser.parse(
+            markdown=markdown,
+            pdf_path=pdf_path,
+            pdf_root=pdf_root,
+            figures_by_page=figures_by_page,
+        )
 
     def _write_pdf_outputs(self, pdf_key: str, pages: list[Page], questions: list[Question]) -> None:
         question_payload = dump_records(questions)

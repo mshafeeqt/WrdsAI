@@ -45,7 +45,7 @@ import SidebarDrawer from "./features/chat/components/SidebarDrawer";
 import StudyChapterMenus from "./features/chat/components/study/StudyChapterMenus";
 import {
   getUserClassName,
-  getLockedStudentClass,
+  getStudentClassChoices,
   isStudentUser,
   getVisibleSubjectsForStudent,
 } from "./features/curriculum/studentCurriculum";
@@ -343,15 +343,22 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
       effectiveAuthenticatedUser?.userRole ||
       effectiveAuthenticatedUser?.role,
   );
-  const shouldHideStudyClassSelection =
-    !teacherMode &&
-    isStudentUser(effectiveAuthenticatedUser) &&
-    Boolean(getUserClassName(effectiveAuthenticatedUser));
-  const lockedStudyClass = getLockedStudentClass(
+  const studentStudyClassChoices = getStudentClassChoices(
     chapterStructure,
     effectiveAuthenticatedUser,
     teacherMode,
   );
+  const shouldHideStudyClassSelection =
+    !teacherMode &&
+    isStudentUser(effectiveAuthenticatedUser) &&
+    Boolean(getUserClassName(effectiveAuthenticatedUser)) &&
+    studentStudyClassChoices.length === 1;
+  const lockedStudyClass = shouldHideStudyClassSelection
+    ? studentStudyClassChoices[0]
+    : null;
+  const studyClassOptions = studentStudyClassChoices.length
+    ? studentStudyClassChoices
+    : chapterStructure;
   const studyMenuClass = lockedStudyClass || activeStudyClass;
   const studyMenuSubjects = lockedStudyClass
     ? getVisibleSubjectsForStudent(lockedStudyClass)
@@ -466,7 +473,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
       isStudyMenuOpen={isStudyMenuOpen}
       onCloseStudyMenus={closeStudyMenus}
       chaptersLoading={chaptersLoading}
-      chapterStructure={chapterStructure}
+      chapterStructure={studyClassOptions}
       onStudyClassOpen={handleStudyClassOpen}
       selectedClass={selectedClass}
       studyClassMenuAnchorEl={studyClassMenuAnchorEl}
@@ -9126,7 +9133,7 @@ const ChatUI = ({ studyModeLabel = "Study", teacherMode = false }) => {
                         isStudyMenuOpen={isStudyMenuOpen}
                         onCloseStudyMenus={closeStudyMenus}
                         chaptersLoading={chaptersLoading}
-                        chapterStructure={chapterStructure}
+                        chapterStructure={studyClassOptions}
                         onStudyClassOpen={handleStudyClassOpen}
                         selectedClass={selectedClass}
                         studyClassMenuAnchorEl={studyClassMenuAnchorEl}

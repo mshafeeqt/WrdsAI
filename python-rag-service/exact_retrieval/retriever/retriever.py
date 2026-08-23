@@ -7,7 +7,8 @@ from typing import Any, Literal
 
 from exact_retrieval.index.page_index import PageIndex
 from exact_retrieval.index.question_index import QuestionIndex
-from exact_retrieval.parser.utils import normalize_pdf_query, normalize_sub_question
+from exact_retrieval.parser.question_text_normalizer import normalize_exact_question_text
+from exact_retrieval.parser.utils import PAGE_INDEX_DIR, normalize_pdf_query, normalize_sub_question, read_json
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +18,16 @@ EXERCISE_RE = re.compile(r"\b(?:ex(?:ercise)?\s*\.?\s*(?:set\s*)?|exercise\s+set
 QUESTION_RE = re.compile(
     r"\b(?:q(?:uestion)?\s*\.?|problem\s*(?:no\.?|number)?|question\s*(?:no\.?|number)?|no\.?)\s*(\d{1,3})(?:\s*\(?([ivxlcdm]+)\)?)?\b"
     r"|\bsolve\s+(?:problem|question|q)?\s*(\d{1,3})(?:\s*\(?([ivxlcdm]+)\)?)?\b",
+    re.IGNORECASE,
+)
+NCERT_NUMBERED_QUESTION_RE = re.compile(
+    r"\b(?:q(?:uestion)?|que|ques|problem|prob)\s*(?:no\.?|number)?\s*([A-Z]?\d{1,2})\.(\d{1,3}[a-z]?)(?:\s*\(?([ivxlcdm]+)\)?)?\b",
+    re.IGNORECASE,
+)
+BARE_NCERT_NUMBERED_QUESTION_RE = re.compile(
+    r"(?:\b(?:solve|answer|do|find|explain|show)\s+(?:the\s+)?)"
+    r"([A-Z]?\d{1,2})\.(\d{1,3}[a-z]?)(?:\s*\(?([ivxlcdm]+)\)?)?\b"
+    r"|\b([A-Z]?\d{1,2})\.(\d{1,3}[a-z]?)(?:\s*\(?([ivxlcdm]+)\)?)?\s+from\s+exercises?\b",
     re.IGNORECASE,
 )
 PART_RE = re.compile(r"\b(?:part|sub\s*question)\s*\(?([ivxlcdm]+)\)?\b", re.IGNORECASE)
@@ -69,6 +80,17 @@ def detect_intent(query: str) -> ExactIntent:
     if page_match:
         return ExactIntent(type="page", pdf=pdf, page=int(page_match.group(1)))
 
+    numbered_question = _extract_ncert_numbered_question(value)
+    if numbered_question:
+        exercise, question_no, sub_question = numbered_question
+        return ExactIntent(
+            type="question",
+            pdf=pdf,
+            exercise=exercise,
+            question_no=question_no,
+            sub_question=sub_question,
+        )
+
     exercise = _first_group(EXERCISE_RE.search(value))
     question_no, sub_question = _extract_question_and_subquestion(value)
     if exercise and question_no:
@@ -90,6 +112,27 @@ def _first_group(match: re.Match[str] | None) -> str | None:
         if group:
             return group.strip()
     return None
+
+
+def _extract_ncert_numbered_question(query: str) -> tuple[str, str, str | None] | None:
+    """Parse Physics-style labels like question 2.1 as chapter/exercise 2, question 1."""
+    match = NCERT_NUMBERED_QUESTION_RE.search(query)
+    if match:
+        exercise = match.group(1).upper()
+        question_no = match.group(2).lower()
+        sub_question = normalize_sub_question(match.group(3))
+        return exercise, question_no, sub_question
+
+    bare_match = BARE_NCERT_NUMBERED_QUESTION_RE.search(query)
+    if not bare_match:
+        return None
+    groups = [group for group in bare_match.groups() if group]
+    if len(groups) < 2:
+        return None
+    exercise = groups[0].upper()
+    question_no = groups[1].lower()
+    sub_question = normalize_sub_question(groups[2] if len(groups) > 2 else None)
+    return exercise, question_no, sub_question
 
 
 def _extract_question_and_subquestion(query: str) -> tuple[str | None, str | None]:
@@ -156,6 +199,7 @@ def _question_result(
         "sub_question": record.get("sub_question"),
         "text": record.get("question_text") or "",
         "markdown": record.get("question_markdown") or "",
+        "figures": record.get("figures") or [],
     }
 
 
@@ -168,6 +212,7 @@ def _page_result(record: dict[str, Any]) -> dict[str, Any]:
         "page": record.get("page"),
         "text": record.get("text") or "",
         "markdown": record.get("markdown") or "",
+        "figures": record.get("figures") or [],
     }
 
 
@@ -200,6 +245,33 @@ def get_question(
         if exact:
             return _question_result(exact, requested_pdf=pdf, lookup_scope="selected_pdf")
 
+        chapter_number_match = _find_chapter_numbered_question(
+            index=index,
+            pdf=pdf,
+            exercise=exercise,
+            question_no=question_no,
+            sub_question=sub_question,
+        )
+        if chapter_number_match:
+            return _question_result(
+                chapter_number_match,
+                requested_pdf=pdf,
+                lookup_scope="selected_pdf_chapter_numbered",
+            )
+
+        page_text_match = _find_question_from_page_text(
+            pdf=pdf,
+            exercise=exercise,
+            question_no=question_no,
+            sub_question=sub_question,
+        )
+        if page_text_match:
+            return _question_result(
+                page_text_match,
+                requested_pdf=pdf,
+                lookup_scope="selected_pdf_page_text",
+            )
+
         same_scope = index.find_same_class_subject_unique(
             requested_pdf=pdf,
             exercise=exercise,
@@ -222,6 +294,139 @@ def get_question(
     return None
 
 
+def get_pdf_question_unique(
+    *,
+    pdf: str,
+    question_no: str,
+    sub_question: str | None = None,
+) -> dict[str, Any] | None:
+    """Return a question by number when the selected PDF makes it unambiguous."""
+    index = QuestionIndex.from_file()
+    matches = [
+        record
+        for record in index.questions
+        if _pdf_matches(str(record.get("pdf") or ""), pdf)
+        and str(record.get("question_no") or "").strip().lower() == str(question_no).strip().lower()
+        and normalize_sub_question(record.get("sub_question")) == normalize_sub_question(sub_question)
+    ]
+    return _question_result(matches[0], requested_pdf=pdf, lookup_scope="selected_pdf_unique_question") if len(matches) == 1 else None
+
+
+def _find_question_from_page_text(
+    *,
+    pdf: str,
+    exercise: str,
+    question_no: str,
+    sub_question: str | None,
+) -> dict[str, Any] | None:
+    """Fallback exact extraction from page text for NCERT labels such as 4.3."""
+    if sub_question:
+        return None
+    exercise_value = str(exercise or "").strip()
+    question_value = str(question_no or "").strip().lower()
+    if not exercise_value or not question_value:
+        return None
+
+    label = f"{exercise_value}.{question_value}"
+    pages = [
+        record
+        for record in read_json(PAGE_INDEX_DIR / "all_pages.json", [])
+        if _pdf_matches(str(record.get("pdf") or ""), pdf)
+    ]
+    if not pages:
+        return None
+
+    pages.sort(key=lambda item: int(item.get("page") or 0))
+    page_offsets: list[tuple[int, int]] = []
+    chunks: list[str] = []
+    cursor = 0
+    for page in pages:
+        marker = f"\n[[PAGE:{int(page.get('page') or 0)}]]\n"
+        text = str(page.get("text") or page.get("markdown") or "")
+        chunks.append(marker)
+        cursor += len(marker)
+        page_offsets.append((cursor, int(page.get("page") or 0)))
+        chunks.append(text)
+        cursor += len(text)
+    combined = "".join(chunks)
+
+    label_regex = re.compile(rf"(?m)^\s*{re.escape(label)}\b", re.IGNORECASE)
+    exercises_heading = re.compile(r"(?m)^\s*EXERCISES\s*$", re.IGNORECASE)
+    heading_matches = list(exercises_heading.finditer(combined))
+    if not heading_matches:
+        return None
+    exercise_section_start = heading_matches[-1].end()
+    start_match = next(
+        (candidate for candidate in label_regex.finditer(combined, exercise_section_start)),
+        None,
+    )
+    if not start_match:
+        return None
+
+    end_index = len(combined)
+    label_pattern = re.compile(r"(?m)^\s*([A-Z]?\d{1,2})\.(\d{1,3}[a-z]?)\b", re.IGNORECASE)
+    for match in label_pattern.finditer(combined, start_match.end()):
+        next_exercise = match.group(1)
+        next_question = match.group(2).lower()
+        if next_exercise == "0":
+            continue
+        if next_exercise == exercise_value and next_question == question_value:
+            continue
+        end_index = match.start()
+        break
+
+    raw_question_text = re.sub(r"\s*\[\[PAGE:\d+\]\]\s*", "\n", combined[start_match.start():end_index])
+    text = normalize_exact_question_text(raw_question_text).strip()
+    if len(text) < len(label) + 4:
+        return None
+
+    page_number = pages[0].get("page")
+    for offset, page in page_offsets:
+        if offset <= start_match.start():
+            page_number = page
+        else:
+            break
+
+    record_pdf = str(pages[0].get("pdf") or pdf)
+    return {
+        "id": f"{Path(record_pdf).stem}_{exercise_value}_{question_value}_page_text",
+        "pdf": record_pdf,
+        "page": page_number,
+        "chapter": exercise_value,
+        "exercise": exercise_value,
+        "question_no": question_value,
+        "sub_question": None,
+        "question_markdown": text,
+        "question_text": text,
+        "figures": [],
+    }
+
+
+def _find_chapter_numbered_question(
+    *,
+    index: QuestionIndex,
+    pdf: str,
+    exercise: str,
+    question_no: str,
+    sub_question: str | None,
+) -> dict[str, Any] | None:
+    """Support chapter-numbered textbooks where question 2.1 means chapter 2, no. 1."""
+    exercise_value = str(exercise or "").strip()
+    if not re.fullmatch(r"\d+\.\d+", exercise_value):
+        return None
+
+    chapter_no, embedded_question_no = exercise_value.split(".", 1)
+    if embedded_question_no != str(question_no).strip():
+        return None
+
+    return index.find_pdf_match(
+        pdf=pdf,
+        exercise=chapter_no,
+        question_no=question_no,
+        sub_question=sub_question,
+    )
+
+
 def route_query(query: str, pdf: str | None = None) -> dict[str, Any] | str | None:
     """Route a query to exact retrieval or semantic fallback."""
     intent = detect_intent(query)
@@ -236,6 +441,16 @@ def route_query(query: str, pdf: str | None = None) -> dict[str, Any] | str | No
             question_no=intent.question_no,
             sub_question=intent.sub_question,
         )
+    if selected_pdf:
+        question_no, sub_question = _extract_question_and_subquestion(query)
+        if question_no:
+            pdf_question = get_pdf_question_unique(
+                pdf=selected_pdf,
+                question_no=question_no,
+                sub_question=sub_question,
+            )
+            if pdf_question:
+                return pdf_question
     return "semantic"
 
 

@@ -158,6 +158,30 @@ const normalizeModelResponseText = (value = "") =>
 const renderFraction = (numerator, denominator) =>
   `<span class="math-frac"><span class="math-num">${numerator.trim()}</span><span class="math-den">${denominator.trim()}</span></span>`;
 
+const normalizeLimitCondition = (condition = "") =>
+  condition.trim().replace(/(?:-&gt;|-&amp;gt;|&gt;|>)/g, "\u2192");
+
+const renderLimit = (condition = "") =>
+  `<span class="math-limit"><span class="math-limit-op">lim</span><span class="math-limit-under">${normalizeLimitCondition(condition)}</span></span>`;
+
+const limitVariablePattern = "[A-Za-z][A-Za-z0-9\\u03c0\\u03b8\\u03b1\\u03b2]*";
+const limitTargetPattern = "[A-Za-z0-9\\u03c0\\u03b8\\u03b1\\u03b2\\u221e+\\-.]+";
+const limitArrowPattern = "(?:\\u2192|-&gt;|-&amp;gt;|&gt;|>)";
+
+const renderLimits = (value = "") =>
+  String(value)
+    .replace(/\blim\s*_\s*\{\s*([^{}<>\n]{1,48}?)\s*\}/g, (_, condition) => renderLimit(condition))
+    .replace(/\blim\s*\{\s*([^{}<>\n]{1,48}?)\s*\}/g, (_, condition) => renderLimit(condition))
+    .replace(
+      new RegExp(`\\blim\\s*_\\s*(${limitVariablePattern}\\s*${limitArrowPattern}\\s*${limitTargetPattern})`, "g"),
+      (_, condition) => renderLimit(condition),
+    )
+    .replace(
+      new RegExp(`\\blim\\s*(${limitVariablePattern}\\s*${limitArrowPattern}\\s*${limitTargetPattern})`, "g"),
+      (_, condition) => renderLimit(condition),
+    );
+
+
 const SUPER_GLYPHS = {
   "\u00B9": "1",
   "\u00B2": "2",
@@ -207,7 +231,8 @@ const renderMathScripts = (value = "") =>
     .replace(/([A-Za-z0-9)\]])\^([+-]?[A-Za-z0-9]{1,12})\b/g, "$1<sup>$2</sup>");
 const renderReadableMath = (value = "") => {
   const fractions = [];
-  let text = renderMathScripts(String(value));
+  let text = renderLimits(String(value));
+  text = renderMathScripts(text);
 
   const stashFraction = (numerator, denominator) => {
     const token = `@@MATH_FRAC_${fractions.length}@@`;

@@ -15,6 +15,8 @@ const FIGURE_REF_PATTERN = /\b(?:figure|fig\.?)\s*([A-Z]?\d+(?:\.\d+)+)\b/gi;
 
 let cachedIndex = null;
 let cachedMtime = 0;
+let cachedPythonExactIndex = null;
+let cachedPythonExactMtime = 0;
 let cachedLegacyIndex = null;
 let cachedLegacyIndexPath = "";
 let cachedLegacyMtime = 0;
@@ -34,6 +36,18 @@ function getIndexPath() {
 function getMathDataDir() {
   return path.join(resolveBackendBasePath(), "Math_Data");
 }
+
+function getPythonExactQuestionIndexPath() {
+  return path.join(
+    resolveBackendBasePath(),
+    "..",
+    "python-rag-service",
+    "data",
+    "question_index",
+    "all_questions.json",
+  );
+}
+
 function getPdfJsOptions(data) {
   return {
     data,
@@ -62,6 +76,17 @@ function normalizeQuestionNo(value = "") {
   return String(value || "").trim().toLowerCase().replace(/\.$/, "");
 }
 
+function getChapterNumberedExerciseFallback(exercise = "", questionNo = "") {
+  const normalizedExercise = normalizeExercise(exercise);
+  const normalizedQuestionNo = normalizeQuestionNo(questionNo);
+  const match = normalizedExercise.match(/^([A-Z]?\d+)\.(\d+[a-z]?)$/i);
+  if (!match) return "";
+
+  return normalizeQuestionNo(match[2]) === normalizedQuestionNo
+    ? normalizeExercise(match[1])
+    : "";
+}
+
 function loadExerciseQuestionIndex() {
   const indexPath = getIndexPath();
   if (!fs.existsSync(indexPath)) return [];
@@ -75,6 +100,21 @@ function loadExerciseQuestionIndex() {
   cachedIndex = Array.isArray(parsed) ? parsed : [];
   cachedMtime = mtime;
   return cachedIndex;
+}
+
+function loadPythonExactQuestionIndex() {
+  const indexPath = getPythonExactQuestionIndexPath();
+  if (!fs.existsSync(indexPath)) return [];
+
+  const mtime = fs.statSync(indexPath).mtimeMs;
+  if (cachedPythonExactIndex && cachedPythonExactMtime === mtime) {
+    return cachedPythonExactIndex;
+  }
+
+  const parsed = JSON.parse(fs.readFileSync(indexPath, "utf8"));
+  cachedPythonExactIndex = Array.isArray(parsed) ? parsed : [];
+  cachedPythonExactMtime = mtime;
+  return cachedPythonExactIndex;
 }
 
 function loadLegacyMathIndex() {
@@ -175,6 +215,21 @@ export async function findExerciseQuestion({ selectedChapter, exercise, question
       null;
 
     if (normalizedExercise && exactMatch) return exactMatch;
+
+    const chapterNumberedExercise = getChapterNumberedExerciseFallback(
+      normalizedExercise,
+      normalizedQuestionNo,
+    );
+    if (chapterNumberedExercise) {
+      const chapterNumberedMatches = chapterMatchesForQuestion.filter(
+        (item) => normalizeExercise(item.exercise) === chapterNumberedExercise,
+      );
+      const chapterNumberedMatch =
+        chapterNumberedMatches.find((item) => item.chapterId === selectedChapter) ||
+        chapterNumberedMatches.find((item) => chapterMatches(item.chapterId, selectedChapter)) ||
+        null;
+      if (chapterNumberedMatch) return chapterNumberedMatch;
+    }
     if (!normalizedExercise && chapterMatchesForQuestion.length === 1) {
       console.log(
         `[RAG] Question number ${questionNo} resolved without exercise because it is unique in selected chapter.`,
@@ -185,6 +240,13 @@ export async function findExerciseQuestion({ selectedChapter, exercise, question
 
   if (!normalizedExercise) return null;
 
+  const pythonExactMatch = findExerciseQuestionInPythonExactIndex({
+    selectedChapter,
+    exercise: normalizedExercise,
+    questionNo: normalizedQuestionNo,
+  });
+  if (pythonExactMatch) return pythonExactMatch;
+
   const legacyMatch = findExerciseQuestionInLegacyIndex({
     selectedChapter,
     exercise: normalizedExercise,
@@ -192,11 +254,84 @@ export async function findExerciseQuestion({ selectedChapter, exercise, question
   });
   if (legacyMatch) return legacyMatch;
 
+  const chapterNumberedExercise = getChapterNumberedExerciseFallback(
+    normalizedExercise,
+    normalizedQuestionNo,
+  );
+  if (chapterNumberedExercise) {
+    const chapterNumberedPythonExactMatch = findExerciseQuestionInPythonExactIndex({
+      selectedChapter,
+      exercise: chapterNumberedExercise,
+      questionNo: normalizedQuestionNo,
+    });
+    if (chapterNumberedPythonExactMatch) return chapterNumberedPythonExactMatch;
+
+    const chapterNumberedLegacyMatch = findExerciseQuestionInLegacyIndex({
+      selectedChapter,
+      exercise: chapterNumberedExercise,
+      questionNo: normalizedQuestionNo,
+    });
+    if (chapterNumberedLegacyMatch) return chapterNumberedLegacyMatch;
+
+    const chapterNumberedPdfMatch = await findExerciseQuestionInSelectedPdf({
+      selectedChapter,
+      exercise: chapterNumberedExercise,
+      questionNo: normalizedQuestionNo,
+    });
+    if (chapterNumberedPdfMatch) return chapterNumberedPdfMatch;
+  }
+
   return findExerciseQuestionInSelectedPdf({
     selectedChapter,
     exercise: normalizedExercise,
     questionNo: normalizedQuestionNo,
   });
+}
+
+function findExerciseQuestionInPythonExactIndex({ selectedChapter, exercise, questionNo }) {
+  const exactIndex = loadPythonExactQuestionIndex();
+  if (!exactIndex.length) return null;
+
+  const normalizedExercise = normalizeExercise(exercise);
+  const normalizedQuestionNo = normalizeQuestionNo(questionNo);
+  const chapterMatchesForQuestion = exactIndex.filter(
+    (item) =>
+      normalizeQuestionNo(item.question_no) === normalizedQuestionNo &&
+      normalizeExercise(item.exercise) === normalizedExercise &&
+      chapterMatches(item.pdf, selectedChapter),
+  );
+
+  const exactMatch =
+    chapterMatchesForQuestion.find((item) => chapterMatches(item.pdf, selectedChapter)) ||
+    null;
+
+  if (!exactMatch) return null;
+
+  const chapterId = String(exactMatch.pdf || "").replace(/\.pdf$/i, "");
+  const questionText = exactMatch.question_text || exactMatch.question_markdown || "";
+  const analysis = analyzePageText(questionText);
+
+  console.log(
+    `[RAG] Exact exercise question loaded from Python exact index: ${chapterId}, exercise ${exercise}, question ${questionNo}`,
+  );
+
+  return {
+    chapterId,
+    exercise: exactMatch.exercise || exercise,
+    questionNo: exactMatch.question_no || questionNo,
+    page: exactMatch.page ?? null,
+    text: questionText,
+    rawText: questionText,
+    figureRefs: collectFigureRefs({ text: questionText }),
+    mathDetected: analysis.mathDetected,
+    diagramDetected: analysis.diagramDetected,
+    textCorrupted: Boolean(analysis.textCorrupted),
+    pageImagePath: "",
+    fallbackPageImageRequired: false,
+    sourcePdf: exactMatch.pdf || "",
+    source: "python-exact-question-index-file",
+    needsReview: false,
+  };
 }
 
 function findExerciseQuestionInLegacyIndex({ selectedChapter, exercise, questionNo }) {

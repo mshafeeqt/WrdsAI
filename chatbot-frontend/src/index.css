@@ -61,6 +61,31 @@ h1 {
   padding-top: 0.08em;
 }
 
+.math-limit {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 0 0.16em;
+  vertical-align: -0.42em;
+  line-height: 1;
+}
+
+.math-limit-op {
+  display: block;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.12em;
+  line-height: 0.9;
+}
+
+.math-limit-under {
+  display: block;
+  margin-top: 0.02em;
+  font-size: 0.68em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 button {
   border-radius: 8px;
   border: 1px solid transparent;

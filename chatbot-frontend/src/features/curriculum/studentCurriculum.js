@@ -4,6 +4,16 @@ function normalizeText(value = "") {
   return String(value).trim().toLowerCase();
 }
 
+function uniqueById(items = []) {
+  const seen = new Set();
+  return items.filter((item) => {
+    const key = item?.id || item?.name;
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 export function getUserClassName(user) {
   return (
     user?.className ||
@@ -18,6 +28,10 @@ export function getUserClassName(user) {
 export function extractClassNumber(value = "") {
   const match = String(value).match(/\d+/);
   return match ? match[0] : "";
+}
+
+export function extractClassNumbers(value = "") {
+  return [...String(value).matchAll(/\d+/g)].map((match) => match[0]);
 }
 
 export function isStudentUser(user) {
@@ -38,9 +52,27 @@ export function findClassByName(structure = [], className = "") {
   );
 }
 
+export function getStudentClassChoices(structure = [], user, teacherMode = false) {
+  if (teacherMode || !isStudentUser(user) || !Array.isArray(structure)) return [];
+
+  const className = getUserClassName(user);
+  const classNumbers = extractClassNumbers(className);
+
+  if (classNumbers.length > 1) {
+    return uniqueById(
+      classNumbers
+        .map((classNumber) => findClassByName(structure, classNumber))
+        .filter(Boolean),
+    );
+  }
+
+  const singleClass = findClassByName(structure, className);
+  return singleClass ? [singleClass] : [];
+}
+
 export function getLockedStudentClass(structure = [], user, teacherMode = false) {
-  if (teacherMode || !isStudentUser(user)) return null;
-  return findClassByName(structure, getUserClassName(user));
+  const choices = getStudentClassChoices(structure, user, teacherMode);
+  return choices.length === 1 ? choices[0] : null;
 }
 
 export function getVisibleSubjectsForStudent(classItem) {

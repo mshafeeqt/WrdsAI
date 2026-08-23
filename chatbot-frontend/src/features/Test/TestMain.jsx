@@ -10,7 +10,7 @@ import './styles/testStyles.css';
 import { toast } from 'react-toastify';
 import { fetchCurrentUser } from '../auth/authClient';
 import {
-  getLockedStudentClass,
+  getStudentClassChoices,
   getVisibleSubjectsForStudent,
 } from '../curriculum/studentCurriculum';
 
@@ -30,9 +30,11 @@ const TestMain = () => {
   const [currentUserLoaded, setCurrentUserLoaded] = useState(false);
 
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-  const lockedStudentClass = getLockedStudentClass(chapterStructure, currentUser);
+  const studentClassChoices = getStudentClassChoices(chapterStructure, currentUser);
+  const lockedStudentClass = studentClassChoices.length === 1 ? studentClassChoices[0] : null;
+  const classOptions = studentClassChoices.length ? studentClassChoices : chapterStructure;
   const visibleSubjects = selectedClass
-    ? (lockedStudentClass ? getVisibleSubjectsForStudent(selectedClass) : selectedClass.subjects || [])
+    ? (studentClassChoices.length ? getVisibleSubjectsForStudent(selectedClass) : selectedClass.subjects || [])
     : [];
 
   useEffect(() => {
@@ -301,7 +303,7 @@ const TestMain = () => {
           <TestDashboard
             title="Select Class"
             subtitle="Choose your grade level to access relevant practice tests."
-            items={chapterStructure}
+            items={classOptions}
             onSelectItem={selectClass}
           />
         )}
