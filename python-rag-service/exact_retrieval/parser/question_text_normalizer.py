@@ -452,7 +452,10 @@ def _read_stacked_signed_fraction(lines: list[str], start: int) -> tuple[int, st
         and re.fullmatch(r"[A-Za-z]+(?:.*)?", tokens[3] if len(tokens) > 3 else "")
     ):
         operator = tokens[2][:1]
-        base = re.match(r"[A-Za-z]+", tokens[3]).group(0)
+        base_match = re.match(r"[A-Za-z]+", tokens[3])
+        if base_match is None:
+            return None
+        base = base_match.group(0)
         inline_tail = tokens[3][len(base) :].strip()
         exponent_or_tail = tokens[4] if len(tokens) > 4 else ""
         exponent = ""
