@@ -18,3 +18,9 @@ python-rag-service/.venv/
 python-rag-service/.packages/
 python-rag-service/.tmp/
 python-rag-service/data/
+python-rag-service/*.zip
+python-rag-service/*.zip
+python-rag-service/data/
+chatbot-backend/Math_Data/
+python-rag-service/index_class_12_*.py
+python-rag-service/exact_retrieval/parser/math_layout_repair.py
